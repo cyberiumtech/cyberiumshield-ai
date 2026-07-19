@@ -1,0 +1,11 @@
+# Placeholder dependencies.
+fastapi
+uvicorn
+pandas
+numpy
+scikit-learn
+transformers
+torch
+tensorflow
+redis
+

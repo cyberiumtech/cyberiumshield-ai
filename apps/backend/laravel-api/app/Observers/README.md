@@ -1,0 +1,4 @@
+# app/Observers/
+
+Model observers.
+

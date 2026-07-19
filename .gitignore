@@ -1,0 +1,34 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+.vite/
+.dist/
+.env*
+
+# PHP/Laravel
+/vendor/
+/bootstrap/cache/
+/storage/*.key
+/public/storage/
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+

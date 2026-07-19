@@ -1,0 +1,4 @@
+# app/Policies/
+
+Authorization policies.
+

@@ -1,0 +1,4 @@
+# app/Notifications/
+
+Notification classes.
+
