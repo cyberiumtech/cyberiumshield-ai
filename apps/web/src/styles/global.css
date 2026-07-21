@@ -1,8 +1,6 @@
-/* Tailwind directives removed temporarily.
-   Current workspace diagnostics report Tailwind directives as unknown,
-   likely due to missing Tailwind processing pipeline during initial bootstrap.
-   Restore once Tailwind+PostCSS are fully installed and wired. */
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   color-scheme: dark;

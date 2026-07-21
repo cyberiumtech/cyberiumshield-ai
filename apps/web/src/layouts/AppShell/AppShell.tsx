@@ -1,29 +1,17 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
-
-
 /**
- * AppShell decides which high-level layout to use.
- * For now: routes under '/' render LandingLayout; other routes render DashboardLayout.
+ * @deprecated This component is deprecated in favor of using idiomatic
+ * `react-router-dom` v6 layout routes directly in `App.tsx`.
+ * This provides a more declarative and maintainable routing structure.
+ * The logic for choosing a layout is now structurally defined in the routing tree.
+ * This file is kept for historical reference and will be removed in a future refactor.
  */
 export function AppShell() {
-  // Keep it simple: if you navigate to root, use Landing layout.
-  // Actual matching can be refined later.
-  return (
-    <div className="min-h-screen">
-      <Outlet />
-    </div>
-  );
-}
-
-// Legacy router-based layout wrapper was referencing a missing component.
-// Kept for backward compatibility but not used by App.tsx.
-export function AppShellRouter() {
   return (
     <>
       <Outlet />
     </>
   );
 }
-

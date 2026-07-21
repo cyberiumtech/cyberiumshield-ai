@@ -1,4 +1,0 @@
-# app/Events/
-
-Domain events.
-

@@ -1,4 +1,0 @@
-# app/Traits/
-
-Reusable traits.
-

@@ -1,4 +1,0 @@
-# app/Providers/
-
-Service providers.
-

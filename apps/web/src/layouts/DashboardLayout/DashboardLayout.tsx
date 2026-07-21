@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { TopNav } from '../../components/TopNav/TopNav';
+import { Navbar } from '../../components/Navbar';
 import { Sidebar } from '../../components/Sidebar/Sidebar';
 
 export function DashboardLayout() {
@@ -8,7 +8,7 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-[#0B1120] text-slate-200">
-      <TopNav />
+      <Navbar />
       <div className="flex w-full">
         <aside className="w-72 hidden lg:block shrink-0">
           <Sidebar activePath={location.pathname} />

@@ -1,0 +1,1 @@
+export { ThreatScanner } from './ThreatScanner';

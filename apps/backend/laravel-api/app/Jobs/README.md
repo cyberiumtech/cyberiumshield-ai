@@ -1,4 +1,0 @@
-# app/Jobs/
-
-Asynchronous jobs.
-

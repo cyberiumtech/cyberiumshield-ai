@@ -1,4 +1,0 @@
-# app/Listeners/
-
-Event listeners.
-

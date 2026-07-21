@@ -1,4 +1,0 @@
-# app/Http/
-
-HTTP layer.
-
