@@ -1,44 +1,68 @@
-import React, { useEffect, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
   Shield,
   ShieldCheck,
   AlertTriangle,
-  Bug,
   Activity,
   Server,
-  Search,
-  Bell,
-  Sparkles,
   Monitor,
   Database,
   Cpu,
   ArrowRight,
   Radar,
+  Sparkles,
+  Terminal,
+  Clock3,
+  LockKeyhole,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
+
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   RadialBarChart,
   RadialBar,
 } from 'recharts';
+
 import { Badge } from '../../components/shared/Badge';
+
 import {
   ComposableMap,
   Geographies,
   Geography,
   Marker,
   Line,
+  Sphere,
+  Graticule,
 } from 'react-simple-maps';
+
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
+
+type Severity =
+  | 'critical'
+  | 'high'
+  | 'medium'
+  | 'low';
+
+type LogStatusType =
+  | 'success'
+  | 'blocked'
+  | 'warning'
+  | 'investigating';
 
 /* ------------------------------------------------------------------ */
 /* Data                                                               */
@@ -79,7 +103,16 @@ const headlineStats = [
     trend: 'up' as const,
     icon: Monitor,
     accent: '#818cf8',
-    spark: [1100, 1120, 1140, 1160, 1190, 1210, 1230, 1247],
+    spark: [
+      1100,
+      1120,
+      1140,
+      1160,
+      1190,
+      1210,
+      1230,
+      1247,
+    ],
   },
   {
     title: 'Designated Safe',
@@ -91,6 +124,10 @@ const headlineStats = [
     spark: [95, 95.5, 96, 96.8, 97.2, 97.6, 98, 98.3],
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/* Global Threat Map Data                                             */
+/* ------------------------------------------------------------------ */
 
 const threatMapPoints = [
   {
@@ -190,66 +227,128 @@ const threatsByType = [
   },
 ];
 
-const criticalAlerts = [
+const criticalAlerts: Array<{
+  title: string;
+  detail: string;
+  time: string;
+  severity: Severity;
+}> = [
   {
     title: 'Ransomware Attack Detected',
     detail: 'On endpoint: FIN-SRV-09',
     time: '2 min ago',
-    severity: 'critical' as const,
+    severity: 'critical',
   },
   {
     title: 'Suspicious Login Attempt',
     detail: 'User: admin@company.com',
     time: '5 min ago',
-    severity: 'medium' as const,
+    severity: 'medium',
   },
   {
     title: 'Malware Detected',
     detail: 'On endpoint: HR-LAPTOP-21',
     time: '10 min ago',
-    severity: 'high' as const,
+    severity: 'high',
   },
   {
     title: 'Unusual Data Exfiltration',
     detail: 'From: 192.168.1.45',
     time: '15 min ago',
-    severity: 'high' as const,
+    severity: 'high',
   },
 ];
 
-const recentIncidents = [
+const activityLogs: Array<{
+  time: string;
+  event: string;
+  source: string;
+  action: string;
+  status: LogStatusType;
+}> = [
+  {
+    time: '22:01:42',
+    event: 'Ransomware signature detected',
+    source: 'FIN-SRV-09',
+    action: 'Blocked',
+    status: 'blocked',
+  },
+  {
+    time: '21:59:18',
+    event: 'Suspicious authentication attempt',
+    source: 'admin@company.com',
+    action: 'Challenged',
+    status: 'warning',
+  },
+  {
+    time: '21:55:03',
+    event: 'Malware payload detected',
+    source: 'HR-LAPTOP-21',
+    action: 'Quarantined',
+    status: 'blocked',
+  },
+  {
+    time: '21:49:27',
+    event: 'Outbound data anomaly detected',
+    source: '192.168.1.45',
+    action: 'Inspected',
+    status: 'investigating',
+  },
+  {
+    time: '21:44:11',
+    event: 'Firewall policy violation',
+    source: 'EDGE-FW-01',
+    action: 'Blocked',
+    status: 'blocked',
+  },
+  {
+    time: '21:39:56',
+    event: 'Endpoint security scan completed',
+    source: 'ENG-LAPTOP-14',
+    action: 'Completed',
+    status: 'success',
+  },
+];
+
+const recentIncidents: Array<{
+  id: string;
+  title: string;
+  severity: Severity;
+  status: string;
+  time: string;
+}> = [
   {
     id: 'INC-2025-0729',
     title: 'Ransomware Attack',
-    severity: 'critical' as const,
+    severity: 'critical',
     status: 'Investigating',
     time: '2 min ago',
   },
   {
     id: 'INC-2025-0728',
     title: 'Malware Infection',
-    severity: 'high' as const,
+    severity: 'high',
     status: 'Containment',
     time: '10 min ago',
   },
   {
     id: 'INC-2025-0727',
     title: 'Phishing Attempt',
-    severity: 'medium' as const,
+    severity: 'medium',
     status: 'Resolved',
     time: '1 hr ago',
   },
   {
     id: 'INC-2025-0726',
     title: 'Brute Force Attempt',
-    severity: 'low' as const,
+    severity: 'low',
     status: 'Resolved',
     time: '3 hr ago',
   },
   {
     id: 'INC-2025-0725',
     title: 'Suspicious Activity',
-    severity: 'medium' as const,
+    severity: 'medium',
     status: 'Investigating',
     time: '5 hr ago',
   },
@@ -329,20 +428,24 @@ const footerStats = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Small building blocks                                              */
+/* Small Building Blocks                                              */
 /* ------------------------------------------------------------------ */
 
 function Sparkline({
   data,
   color,
+  id,
 }: {
   data: number[];
   color: string;
+  id: string;
 }) {
   const points = data.map((v, i) => ({
     i,
     v,
   }));
+
+  const gradientId = `spark-${id}`;
 
   return (
     <ResponsiveContainer width="100%" height={40}>
@@ -357,7 +460,7 @@ function Sparkline({
       >
         <defs>
           <linearGradient
-            id={`spark-${color.replace('#', '')}`}
+            id={gradientId}
             x1="0"
             y1="0"
             x2="0"
@@ -382,7 +485,8 @@ function Sparkline({
           dataKey="v"
           stroke={color}
           strokeWidth={2}
-          fill={`url(#spark-${color.replace('#', '')})`}
+          fill={`url(#${gradientId})`}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -398,51 +502,101 @@ function Panel({
 }) {
   return (
     <div
-      className={`bg-[#0F1729]/60 backdrop-blur-sm border border-white/10 rounded-2xl p-5 ${className}`}
+      className={`rounded-2xl border border-white/10 bg-[#0F1729]/60 p-5 backdrop-blur-sm ${className}`}
     >
       {children}
     </div>
   );
 }
 
+function LogStatus({
+  status,
+}: {
+  status: LogStatusType;
+}) {
+  const config: Record<
+    LogStatusType,
+    {
+      label: string;
+      className: string;
+      icon: React.ElementType;
+    }
+  > = {
+    success: {
+      label: 'Success',
+      className:
+        'border-emerald-400/20 bg-emerald-400/10 text-emerald-300',
+      icon: CheckCircle2,
+    },
+    blocked: {
+      label: 'Blocked',
+      className:
+        'border-red-400/20 bg-red-400/10 text-red-300',
+      icon: XCircle,
+    },
+    warning: {
+      label: 'Warning',
+      className:
+        'border-amber-400/20 bg-amber-400/10 text-amber-300',
+      icon: AlertTriangle,
+    },
+    investigating: {
+      label: 'Investigating',
+      className:
+        'border-cyan-400/20 bg-cyan-400/10 text-cyan-300',
+      icon: RefreshCw,
+    },
+  };
+
+  const item = config[status];
+  const Icon = item.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium ${item.className}`}
+    >
+      <Icon className="h-3 w-3" />
+      {item.label}
+    </span>
+  );
+}
+
 /* ------------------------------------------------------------------ */
-/* Page                                                               */
+/* Global Threat Globe                                                 */
 /* ------------------------------------------------------------------ */
 
-export function DashboardPage() {
-  /*
-   * Rotating globe state.
-   * The globe moves every 50ms for a smooth rotation.
-   */
-  const [rotation, setRotation] = useState(0);
+function GlobalThreatGlobe() {
+  const [rotation, setRotation] = useState<
+    [number, number, number]
+  >([0, -8, 0]);
 
-  /*
-   * Live refresh countdown.
-   * Starts at 30 and counts down every second.
-   */
-  const [refreshCountdown, setRefreshCountdown] = useState(30);
+  const [seconds, setSeconds] = useState(30);
 
-  /* ---------------------------------------------------------------- */
-  /* Globe rotation                                                   */
-  /* ---------------------------------------------------------------- */
+  const projectionConfig = useMemo(
+    () => ({
+      rotate: rotation,
+      scale: 255,
+    }),
+    [rotation]
+  );
 
   useEffect(() => {
     const rotationTimer = window.setInterval(() => {
-      setRotation((current) => (current + 0.35) % 360);
-    }, 50);
+      setRotation((current) => [
+        current[0] + 0.35,
+        current[1],
+        current[2],
+      ]);
+    }, 80);
 
     return () => {
       window.clearInterval(rotationTimer);
     };
   }, []);
 
-  /* ---------------------------------------------------------------- */
-  /* 30-second live countdown                                         */
-  /* ---------------------------------------------------------------- */
-
   useEffect(() => {
-    const countdownTimer = window.setInterval(() => {
-      setRefreshCountdown((current) => {
+    const timer = window.setInterval(() => {
+      setSeconds((current) => {
         if (current <= 1) {
           return 30;
         }
@@ -452,26 +606,221 @@ export function DashboardPage() {
     }, 1000);
 
     return () => {
-      window.clearInterval(countdownTimer);
+      window.clearInterval(timer);
     };
   }, []);
 
   return (
+    <div
+      className="relative w-full overflow-hidden rounded-xl border border-white/5 bg-[#08111f]"
+      style={{
+        height: '500px',
+      }}
+    >
+      {/* Main atmospheric glow */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0"
+        style={{
+          width: '620px',
+          height: '620px',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '9999px',
+          background:
+            'radial-gradient(circle, rgba(14,165,233,0.14) 0%, rgba(14,165,233,0.07) 35%, rgba(14,165,233,0.025) 55%, transparent 72%)',
+          filter: 'blur(8px)',
+        }}
+      />
+
+      {/* Outer globe halo */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0"
+        style={{
+          width: '535px',
+          height: '535px',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '9999px',
+          border: '1px solid rgba(56,189,248,0.06)',
+          boxShadow:
+            '0 0 70px rgba(14,165,233,0.06), inset 0 0 70px rgba(14,165,233,0.04)',
+        }}
+      />
+
+      <ComposableMap
+        projection="geoOrthographic"
+        projectionConfig={projectionConfig}
+        width={900}
+        height={500}
+        className="relative z-10 h-full w-full"
+        style={{
+          width: '100%',
+          height: '100%',
+          background: 'transparent',
+        }}
+      >
+        {/* Earth sphere */}
+        <Sphere
+          id="globe-sphere"
+          fill="#0b1a2d"
+          stroke="#1e4162"
+          strokeWidth={1.2}
+        />
+
+        {/* Latitude / longitude grid */}
+        <Graticule
+          stroke="#1c4568"
+          strokeWidth={0.35}
+          strokeOpacity={0.28}
+        />
+
+        {/* World countries */}
+        <Geographies
+          geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+        >
+          {({ geographies }) =>
+            geographies.map((geo) => (
+              <Geography
+                key={geo.rsmKey}
+                geography={geo}
+                fill="#10243a"
+                stroke="#284766"
+                strokeWidth={0.45}
+                style={{
+                  default: {
+                    outline: 'none',
+                  },
+                  hover: {
+                    outline: 'none',
+                    fill: '#173553',
+                  },
+                  pressed: {
+                    outline: 'none',
+                  },
+                }}
+              />
+            ))
+          }
+        </Geographies>
+
+        {/* Threat connections */}
+        {threatMapPoints.slice(0, 6).map((point, i) => {
+          const target =
+            threatMapPoints[
+              (i + 4) % threatMapPoints.length
+            ];
+
+          return (
+            <Line
+              key={`${point.name}-${target.name}`}
+              from={point.coordinates}
+              to={target.coordinates}
+              stroke="#38bdf8"
+              strokeWidth={1.15}
+              strokeLinecap="round"
+              strokeDasharray="3 5"
+              opacity={0.42}
+            />
+          );
+        })}
+
+        {/* Threat locations */}
+        {threatMapPoints.map((point) => (
+          <Marker
+            key={point.name}
+            coordinates={point.coordinates}
+          >
+            <g className="cursor-pointer">
+              <circle
+                r={9}
+                fill={levelColor[point.level]}
+                opacity={0.08}
+              />
+
+              <circle
+                r={6}
+                fill={levelColor[point.level]}
+                opacity={0.16}
+              />
+
+              <circle
+                r={4}
+                fill={levelColor[point.level]}
+                opacity={0.35}
+              />
+
+              <circle
+                r={2.5}
+                fill={levelColor[point.level]}
+                stroke="#07111f"
+                strokeWidth={1.3}
+              />
+
+              <title>{point.name}</title>
+            </g>
+          </Marker>
+        ))}
+      </ComposableMap>
+
+      {/* Edge vignette */}
+      <div
+        className="pointer-events-none absolute inset-0 z-20"
+        style={{
+          background:
+            'radial-gradient(circle at center, transparent 48%, rgba(8,17,31,0.18) 68%, rgba(8,17,31,0.72) 100%)',
+        }}
+      />
+
+      {/* Live indicator */}
+      <div className="absolute left-4 top-4 z-30 flex items-center gap-2 rounded-full border border-emerald-400/20 bg-[#08111f]/75 px-3 py-1.5 backdrop-blur-md">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+
+        <span className="text-[11px] font-medium text-emerald-300">
+          LIVE
+        </span>
+      </div>
+
+      {/* Globe status */}
+      <div className="absolute bottom-4 left-4 z-30 rounded-lg border border-white/10 bg-[#08111f]/70 px-3 py-2 backdrop-blur-md">
+        <p className="text-[10px] uppercase tracking-wider text-slate-500">
+          Global Network
+        </p>
+
+        <p className="mt-0.5 text-xs font-medium text-slate-300">
+          10 active threat locations
+        </p>
+      </div>
+
+      {/* Feed status */}
+      <div className="absolute bottom-4 right-4 z-30 rounded-lg border border-white/10 bg-[#08111f]/70 px-3 py-2 text-right backdrop-blur-md">
+        <p className="text-[10px] uppercase tracking-wider text-slate-500">
+          Threat Feed
+        </p>
+
+        <p className="mt-0.5 text-xs font-medium text-cyan-300">
+          Next update in {seconds}s
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                               */
+/* ------------------------------------------------------------------ */
+
+export function DashboardPage() {
+  return (
     <div className="space-y-6">
-
-      {/* ------------------------------------------------------------ */}
-
-      {/* Header                                                       */}
-
-      {/* ------------------------------------------------------------ */}
-
+      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-sm text-slate-400">
             Welcome back,
           </p>
 
-          <div className="flex items-center gap-3 mt-0.5">
+          <div className="mt-0.5 flex items-center gap-3">
             <h1 className="text-2xl font-bold text-slate-100">
               CyberShield Operator
             </h1>
@@ -479,24 +828,20 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------ */}
-
-      {/* Top stat row                                                 */}
-
-      {/* ------------------------------------------------------------ */}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
-
-        {/* Overall Risk Score */}
-
-        <Panel className="lg:col-span-1 h-full">
-          <p className="text-sm text-slate-400 mb-3">
+      {/* Top stat row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Risk gauge */}
+        <Panel className="lg:col-span-1">
+          <p className="mb-3 text-sm text-slate-400">
             Overall Risk Score
           </p>
 
-          <div className="flex items-center gap-3">
-            <div className="relative w-24 h-24 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+          <div className="flex items-center gap-4">
+            <div className="relative h-20 w-20 shrink-0">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
                 <RadialBarChart
                   innerRadius="72%"
                   outerRadius="100%"
@@ -508,6 +853,8 @@ export function DashboardPage() {
                   ]}
                   startAngle={90}
                   endAngle={-270}
+                  cx="50%"
+                  cy="50%"
                 >
                   <RadialBar
                     dataKey="value"
@@ -515,307 +862,131 @@ export function DashboardPage() {
                       fill: 'rgba(255,255,255,0.06)',
                     }}
                     cornerRadius={8}
-                    max={100}
                   />
                 </RadialBarChart>
               </ResponsiveContainer>
 
-              {/* Centered 72/100 */}
-
-              <div className="absolute inset-0 flex items-center justify-center whitespace-nowrap">
-                <span className="text-xl font-bold leading-none text-slate-100">
+              <div className="absolute inset-0 flex items-baseline justify-center gap-0.5 whitespace-nowrap">
+                <span className="text-lg font-bold leading-none text-slate-100">
                   {riskScore.value}
                 </span>
 
-                <span className="text-[11px] font-semibold leading-none text-slate-500 ml-0.5">
+                <span className="text-[10px] font-semibold leading-none text-slate-500">
                   /{riskScore.max}
                 </span>
               </div>
             </div>
 
-            <div className="min-w-0">
+            <div>
               <p className="text-sm font-semibold text-amber-400">
                 {riskScore.label}
               </p>
 
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="mt-1 text-xs text-slate-500">
                 ▲ {riskScore.delta}
               </p>
             </div>
           </div>
 
-          <div className="mt-3 -mx-1">
+          <div className="-mx-1 mt-3">
             <Sparkline
               data={riskScore.spark}
               color="#f59e0b"
+              id="risk"
             />
           </div>
         </Panel>
 
         {/* Headline statistics */}
+        {headlineStats.map((stat) => {
+          const Icon = stat.icon;
 
-        {headlineStats.map((stat) => (
-          <Panel
-            key={stat.title}
-            className="h-full"
-          >
-            <div className="flex items-center justify-between">
+          return (
+            <Panel key={stat.title}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-400">
+                  {stat.title}
+                </p>
 
-              <p className="text-sm text-slate-400">
-                {stat.title}
+                <Icon
+                  className="h-4 w-4"
+                  style={{
+                    color: stat.accent,
+                  }}
+                />
+              </div>
+
+              <p className="mt-2 text-2xl font-bold text-slate-100">
+                {stat.value}
               </p>
 
-              <stat.icon
-                className="w-4 h-4"
-                style={{
-                  color: stat.accent,
-                }}
-              />
+              <p className="mt-1 text-xs text-emerald-400">
+                ▲ {stat.delta}
+              </p>
 
-            </div>
-
-            <p className="text-2xl font-bold text-slate-100 mt-2">
-              {stat.value}
-            </p>
-
-            <p className="text-xs text-emerald-400 mt-1">
-              ▲ {stat.delta}
-            </p>
-
-            <div className="mt-2 -mx-1">
-              <Sparkline
-                data={stat.spark}
-                color={stat.accent}
-              />
-            </div>
-          </Panel>
-        ))}
-
+              <div className="-mx-1 mt-2">
+                <Sparkline
+                  data={stat.spark}
+                  color={stat.accent}
+                  id={stat.title
+                    .toLowerCase()
+                    .replace(/\s+/g, '-')}
+                />
+              </div>
+            </Panel>
+          );
+        })}
       </div>
 
-      {/* ------------------------------------------------------------ */}
-
-      {/* Threat map + breakdown + alerts                              */}
-
-      {/* ------------------------------------------------------------ */}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ---------------------------------------------------------- */}
-
-        {/* Global Threat Map                                          */}
-
-        {/* ---------------------------------------------------------- */}
-
-        <Panel className="lg:col-span-2 lg:row-span-3 h-full">
-
-          <div className="flex items-center justify-between mb-4">
+      {/* Threat map + breakdown + alerts */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Global Threat Map */}
+        <Panel className="lg:col-span-2 lg:row-span-2">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-200">
               Global Threat Map
             </h3>
 
-            {/* REALTIME COUNTDOWN */}
-
-            <span className="text-xs text-slate-500 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-
-              Live · {refreshCountdown}s
+            <span className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              Live · updates every 30s
             </span>
           </div>
 
-          <div
-            className="relative w-full overflow-hidden rounded-xl border border-white/5 bg-[#0B1220]"
-            style={{
-              aspectRatio: '16 / 9',
-            }}
-          >
+          <GlobalThreatGlobe />
 
-            {/* Globe background glow */}
-
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `
-                  radial-gradient(
-                    circle at 50% 50%,
-                    rgba(56,189,248,0.14) 0%,
-                    rgba(56,189,248,0.06) 28%,
-                    transparent 62%
-                  )
-                `,
-              }}
-            />
-
-            {/* ------------------------------------------------------ */}
-
-            {/* ROTATING EARTH                                          */}
-
-            {/* ------------------------------------------------------ */}
-
-            <ComposableMap
-              projection="geoOrthographic"
-              projectionConfig={{
-                rotate: [rotation, -8, 0],
-                scale: 215,
-                center: [0, 0],
-              }}
-              width={900}
-              height={500}
-              className="relative z-10 h-full w-full"
-              style={{
-                background: 'transparent',
-              }}
-            >
-
-              {/* Countries */}
-
-              <Geographies
-                geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
-              >
-                {({ geographies }) =>
-                  geographies.map((geo) => (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill="#132238"
-                      stroke="#29415f"
-                      strokeWidth={0.45}
-                      style={{
-                        default: {
-                          outline: 'none',
-                        },
-
-                        hover: {
-                          outline: 'none',
-                          fill: '#19304c',
-                        },
-
-                        pressed: {
-                          outline: 'none',
-                        },
-                      }}
-                    />
-                  ))
-                }
-              </Geographies>
-
-              {/* Threat connection lines */}
-
-              {threatMapPoints.slice(0, 4).map((p, i) => {
-                const target =
-                  threatMapPoints[
-                  (i + 5) % threatMapPoints.length
-                  ];
-
-                return (
-                  <Line
-                    key={`${p.name}-${target.name}`}
-                    from={p.coordinates}
-                    to={target.coordinates}
-                    stroke="#38bdf8"
-                    strokeWidth={1.2}
-                    strokeLinecap="round"
-                    strokeDasharray="3 5"
-                    opacity={0.35}
-                  />
-                );
-              })}
-
-              {/* Threat markers */}
-
-              {threatMapPoints.map((p) => (
-                <Marker
-                  key={p.name}
-                  coordinates={p.coordinates}
-                >
-                  <g className="cursor-pointer">
-
-                    {/* Outer glow */}
-
-                    <circle
-                      r={8}
-                      fill={levelColor[p.level]}
-                      opacity={0.15}
-                    />
-
-                    {/* Middle glow */}
-
-                    <circle
-                      r={4.2}
-                      fill={levelColor[p.level]}
-                      opacity={0.28}
-                    />
-
-                    {/* Core */}
-
-                    <circle
-                      r={2.8}
-                      fill={levelColor[p.level]}
-                      stroke="#0B1220"
-                      strokeWidth={1.5}
-                    />
-
-                    <title>
-                      {p.name}
-                    </title>
-
-                  </g>
-                </Marker>
-              ))}
-
-            </ComposableMap>
-
-            {/* Globe edge/vignette */}
-
-            <div className="pointer-events-none absolute inset-0 z-20 bg-[radial-gradient(circle_at_center,transparent_48%,rgba(11,18,32,0.28)_100%)]" />
-
-          </div>
-
-          {/* Map legend */}
-
-          <div className="flex items-center gap-5 mt-4 text-xs text-slate-400">
-
+          {/* Legend */}
+          <div className="mt-4 flex items-center gap-5 text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="h-2 w-2 rounded-full bg-red-400" />
               High
             </span>
 
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
               Medium
             </span>
 
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sky-400" />
+              <span className="h-2 w-2 rounded-full bg-sky-400" />
               Low
             </span>
-
           </div>
-
         </Panel>
 
-        {/* ---------------------------------------------------------- */}
-
-        {/* Threats by type                                            */}
-
-        {/* ---------------------------------------------------------- */}
-
+        {/* Threats by type */}
         <Panel>
-
-          <h3 className="text-lg font-semibold text-slate-200 mb-2">
+          <h3 className="mb-2 text-lg font-semibold text-slate-200">
             Threats by Type
           </h3>
 
           <div className="flex items-center gap-4">
-
-            <div className="relative w-28 h-28 shrink-0">
-
+            <div className="relative h-28 w-28 shrink-0">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
               >
                 <PieChart>
-
                   <Pie
                     data={threatsByType}
                     dataKey="value"
@@ -838,12 +1009,10 @@ export function DashboardPage() {
                       borderRadius: '8px',
                     }}
                   />
-
                 </PieChart>
               </ResponsiveContainer>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-
                 <span className="text-lg font-bold text-slate-100">
                   348
                 </span>
@@ -851,69 +1020,46 @@ export function DashboardPage() {
                 <span className="text-[10px] text-slate-500">
                   Total
                 </span>
-
               </div>
-
             </div>
 
-            <div className="space-y-1.5 flex-1">
-
-              {threatsByType.map((t) => (
+            <div className="flex-1 space-y-1.5">
+              {threatsByType.map((threat) => (
                 <div
-                  key={t.name}
+                  key={threat.name}
                   className="flex items-center justify-between text-xs"
                 >
-
                   <span className="flex items-center gap-1.5 text-slate-400">
-
                     <span
-                      className="w-2 h-2 rounded-full"
+                      className="h-2 w-2 rounded-full"
                       style={{
-                        backgroundColor: t.color,
+                        backgroundColor: threat.color,
                       }}
                     />
 
-                    {t.name}
-
+                    {threat.name}
                   </span>
 
                   <span className="text-slate-300">
-                    {t.value}
-
-{' '}
-
+                    {threat.value}{' '}
                     <span className="text-slate-500">
-                      ({t.pct})
+                      ({threat.pct})
                     </span>
                   </span>
-
                 </div>
               ))}
-
             </div>
-
           </div>
-
         </Panel>
 
-        {/* ---------------------------------------------------------- */}
-
-        {/* AI detection engine                                        */}
-
-        {/* ---------------------------------------------------------- */}
-
+        {/* AI Detection Engine */}
         <Panel>
-
-          <div className="flex items-center gap-2 mb-3">
-
-            <div className="w-8 h-8 rounded-lg bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center">
-
-              <Sparkles className="w-4 h-4 text-cyan-300" />
-
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
+              <Sparkles className="h-4 w-4 text-cyan-300" />
             </div>
 
             <div>
-
               <p className="text-sm font-semibold text-slate-200">
                 AI Detection Engine
               </p>
@@ -921,51 +1067,40 @@ export function DashboardPage() {
               <p className="text-xs text-emerald-400">
                 Active &amp; Learning
               </p>
-
             </div>
-
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+          <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
+            <span>Model Accuracy</span>
 
-            <span>
-              Model Accuracy
-            </span>
-
-            <span className="text-slate-200 font-medium">
+            <span className="font-medium text-slate-200">
               98.7%
             </span>
-
           </div>
 
-          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-
+          <div className="h-2 overflow-hidden rounded-full bg-white/5">
             <div
               className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
               style={{
                 width: '98.7%',
               }}
             />
-
           </div>
-
         </Panel>
 
-        {/* ---------------------------------------------------------- */}
-
-        {/* Critical alerts                                            */}
-
-        {/* ---------------------------------------------------------- */}
-
-        <Panel className="h-full">
-          <div className="flex items-center justify-between mb-4">
+        {/* Critical Alerts */}
+        <Panel>
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-200">
               Critical Alerts
             </h3>
 
-            <button className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
+            >
               View all
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -973,11 +1108,11 @@ export function DashboardPage() {
             {criticalAlerts.map((alert) => (
               <div
                 key={alert.title}
-                className="p-3 rounded-lg bg-white/5 border-l-2"
+                className="rounded-lg border-l-2 bg-white/5 p-3"
                 style={{
                   borderColor:
                     alert.severity === 'critical' ||
-                      alert.severity === 'high'
+                    alert.severity === 'high'
                       ? '#f87171'
                       : '#fbbf24',
                 }}
@@ -992,131 +1127,210 @@ export function DashboardPage() {
                   </Badge>
                 </div>
 
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   {alert.detail}
                 </p>
 
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="mt-1 text-[11px] text-slate-500">
                   {alert.time}
                 </p>
               </div>
             ))}
           </div>
         </Panel>
-
       </div>
 
-      {/* ------------------------------------------------------------ */}
+      {/* Live Activity Logs */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Panel className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
+                <Terminal className="h-4 w-4 text-cyan-300" />
+              </div>
 
-      {/* Recent incidents / vulnerability overview / AI insights      */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-200">
+                  Live Activity Logs
+                </h3>
 
-      {/* ------------------------------------------------------------ */}
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Security events across monitored infrastructure
+                </p>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                LIVE
+              </span>
 
-        {/* Recent incidents */}
+              <button
+                type="button"
+                className="ml-2 flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
+              >
+                View all
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
 
+          <div className="overflow-hidden rounded-xl border border-white/5 bg-[#0B1220]/50">
+            {/* Log Header */}
+            <div className="hidden grid-cols-[90px_1fr_130px_110px_90px] gap-3 border-b border-white/5 bg-white/[0.025] px-4 py-2.5 text-[10px] uppercase tracking-wider text-slate-500 md:grid">
+              <span>Time</span>
+              <span>Event</span>
+              <span>Source</span>
+              <span>Action</span>
+              <span>Status</span>
+            </div>
+
+            {/* Log Rows */}
+            <div className="divide-y divide-white/5">
+              {activityLogs.map((log, index) => (
+                <div
+                  key={`${log.time}-${index}`}
+                  className="grid grid-cols-1 gap-2 px-4 py-3 transition-colors hover:bg-white/[0.035] md:grid-cols-[90px_1fr_130px_110px_90px] md:items-center md:gap-3"
+                >
+                  <span className="text-[11px] font-mono text-slate-500">
+                    {log.time}
+                  </span>
+
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Activity className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+
+                    <span className="truncate text-xs text-slate-300">
+                      {log.event}
+                    </span>
+                  </div>
+
+                  <span className="truncate text-[11px] font-mono text-slate-500">
+                    {log.source}
+                  </span>
+
+                  <span className="text-[11px] text-slate-400">
+                    {log.action}
+                  </span>
+
+                  <span className="text-[11px]">
+                    <LogStatus status={log.status} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Log footer */}
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <Clock3 className="h-3.5 w-3.5" />
+                Retention: 30 days
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <LockKeyhole className="h-3.5 w-3.5" />
+                Encrypted
+              </span>
+            </div>
+
+            <span className="text-[11px] text-slate-500">
+              1,842 events processed today
+            </span>
+          </div>
+        </Panel>
+      </div>
+
+      {/* Recent incidents / vulnerability overview / AI insights */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Recent Incidents */}
         <Panel className="h-full">
-
-          <div className="flex items-center justify-between mb-4">
-
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-200">
               Recent Incidents
             </h3>
 
-            <button className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
+            >
               View all
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
-
           </div>
 
           <div className="space-y-2">
-
             {recentIncidents.map((incident) => (
               <div
                 key={incident.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                className="flex cursor-pointer items-center justify-between rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10"
               >
-
-                <div className="flex items-center gap-3 min-w-0">
-
+                <div className="flex min-w-0 items-center gap-3">
                   <AlertTriangle
-                    className="w-4 h-4 shrink-0"
+                    className="h-4 w-4 shrink-0"
                     style={{
                       color:
                         incident.severity === 'critical'
                           ? '#f87171'
                           : incident.severity === 'high'
-                            ? '#fb923c'
-                            : incident.severity === 'medium'
-                              ? '#fbbf24'
-                              : '#60a5fa',
+                          ? '#fb923c'
+                          : incident.severity === 'medium'
+                          ? '#fbbf24'
+                          : '#60a5fa',
                     }}
                   />
 
                   <div className="min-w-0">
-
-                    <p className="text-sm font-medium text-slate-200 truncate">
+                    <p className="truncate text-sm font-medium text-slate-200">
                       {incident.title}
                     </p>
 
                     <p className="text-xs text-slate-500">
                       {incident.id}
                     </p>
-
                   </div>
-
                 </div>
 
-                <div className="text-right shrink-0">
-
+                <div className="shrink-0 text-right">
                   <Badge
                     variant={incident.severity as any}
                   >
                     {incident.severity}
                   </Badge>
 
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="mt-1 text-[11px] text-slate-500">
                     {incident.time}
                   </p>
-
                 </div>
-
               </div>
             ))}
-
           </div>
-
         </Panel>
 
-        {/* Vulnerability overview */}
-
+        {/* Vulnerability Overview */}
         <Panel className="h-full">
-
-          <div className="flex items-center justify-between mb-2">
-
+          <div className="mb-2 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-200">
               Vulnerability Overview
             </h3>
 
-            <button className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
+            >
               View all
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
-
           </div>
 
           <div className="flex items-center gap-4">
-
-            <div className="relative w-28 h-28 shrink-0">
-
+            <div className="relative h-28 w-28 shrink-0">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
               >
                 <PieChart>
-
                   <Pie
                     data={vulnerabilities}
                     dataKey="value"
@@ -1139,12 +1353,10 @@ export function DashboardPage() {
                       borderRadius: '8px',
                     }}
                   />
-
                 </PieChart>
               </ResponsiveContainer>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-
                 <span className="text-lg font-bold text-slate-100">
                   184
                 </span>
@@ -1152,127 +1364,105 @@ export function DashboardPage() {
                 <span className="text-[10px] text-slate-500">
                   Total
                 </span>
-
               </div>
-
             </div>
 
-            <div className="space-y-1.5 flex-1">
-
-              {vulnerabilities.map((v) => (
+            <div className="flex-1 space-y-1.5">
+              {vulnerabilities.map((vulnerability) => (
                 <div
-                  key={v.name}
+                  key={vulnerability.name}
                   className="flex items-center justify-between text-xs"
                 >
-
                   <span className="flex items-center gap-1.5 text-slate-400">
-
                     <span
-                      className="w-2 h-2 rounded-full"
+                      className="h-2 w-2 rounded-full"
                       style={{
-                        backgroundColor: v.color,
+                        backgroundColor:
+                          vulnerability.color,
                       }}
                     />
 
-                    {v.name}
-
+                    {vulnerability.name}
                   </span>
 
                   <span className="text-slate-300">
-
-                    {v.value}
-
-{' '}
-
+                    {vulnerability.value}{' '}
                     <span className="text-slate-500">
-                      ({v.pct})
+                      ({vulnerability.pct})
                     </span>
-
                   </span>
-
                 </div>
               ))}
-
             </div>
-
           </div>
-
         </Panel>
 
         {/* AI Insights */}
-
         <Panel className="h-full space-y-3">
-
-          <h3 className="text-lg font-semibold text-slate-200 mb-1">
+          <h3 className="mb-1 text-lg font-semibold text-slate-200">
             AI Insights
           </h3>
 
-          {aiInsights.map((insight) => (
-            <div
-              key={insight.title}
-              className={`p-4 rounded-xl border flex items-start gap-3 ${insight.tone === 'violet'
-                ? 'bg-violet-400/5 border-violet-400/20'
-                : 'bg-cyan-400/5 border-cyan-400/20'
-                }`}
-            >
+          {aiInsights.map((insight) => {
+            const InsightIcon = insight.icon;
 
-              <div className="flex-1">
-
-                <p className="text-sm font-semibold text-slate-200">
-                  {insight.title}
-                </p>
-
-                <p className="text-xs text-slate-400 mt-1">
-                  {insight.body}
-                </p>
-
-                <button
-                  className={`text-xs font-medium mt-2 flex items-center gap-1 ${insight.tone === 'violet'
-                    ? 'text-violet-300'
-                    : 'text-cyan-300'
-                    }`}
-                >
-                  {insight.cta}
-
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-
-              </div>
-
+            return (
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${insight.tone === 'violet'
-                  ? 'bg-violet-500/20'
-                  : 'bg-cyan-500/20'
-                  }`}
+                key={insight.title}
+                className={`flex items-start gap-3 rounded-xl border p-4 ${
+                  insight.tone === 'violet'
+                    ? 'border-violet-400/20 bg-violet-400/5'
+                    : 'border-cyan-400/20 bg-cyan-400/5'
+                }`}
               >
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-slate-200">
+                    {insight.title}
+                  </p>
 
-                <insight.icon
-                  className={`w-4 h-4 ${insight.tone === 'violet'
-                    ? 'text-violet-300'
-                    : 'text-cyan-300'
+                  <p className="mt-1 text-xs text-slate-400">
+                    {insight.body}
+                  </p>
+
+                  <button
+                    type="button"
+                    className={`mt-2 flex items-center gap-1 text-xs font-medium ${
+                      insight.tone === 'violet'
+                        ? 'text-violet-300'
+                        : 'text-cyan-300'
                     }`}
-                />
+                  >
+                    {insight.cta}
 
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    insight.tone === 'violet'
+                      ? 'bg-violet-500/20'
+                      : 'bg-cyan-500/20'
+                  }`}
+                >
+                  <InsightIcon
+                    className={`h-4 w-4 ${
+                      insight.tone === 'violet'
+                        ? 'text-violet-300'
+                        : 'text-cyan-300'
+                    }`}
+                  />
+                </div>
               </div>
-
-            </div>
-          ))}
-
+            );
+          })}
         </Panel>
-
       </div>
 
-      {/* ------------------------------------------------------------ */}
-
-      {/* Footer stat bar                                              */}
-
-      {/* ------------------------------------------------------------ */}
-
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0F1729]/50 backdrop-blur-sm border border-white/10 rounded-xl px-6 py-4">
-
+      {/* Footer stat bar */}
+      <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0F1729]/50 px-6 py-4 backdrop-blur-sm sm:flex-row">
         <div className="flex items-center gap-2">
-
-          <Shield className="w-4 h-4 text-cyan-400" />
+          <Shield className="h-4 w-4 text-cyan-400" />
 
           <span className="text-sm font-medium text-cyan-300">
             CyberShield AI
@@ -1281,38 +1471,33 @@ export function DashboardPage() {
           <span className="text-sm text-slate-400">
             is protecting your digital world
           </span>
-
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+          {footerStats.map((stat) => {
+            const Icon = stat.icon;
 
-          {footerStats.map((s) => (
-            <div
-              key={s.label}
-              className="flex items-center gap-2"
-            >
+            return (
+              <div
+                key={stat.label}
+                className="flex items-center gap-2"
+              >
+                <Icon className="h-4 w-4 text-emerald-400" />
 
-              <s.icon className="w-4 h-4 text-emerald-400" />
+                <div className="leading-tight">
+                  <p className="text-[11px] text-slate-500">
+                    {stat.label}
+                  </p>
 
-              <div className="leading-tight">
-
-                <p className="text-[11px] text-slate-500">
-                  {s.label}
-                </p>
-
-                <p className="text-sm font-semibold text-slate-200">
-                  {s.value}
-                </p>
-
+                  <p className="text-sm font-semibold text-slate-200">
+                    {stat.value}
+                  </p>
+                </div>
               </div>
-
-            </div>
-          ))}
-
+            );
+          })}
         </div>
-
       </div>
-
     </div>
   );
 }
