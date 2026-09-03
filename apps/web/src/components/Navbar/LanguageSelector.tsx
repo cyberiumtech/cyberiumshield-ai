@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Language } from './types';
+import { useLanguage, type Language } from '../../contexts/LanguageContext';
 
 export function LanguageSelector() {
-  const [language, setLanguage] = useState<Language>('en');
+  const { language, setLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   const languages: { value: Language; label: string; flag: string }[] = [

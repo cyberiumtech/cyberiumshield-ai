@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '../contexts/AuthContext';
 
 // Components
 import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
@@ -48,7 +49,8 @@ function PlaceholderRoute({ pageName }: { pageName: string }) {
 
 export default function App() {
   return (
-    <Routes>
+    <AuthProvider>
+      <Routes>
       {/* Public routes */}
       <Route element={<LandingLayout />}>
         <Route index element={<LandingPage />} />
@@ -99,5 +101,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </AuthProvider>
   );
 }

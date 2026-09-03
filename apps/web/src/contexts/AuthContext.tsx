@@ -1,13 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 interface User {
-  id: string;
-  name: string;
+  id: number;
   email: string;
-  role: string;
-  organization: string;
-  avatar?: string;
+  username: string;
+  full_name?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  roles: string[];
+  created_at: string;
+}
+
+interface RegisterData {
+  email: string;
+  username: string;
+  password: string;
+  full_name?: string;
 }
 
 interface AuthContextType {
@@ -15,8 +25,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, organization: string) => Promise<void>;
-  logout: () => void;
+  register: (data: RegisterData) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,91 +36,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on mount
+  // Load user on mount if tokens exist
   useEffect(() => {
-    const storedUser = localStorage.getItem('cyberiumshield_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        localStorage.removeItem('cyberiumshield_user');
-      }
-    }
-    setIsLoading(false);
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data } = await api.get<User>('/users/me');
+      setUser(data);
+    } catch (error) {
+      // Token invalid or expired - clear storage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // const data = await response.json();
+      const { data } = await api.post('/auth/login', { email, password });
 
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Store tokens
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
 
-      // Validate credentials (temporary - replace with API)
-      if (email && password.length >= 6) {
-        const mockUser: User = {
-          id: '1',
-          name: email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          email,
-          role: 'Security Analyst',
-          organization: 'CyberiumShield Security',
-        };
+      // Load user data
+      await loadUser();
 
-        localStorage.setItem('cyberiumshield_user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        navigate('/dashboard');
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      throw new Error('Login failed. Please check your credentials.');
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Login failed. Please check your credentials.';
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string, organization: string) => {
+  const register = async (registerData: RegisterData) => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ name, email, password, organization }),
-      // });
-      // const data = await response.json();
+      // Register user
+      await api.post('/auth/register', registerData);
 
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockUser: User = {
-        id: Date.now().toString(),
-        name,
-        email,
-        role: 'Security Analyst',
-        organization,
-      };
-
-      localStorage.setItem('cyberiumshield_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      navigate('/dashboard');
-    } catch (error) {
-      throw new Error('Registration failed. Please try again.');
+      // Auto-login after registration
+      await login(registerData.email, registerData.password);
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Registration failed. Please try again.';
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('cyberiumshield_user');
+  const logout = async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    // Revoke refresh token on server
+    if (refreshToken) {
+      try {
+        await api.post('/auth/logout', { refresh_token: refreshToken });
+      } catch (error) {
+        // Ignore errors - still logout locally
+        console.error('Logout error:', error);
+      }
+    }
+
+    // Clear local storage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+
+    // Clear user state
     setUser(null);
+
+    // Navigate to home
     navigate('/');
   };
 

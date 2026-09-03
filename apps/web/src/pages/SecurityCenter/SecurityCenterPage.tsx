@@ -3,6 +3,7 @@ import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, TrendingUp, Eye, Fi
 import { StatCard } from '../../components/shared/StatCard';
 import { Badge } from '../../components/shared/Badge';
 import { DataTable } from '../../components/shared/DataTable';
+import { ReportModal } from '../../components/modals/ReportModal';
 
 const stats = [
   { title: 'Security Posture', value: '92/100', delta: '+3 pts', icon: Shield, trend: 'up' as const, color: 'text-emerald-400' },
@@ -83,6 +84,7 @@ const policyCategories = [
 
 export function SecurityCenterPage() {
   const [selectedTab, setSelectedTab] = useState<'alerts' | 'policies' | 'compliance'>('alerts');
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const columns = [
     { header: 'Alert ID', accessor: 'id' as keyof SecurityAlert, className: 'font-mono' },
@@ -129,7 +131,10 @@ export function SecurityCenterPage() {
           <h1 className="text-2xl font-bold text-slate-100">Security Center</h1>
           <p className="text-sm text-slate-400 mt-1">Monitor security alerts, policies, and compliance status</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all">
+        <button
+          onClick={() => setReportModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all"
+        >
           <FileText className="w-4 h-4" />
           Generate Report
         </button>
@@ -252,6 +257,9 @@ export function SecurityCenterPage() {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <ReportModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
     </div>
   );
 }

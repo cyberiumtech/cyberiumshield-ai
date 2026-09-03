@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Theme } from './types';
+import { useTheme, type Theme } from '../../contexts/ThemeContext';
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const themes: { value: Theme; icon: React.ReactNode; label: string }[] = [
