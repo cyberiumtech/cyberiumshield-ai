@@ -1,32 +1,81 @@
 import React, { useState } from 'react';
 import { X, FileText, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
+
+interface ReportAlert {
+  title: string;
+  severity: string;
+  status: string;
+  timestamp: string;
+}
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  alerts?: ReportAlert[];
 }
 
-export function ReportModal({ isOpen, onClose }: ReportModalProps) {
+const defaultAlerts: ReportAlert[] = [
+  { title: 'Security summary requested', severity: 'info', status: 'ready', timestamp: new Date().toLocaleString() },
+];
+
+export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportModalProps) {
   const [reportType, setReportType] = useState('security-summary');
   const [format, setFormat] = useState('pdf');
   const [dateRange, setDateRange] = useState('last-7-days');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const downloadFile = (content: BlobPart, filename: string, type: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const reportName = `cyberiumshield-${reportType}-${dateRange}`;
+      const rows = alerts.map((alert) => [alert.title, alert.severity, alert.status, alert.timestamp]);
+      const csv = [
+        ['Title', 'Severity', 'Status', 'Time'],
+        ...rows,
+      ].map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(',')).join('\n');
+      const reportJson = JSON.stringify({ reportType, dateRange, generatedAt: new Date().toISOString(), alerts }, null, 2);
 
-    // Simulate report generation
-    console.log('Generating report:', { reportType, format, dateRange });
+      if (format === 'csv') {
+        downloadFile(csv, `${reportName}.csv`, 'text/csv;charset=utf-8');
+      } else if (format === 'json') {
+        downloadFile(reportJson, `${reportName}.json`, 'application/json');
+      } else {
+        const pdf = new jsPDF();
+        pdf.setFontSize(16);
+        pdf.text('CyberiumShield AI Security Report', 20, 20);
+        pdf.setFontSize(10);
+        pdf.text(`Type: ${reportType} | Range: ${dateRange}`, 20, 30);
+        alerts.forEach((alert, index) => {
+          const y = 45 + index * 18;
+          pdf.text(`${index + 1}. ${alert.title}`, 20, y);
+          pdf.text(`Severity: ${alert.severity} | Status: ${alert.status} | ${alert.timestamp}`, 26, y + 7);
+        });
+        pdf.save(`${reportName}.pdf`);
+      }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // TODO: Implement actual report generation logic
-    alert(`Report generated successfully!\nType: ${reportType}\nFormat: ${format}\nDate Range: ${dateRange}`);
-
-    setIsGenerating(false);
-    onClose();
+      toast.success('Report downloaded successfully');
+      onClose();
+    } catch {
+      toast.error('Unable to generate the report');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -44,7 +93,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#0F1729] border border-white/10 rounded-xl shadow-2xl z-50"
+            className="fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-white/10 bg-[#0F1729] shadow-2xl z-50"
           >
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
@@ -61,7 +110,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
               </button>
             </div>
 
-            <form onSubmit={handleGenerate} className="p-6 space-y-4">
+            <form onSubmit={handleGenerate} className="space-y-4 p-4 sm:p-6">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Report Type
@@ -90,7 +139,6 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                 >
                   <option value="pdf">PDF</option>
-                  <option value="excel">Excel (XLSX)</option>
                   <option value="csv">CSV</option>
                   <option value="json">JSON</option>
                 </select>
@@ -115,7 +163,7 @@ export function ReportModal({ isOpen, onClose }: ReportModalProps) {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3 pt-4">
+              <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row">
                 <button
                   type="submit"
                   disabled={isGenerating}

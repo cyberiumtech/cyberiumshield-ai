@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, TrendingUp, Eye, FileText } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, XCircle, Eye, FileText } from 'lucide-react';
 import { StatCard } from '../../components/shared/StatCard';
 import { Badge } from '../../components/shared/Badge';
 import { DataTable } from '../../components/shared/DataTable';
@@ -93,8 +93,6 @@ export function SecurityCenterPage() {
       header: 'Severity',
       accessor: (row: SecurityAlert) => <Badge variant={row.severity}>{row.severity}</Badge>,
     },
-    { header: 'Category', accessor: 'category' as keyof SecurityAlert },
-    { header: 'Affected', accessor: 'affected' as keyof SecurityAlert, className: 'font-mono text-xs' },
     { header: 'Time', accessor: 'timestamp' as keyof SecurityAlert },
     {
       header: 'Status',
@@ -111,10 +109,10 @@ export function SecurityCenterPage() {
       header: 'Actions',
       accessor: (row: SecurityAlert) => (
         <div className="flex items-center gap-2">
-          <button className="p-1.5 hover:bg-white/10 rounded transition-colors">
+          <button aria-label={`View ${row.title}`} className="p-1.5 hover:bg-white/10 rounded transition-colors">
             <Eye className="w-4 h-4" />
           </button>
-          <button className="p-1.5 hover:bg-white/10 rounded transition-colors">
+          <button aria-label={`Create report for ${row.title}`} className="p-1.5 hover:bg-white/10 rounded transition-colors">
             <FileText className="w-4 h-4" />
           </button>
         </div>
@@ -259,7 +257,16 @@ export function SecurityCenterPage() {
       )}
 
       {/* Report Modal */}
-      <ReportModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        alerts={alerts.map(({ title, severity, status, timestamp }) => ({
+          title,
+          severity,
+          status,
+          timestamp,
+        }))}
+      />
     </div>
   );
 }
