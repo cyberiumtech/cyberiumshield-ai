@@ -87,7 +87,6 @@ export function SecurityCenterPage() {
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const columns = [
-    { header: 'Alert ID', accessor: 'id' as keyof SecurityAlert, className: 'font-mono' },
     { header: 'Title', accessor: 'title' as keyof SecurityAlert },
     {
       header: 'Severity',
@@ -122,16 +121,16 @@ export function SecurityCenterPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-100">Security Center</h1>
           <p className="text-sm text-slate-400 mt-1">Monitor security alerts, policies, and compliance status</p>
         </div>
         <button
           onClick={() => setReportModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-cyan-300 transition-all hover:bg-cyan-400/20 sm:w-auto"
         >
           <FileText className="w-4 h-4" />
           Generate Report
@@ -146,7 +145,7 @@ export function SecurityCenterPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-white/10">
         {[
           { id: 'alerts' as const, label: 'Security Alerts', count: 23 },
           { id: 'policies' as const, label: 'Policy Compliance', count: 5 },
@@ -155,7 +154,7 @@ export function SecurityCenterPage() {
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
-            className={`px-4 py-3 text-sm font-medium transition-all relative ${
+            className={`relative shrink-0 whitespace-nowrap px-3 py-3 text-sm font-medium transition-all sm:px-4 ${
               selectedTab === tab.id
                 ? 'text-cyan-400'
                 : 'text-slate-400 hover:text-slate-300'
@@ -177,7 +176,39 @@ export function SecurityCenterPage() {
       {/* Content */}
       {selectedTab === 'alerts' && (
         <div>
-          <DataTable columns={columns} data={alerts} onRowClick={(row) => console.log('View alert:', row.id)} />
+          <div className="hidden md:block">
+            <DataTable columns={columns} data={alerts} onRowClick={(row) => console.log('View alert:', row.id)} />
+          </div>
+          <div className="space-y-3 md:hidden">
+            {alerts.map((alert) => {
+              const statusVariants = {
+                new: 'info' as const,
+                investigating: 'warning' as const,
+                resolved: 'success' as const,
+              };
+
+              return (
+                <article key={alert.id} className="rounded-xl border border-white/10 bg-[#0F1729]/50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 text-sm font-semibold leading-5 text-slate-200">{alert.title}</h3>
+                    <Badge variant={alert.severity}>{alert.severity}</Badge>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-500">{alert.timestamp}</span>
+                    <Badge variant={statusVariants[alert.status]}>{alert.status}</Badge>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 border-t border-white/5 pt-3">
+                    <button aria-label={`View ${alert.title}`} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200">
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button aria-label={`Create report for ${alert.title}`} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200">
+                      <FileText className="h-4 w-4" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -186,7 +217,7 @@ export function SecurityCenterPage() {
           {policyCategories.map((category) => (
             <div
               key={category.name}
-              className="bg-[#0F1729]/50 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+              className="rounded-xl border border-white/10 bg-[#0F1729]/50 p-4 backdrop-blur-sm sm:p-6"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-slate-200">{category.name}</h3>
@@ -222,15 +253,15 @@ export function SecurityCenterPage() {
       )}
 
       {selectedTab === 'compliance' && (
-        <div className="bg-[#0F1729]/50 backdrop-blur-sm border border-white/10 rounded-xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-emerald-400/10 border-4 border-emerald-400/30 mb-4">
-              <span className="text-4xl font-bold text-emerald-400">92</span>
+        <div className="rounded-xl border border-white/10 bg-[#0F1729]/50 p-4 backdrop-blur-sm sm:p-8">
+          <div className="mb-8 text-center">
+            <div className="mb-4 inline-flex h-24 w-24 items-center justify-center rounded-full border-4 border-emerald-400/30 bg-emerald-400/10 sm:h-32 sm:w-32">
+              <span className="text-3xl font-bold text-emerald-400 sm:text-4xl">92</span>
             </div>
             <h3 className="text-xl font-semibold text-slate-200 mb-2">Overall Compliance Score</h3>
             <p className="text-sm text-slate-400">Your organization meets 92% of security standards</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
             {[
               { framework: 'ISO 27001', score: 94, status: 'Compliant' },
               { framework: 'SOC 2', score: 91, status: 'Compliant' },
