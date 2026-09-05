@@ -126,9 +126,7 @@ docker compose logs -f python-ai
 
 ## 📚 Documentation
 - **START_HERE.md** - Getting started guide
-- **SCAFFOLDING_COMPLETE.md** - Technical details
 - **VERIFICATION_CHECKLIST.md** - Testing steps
-- **PHASE_1_COMPLETE.md** - Summary & metrics
 
 ## ✅ Health Check Expected Response
 ```json

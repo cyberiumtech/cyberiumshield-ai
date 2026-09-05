@@ -249,7 +249,6 @@ After verifying everything works:
 6. **Progress Tracking**: Show scan/report progress
 7. **More Languages**: Add Spanish, French, etc.
 
-See `FIXES_SUMMARY.md` for detailed technical documentation.
 See `TESTING_GUIDE.md` for comprehensive test scenarios.
 
 ---
@@ -258,9 +257,8 @@ See `TESTING_GUIDE.md` for comprehensive test scenarios.
 
 1. Check browser console (F12) for errors
 2. Review `TESTING_GUIDE.md` for detailed tests
-3. Check `FIXES_SUMMARY.md` for implementation details
-4. Verify all dependencies installed: `npm install`
-5. Try fresh build: `rm -rf node_modules dist && npm install && npm run build`
+3. Verify all dependencies installed: `npm install`
+4. Try fresh build: `rm -rf node_modules dist && npm install && npm run build`
 
 ---
 
