@@ -227,7 +227,6 @@ npm install
 ## Support
 
 - Check **VERIFICATION_CHECKLIST.md** for detailed testing steps
-- Review **SCAFFOLDING_COMPLETE.md** for architecture details
 - Run `docker compose logs <service>` to debug issues
 
 ---
