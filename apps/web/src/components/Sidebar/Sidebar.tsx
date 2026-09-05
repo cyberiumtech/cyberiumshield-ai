@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 const items: Array<{ label: string; path: string }> = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Security Center', path: '/security-center' },
-  { label: 'Threat Detection', path: '/threat-detection' },
   { label: 'Network Monitoring', path: '/network' },
   { label: 'Vulnerability Management', path: '/vulnerability' },
   { label: 'Threat Intelligence', path: '/threat-intelligence' },

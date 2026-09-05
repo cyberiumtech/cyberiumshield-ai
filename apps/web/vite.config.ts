@@ -17,6 +17,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/malware-api/, ''),
       },
+      '/phishing-api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/phishing-api/, ''),
+      },
     },
   },
   resolve: {

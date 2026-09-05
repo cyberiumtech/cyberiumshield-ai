@@ -18,7 +18,6 @@ import { ResetPasswordPage } from '../pages/ResetPassword/ResetPasswordPage';
 import { VerifyEmailPage } from '../pages/VerifyEmail/VerifyEmailPage';
 import { DashboardPage } from '../pages/Dashboard/DashboardPage';
 import { SecurityCenterPage } from '../pages/SecurityCenter/SecurityCenterPage';
-import { ThreatDetectionPage } from '../pages/ThreatDetection/ThreatDetectionPage';
 import { VulnerabilityPage } from '../pages/Vulnerability/VulnerabilityPage';
 import { ThreatIntelligencePage } from '../pages/ThreatIntelligence/ThreatIntelligencePage';
 import { MalwarePage } from '../pages/Malware/MalwarePage';
@@ -72,7 +71,6 @@ export default function App() {
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/security-center" element={<SecurityCenterPage />} />
-        <Route path="/threat-detection" element={<ThreatDetectionPage />} />
         <Route path="/network" element={<PlaceholderRoute pageName="Network Monitoring" />} />
         <Route path="/vulnerability" element={<VulnerabilityPage />} />
         <Route path="/threat-intelligence" element={<ThreatIntelligencePage />} />

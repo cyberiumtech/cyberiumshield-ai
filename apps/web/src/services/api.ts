@@ -47,6 +47,26 @@ export async function scanMalwareFile(file: File): Promise<MalwareScanResult> {
   return response.data;
 }
 
+export interface PhishingScanResult {
+  url: string;
+  prediction: 'phishing' | 'legitimate';
+  phishing_probability: number;
+  confidence: number;
+  risk_level: 'critical' | 'high' | 'low' | 'minimal';
+  signals: Array<{ label: string; value: string | number; flagged: boolean }>;
+  model: string;
+}
+
+const phishingApi = axios.create({
+  baseURL: import.meta.env.VITE_PHISHING_API_URL || '/phishing-api',
+  headers: { Accept: 'application/json' },
+});
+
+export async function scanPhishingUrl(url: string): Promise<PhishingScanResult> {
+  const response = await phishingApi.post<PhishingScanResult>('/api/predict', { url });
+  return response.data;
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('cyberiumshield_token');

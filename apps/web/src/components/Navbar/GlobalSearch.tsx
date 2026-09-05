@@ -18,13 +18,6 @@ export function GlobalSearch() {
 
   const mockResults: SearchResult[] = [
     {
-      id: '1',
-      type: 'threat',
-      title: 'Critical Threat Detected',
-      subtitle: 'Malware signature on server-01',
-      link: '/threat-detection',
-    },
-    {
       id: '2',
       type: 'incident',
       title: 'INC-2024-0789',

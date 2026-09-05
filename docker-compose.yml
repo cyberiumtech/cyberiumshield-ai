@@ -64,12 +64,29 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./Malware-Classification-main:/app
+      - ./malware-detector:/app
     environment:
       - MALWARE_CORS_ORIGIN=http://localhost:5173
     command: ["sh", "-c", "pip install -r requirements.txt && python main.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  phishing-detector:
+    image: python:3.11-slim
+    working_dir: /app
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./phishing-detector:/app
+    environment:
+      - PHISHING_PORT=5001
+    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/api/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
