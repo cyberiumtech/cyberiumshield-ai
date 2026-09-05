@@ -11,6 +11,42 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+export interface MalwareScanResult {
+  filename: string;
+  classification: 'Malware' | 'Legitimate' | 'Unknown';
+  family: string;
+  threat_score: number;
+  confidence: number;
+  method: string;
+  file_info: {
+    mime_type?: string;
+    extension?: string;
+    size?: number;
+    md5?: string;
+    sha1?: string;
+    sha256?: string;
+    is_executable?: boolean;
+    is_archive?: boolean;
+    is_document?: boolean;
+    is_script?: boolean;
+  };
+  timestamp: string;
+  error?: string;
+}
+
+const malwareApi = axios.create({
+  baseURL: import.meta.env.VITE_MALWARE_API_URL || '/malware-api',
+  headers: { Accept: 'application/json' },
+});
+
+export async function scanMalwareFile(file: File): Promise<MalwareScanResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await malwareApi.post<MalwareScanResult>('/api/scan', formData);
+  return response.data;
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('cyberiumshield_token');
