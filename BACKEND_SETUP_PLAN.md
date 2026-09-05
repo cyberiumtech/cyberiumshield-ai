@@ -1,4 +1,4 @@
-# Backend Setup Plan - CyberiumShield AI
+# Backend Setup Plan - CyberShield-AI
 
 ## Current Status
 - ✅ MySQL 8.0 running on localhost:3306

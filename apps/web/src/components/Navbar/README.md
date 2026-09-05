@@ -5,7 +5,7 @@ A production-grade, enterprise-level navigation bar designed for Security Operat
 ## Features
 
 ### Left Section
-- **CyberiumShield AI Logo**: Clickable brand logo with gradient styling
+- **CyberShield-AI Logo**: Clickable brand logo with gradient styling
 - **Organization Name**: Displays current workspace/organization
 - **Breadcrumb Navigation**: Dynamic breadcrumbs based on current route
 - **Responsive Design**: Hamburger menu on mobile devices
@@ -291,4 +291,4 @@ When adding new features:
 
 ## License
 
-Proprietary - CyberiumShield AI Platform
+Proprietary - CyberShield-AI Platform

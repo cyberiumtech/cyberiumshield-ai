@@ -1,6 +1,6 @@
-# 🚀 Start Here - CyberiumShield AI Foundational Scaffolding
+# 🚀 Start Here - CyberShield-AI Foundational Scaffolding
 
-Welcome! The foundational scaffolding for CyberiumShield AI is complete and ready to build upon.
+Welcome! The foundational scaffolding for CyberShield-AI is complete and ready to build upon.
 
 ## What's Ready
 

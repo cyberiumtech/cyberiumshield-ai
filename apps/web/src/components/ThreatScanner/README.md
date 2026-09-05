@@ -366,4 +366,4 @@ When adding new detection patterns:
 
 ## License
 
-Proprietary - CyberiumShield AI Platform
+Proprietary - CyberShield-AI Platform

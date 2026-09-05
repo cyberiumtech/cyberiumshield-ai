@@ -2,7 +2,7 @@
 
 ## Overview
 
-Create a comprehensive, production-grade `README.md` for the CyberiumShield AI project that accurately reflects the current state of the codebase, providing clear documentation for developers, contributors, and evaluators.
+Create a comprehensive, production-grade `README.md` for the CyberShield-AI project that accurately reflects the current state of the codebase, providing clear documentation for developers, contributors, and evaluators.
 
 The current `README.md` is a single-line placeholder stating the repo contains "only scalable architecture layout, placeholder documentation, and configuration templates." However, the project has evolved significantly—it now includes a fully functional React 19 + TypeScript frontend with 11+ dashboard pages, a complete authentication system, responsive UI with light/dark themes, an interactive landing page with animated demos, a Docker-based infrastructure, MySQL database setup, Laravel backend scaffold, Python AI/ML services scaffold, and comprehensive project documentation.
 
@@ -63,7 +63,7 @@ The README will follow this detailed structure:
 - Python/AI badge
 
 ### 2. Project Title & Tagline
-- "CyberiumShield AI - Enterprise AI-Powered Cybersecurity Platform"
+- "CyberShield-AI - Enterprise AI-Powered Cybersecurity Platform"
 
 ### 3. Overview / Description
 - 2-3 paragraphs explaining the project's purpose, target audience, and value proposition

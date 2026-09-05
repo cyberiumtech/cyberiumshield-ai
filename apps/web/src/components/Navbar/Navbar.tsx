@@ -59,12 +59,12 @@ export function Navbar() {
           >
             <img
               src={logoUrl}
-              alt="CyberiumShield AI"
+              alt="CyberShield-AI"
               className="h-11 w-11 rounded-xl object-cover ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all group-hover:shadow-xl group-hover:shadow-cyan-400/30"
             />
             <div className="hidden sm:block">
               <div className="text-sm font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                CyberiumShield AI
+                CyberShield-AI
               </div>
               <div className="text-xs text-slate-400 font-medium">
                 Security Operations Center

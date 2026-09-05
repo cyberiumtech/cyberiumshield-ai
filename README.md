@@ -14,7 +14,7 @@
 <br/>
 
 <h1 align="center">
-  🛡️ CyberiumShield AI — Enterprise AI-Powered Cybersecurity Platform
+  🛡️ CyberShield-AI — Enterprise AI-Powered Cybersecurity Platform
 </h1>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 ## 📋 Overview
 
-**CyberiumShield AI** is a comprehensive, enterprise-grade cybersecurity operations platform that leverages artificial intelligence and machine learning to provide real-time threat detection, vulnerability management, incident response, and security analytics. Built with a modern monorepo architecture, the platform combines a powerful React-based frontend with Laravel REST API backend and Python AI/ML microservices.
+**CyberShield-AI** is a comprehensive, enterprise-grade cybersecurity operations platform that leverages artificial intelligence and machine learning to provide real-time threat detection, vulnerability management, incident response, and security analytics. Built with a modern monorepo architecture, the platform combines a powerful React-based frontend with Laravel REST API backend and Python AI/ML microservices.
 
 The platform is designed for Security Operations Centers (SOCs), security analysts, and enterprise IT teams who need a unified, AI-powered command center to monitor, detect, investigate, and respond to cybersecurity threats across their entire infrastructure.
 
@@ -547,5 +547,5 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 <p align="center">
   Built with ❤️ for the cybersecurity community<br/>
-  <sub>© 2026 CyberiumShield AI. All rights reserved.</sub>
+  <sub>© 2026 CyberShield-AI. All rights reserved.</sub>
 </p>

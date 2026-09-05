@@ -300,7 +300,7 @@ export function LandingPage() {
 
   const testimonials = [
     {
-      quote: 'CyberiumShield AI has transformed our security posture. The AI-driven insights are game-changing.',
+      quote: 'CyberShield-AI has transformed our security posture. The AI-driven insights are game-changing.',
       author: 'Sarah Johnson',
       role: 'CISO, TechCorp',
       company: 'Fortune 500 Company',
@@ -321,7 +321,7 @@ export function LandingPage() {
 
   const faqs = [
     {
-      question: 'How quickly can I deploy CyberiumShield AI?',
+      question: 'How quickly can I deploy CyberShield-AI?',
       answer: 'Most organizations are fully operational within 24 hours. Our streamlined onboarding process and pre-configured templates make deployment fast and efficient.',
     },
     {
@@ -415,7 +415,7 @@ export function LandingPage() {
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                CyberiumShield AI
+                CyberShield-AI
               </span>
             </div>
             <nav className="hidden md:flex items-center gap-8">
@@ -541,7 +541,7 @@ export function LandingPage() {
               viewport={{ once: true }}
             >
               <h2 className="text-4xl md:text-5xl font-bold text-slate-200 mb-4">
-                See CyberiumShield AI in Action
+                See CyberShield-AI in Action
               </h2>
               <p className="text-xl text-slate-400 max-w-2xl mx-auto">
                 Experience the power of AI-driven security operations
@@ -1022,7 +1022,7 @@ export function LandingPage() {
                   Enterprise Security Architecture
                 </h3>
                 <p className="text-slate-300 leading-relaxed">
-                  CyberiumShield AI is designed with a security-first approach. We employ defense-in-depth strategies,
+                  CyberShield-AI is designed with a security-first approach. We employ defense-in-depth strategies,
                   conduct regular security audits, and follow secure development practices. Our architecture includes
                   encrypted data storage, secure API communications, and comprehensive logging for compliance and forensics.
                 </p>
@@ -1169,7 +1169,7 @@ export function LandingPage() {
                     <div className="w-3 h-3 rounded-full bg-yellow-400" />
                     <div className="w-3 h-3 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="text-slate-400 text-sm">CyberiumShield AI Dashboard</div>
+                  <div className="text-slate-400 text-sm">CyberShield-AI Dashboard</div>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   {threatIntelStats.map((stat, index) => (
@@ -1357,7 +1357,7 @@ export function LandingPage() {
               Trusted by Security Leaders
             </h2>
             <p className="text-xl text-slate-400">
-              See what our customers say about CyberiumShield AI
+              See what our customers say about CyberShield-AI
             </p>
           </div>
 
@@ -1398,7 +1398,7 @@ export function LandingPage() {
               Frequently Asked Questions
             </h2>
             <p className="text-xl text-slate-400">
-              Everything you need to know about CyberiumShield AI
+              Everything you need to know about CyberShield-AI
             </p>
           </div>
 
@@ -1624,7 +1624,7 @@ export function LandingPage() {
               Ready to Secure Your Digital Future?
             </h2>
             <p className="text-xl text-slate-400 mb-8">
-              Join thousands of organizations protecting their assets with CyberiumShield AI
+              Join thousands of organizations protecting their assets with CyberShield-AI
             </p>
             <Link
               to="/auth/register"
@@ -1647,7 +1647,7 @@ export function LandingPage() {
                   <Shield className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                  CyberiumShield AI
+                  CyberShield-AI
                 </span>
               </div>
               <p className="text-slate-400 text-sm mb-4 leading-relaxed">
@@ -1699,7 +1699,7 @@ export function LandingPage() {
           </div>
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-slate-500 text-sm text-center md:text-left">
-              © 2026 CyberiumShield AI. All rights reserved.
+              © 2026 CyberShield-AI. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-slate-500 text-sm">
               <a href="#" className="hover:text-cyan-400 transition-colors">Status</a>

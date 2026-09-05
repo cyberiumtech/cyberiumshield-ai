@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    APP_NAME: str = "CyberiumShield AI"
+    APP_NAME: str = "CyberShield-AI"
     APP_ENV: str = "development"
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"

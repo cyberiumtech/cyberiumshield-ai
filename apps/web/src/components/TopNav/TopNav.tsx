@@ -9,7 +9,7 @@ export function TopNav() {
             <span className="text-cyan-300 font-semibold">CS</span>
           </div>
           <div>
-            <div className="text-sm font-semibold tracking-tight">CyberiumShield AI</div>
+            <div className="text-sm font-semibold tracking-tight">CyberShield-AI</div>
             <div className="text-xs text-slate-400">Enterprise Cybersecurity Platform</div>
           </div>
         </div>

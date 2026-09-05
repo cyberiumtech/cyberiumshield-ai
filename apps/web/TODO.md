@@ -1,4 +1,4 @@
-# apps/web TODO - CyberiumShield AI
+# apps/web TODO - CyberShield-AI
 
 - [ ] Confirm/create Tailwind + shadcn/ui setup
 - [ ] Implement Vite+React entry: `src/main.tsx`

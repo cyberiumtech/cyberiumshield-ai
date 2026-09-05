@@ -132,7 +132,7 @@ docker compose logs -f python-ai
 ```json
 {
   "status": "healthy",
-  "service": "CyberiumShield AI",
+  "service": "CyberShield-AI",
   "environment": "development"
 }
 ```
