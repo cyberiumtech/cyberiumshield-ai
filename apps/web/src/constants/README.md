@@ -1,4 +1,0 @@
-# constants/
-
-Constants and enums.
-

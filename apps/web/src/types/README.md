@@ -1,4 +1,0 @@
-# types/
-
-TypeScript shared types.
-

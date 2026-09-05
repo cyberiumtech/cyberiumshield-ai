@@ -1,3 +1,0 @@
-# pages/Analytics/
-Analytics views.
-

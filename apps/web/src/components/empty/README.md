@@ -1,4 +1,0 @@
-# components/empty/
-
-Empty states.
-

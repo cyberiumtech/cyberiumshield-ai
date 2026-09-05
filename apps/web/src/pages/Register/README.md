@@ -1,3 +1,0 @@
-# pages/Register/
-Registration views.
-
