@@ -10,6 +10,7 @@ import { NotificationDropdown } from './NotificationDropdown';
 import { QuickActionsMenu } from './QuickActionsMenu';
 import { ProfileDropdown } from './ProfileDropdown';
 import { GlobalSearch } from './GlobalSearch';
+import { Sidebar } from '../Sidebar/Sidebar';
 import type { AIStatus, Environment } from './types';
 
 export function Navbar() {
@@ -149,6 +150,9 @@ export function Navbar() {
             className="lg:hidden border-t border-white/5 bg-[#0B1120]/95 backdrop-blur-xl overflow-hidden"
           >
             <div className="px-4 py-4 space-y-3">
+              <Sidebar activePath={location.pathname} mobile />
+
+              <div className="border-t border-white/10 pt-3">
               <div className="flex items-center gap-3">
                 <AIStatusIndicator status={aiStatus} />
                 <EnvironmentBadge environment={environment} />
@@ -161,6 +165,7 @@ export function Navbar() {
               <div className="flex items-center gap-3 pt-3 border-t border-white/10">
                 <ThemeToggle />
                 <LanguageSelector />
+              </div>
               </div>
             </div>
           </motion.div>

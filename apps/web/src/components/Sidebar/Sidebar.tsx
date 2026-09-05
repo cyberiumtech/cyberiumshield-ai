@@ -17,9 +17,9 @@ const items: Array<{ label: string; path: string }> = [
   { label: 'Administration', path: '/users' },
 ];
 
-export function Sidebar({ activePath }: { activePath: string }) {
+export function Sidebar({ activePath, mobile = false }: { activePath: string; mobile?: boolean }) {
   return (
-    <nav className="h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4">
+    <nav className={`${mobile ? 'h-auto px-0 py-0' : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4'}`}>
       <div className="space-y-2">
         {items.map((it) => {
           // Use `startsWith` for parent paths to remain active on child routes,

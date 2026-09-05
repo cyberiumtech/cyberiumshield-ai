@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Users, UserPlus, Shield, Settings, Key } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Search, Users, UserPlus, Shield, Settings, Key, X } from 'lucide-react';
 import { StatCard } from '../../components/shared/StatCard';
 import { Badge } from '../../components/shared/Badge';
 import { DataTable } from '../../components/shared/DataTable';
@@ -20,7 +20,7 @@ interface User {
   lastLogin: string;
 }
 
-const users: User[] = [
+const initialUsers: User[] = [
   { id: '1', name: 'John Anderson', email: 'john.anderson@company.com', role: 'Security Analyst', status: 'active', lastLogin: '2 minutes ago' },
   { id: '2', name: 'Sarah Mitchell', email: 'sarah.mitchell@company.com', role: 'Admin', status: 'active', lastLogin: '1 hour ago' },
   { id: '3', name: 'Michael Chen', email: 'michael.chen@company.com', role: 'SOC Manager', status: 'active', lastLogin: '3 hours ago' },
@@ -37,6 +37,31 @@ const roles = [
 
 export function AdminPage() {
   const [selectedTab, setSelectedTab] = useState<'users' | 'roles'>('users');
+  const [userList, setUserList] = useState<User[]>(initialUsers);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+
+  const visibleUsers = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!normalizedSearch) return userList;
+    return userList.filter((user) =>
+      [user.name, user.email, user.role, user.status].some((value) =>
+        value.toLowerCase().includes(normalizedSearch),
+      ),
+    );
+  }, [searchTerm, userList]);
+
+  const saveUser = (user: User) => {
+    setUserList((currentUsers) => {
+      const existingUser = currentUsers.some((currentUser) => currentUser.id === user.id);
+      return existingUser
+        ? currentUsers.map((currentUser) => (currentUser.id === user.id ? user : currentUser))
+        : [...currentUsers, user];
+    });
+    setEditingUser(null);
+    setIsAddUserOpen(false);
+  };
 
   const columns = [
     { header: 'Name', accessor: 'name' as keyof User },
@@ -50,14 +75,23 @@ export function AdminPage() {
           inactive: 'default' as const,
           suspended: 'critical' as const,
         };
-        return <Badge variant={variants[row.status]}>{row.status}</Badge>;
+        return <Badge variant={variants[row.status]}>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</Badge>;
       },
     },
     { header: 'Last Login', accessor: 'lastLogin' as keyof User },
     {
       header: 'Actions',
-      accessor: () => (
-        <button className="text-sm text-cyan-400 hover:text-cyan-300">Edit</button>
+      accessor: (row: User) => (
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            const selectedUser = userList.find((user) => user.id === row.id);
+            if (selectedUser) setEditingUser(selectedUser);
+          }}
+          className="text-sm text-cyan-400 hover:text-cyan-300"
+        >
+          Edit
+        </button>
       ),
       className: 'text-center',
     },
@@ -70,7 +104,10 @@ export function AdminPage() {
           <h1 className="text-2xl font-bold text-slate-100">User Management</h1>
           <p className="text-sm text-slate-400 mt-1">Manage users, roles, and permissions</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all">
+        <button
+          onClick={() => setIsAddUserOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all"
+        >
           <UserPlus className="w-4 h-4" />
           Add User
         </button>
@@ -106,7 +143,18 @@ export function AdminPage() {
       </div>
 
       {selectedTab === 'users' && (
-        <DataTable columns={columns} data={users} onRowClick={(row) => console.log('Edit user:', row.id)} />
+        <div className="space-y-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Filter users..."
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-slate-200 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/10 placeholder:text-slate-500"
+            />
+          </div>
+          <DataTable columns={columns} data={visibleUsers} />
+        </div>
       )}
 
       {selectedTab === 'roles' && (
@@ -140,6 +188,68 @@ export function AdminPage() {
           ))}
         </div>
       )}
+
+      {(isAddUserOpen || editingUser) && (
+        <UserFormModal
+          user={editingUser}
+          onClose={() => {
+            setIsAddUserOpen(false);
+            setEditingUser(null);
+          }}
+          onSave={saveUser}
+        />
+      )}
+    </div>
+  );
+}
+
+function UserFormModal({
+  user,
+  onClose,
+  onSave,
+}: {
+  user: User | null;
+  onClose: () => void;
+  onSave: (user: User) => void;
+}) {
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [role, setRole] = useState(user?.role ?? 'Security Analyst');
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSave({
+      id: user?.id ?? `user-${Date.now()}`,
+      name,
+      email,
+      role,
+      status: user?.status ?? 'active',
+      lastLogin: user?.lastLogin ?? 'Never',
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-xl border border-white/10 bg-[#0F1729] p-6 shadow-2xl shadow-cyan-950/30">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Administration</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-100">{user ? 'Edit user' : 'Add user'}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-100" aria-label="Close dialog">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <label className="block text-sm text-slate-300">Name<input required value={name} onChange={(event) => setName(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-slate-100 outline-none focus:border-cyan-400/50" /></label>
+          <label className="block text-sm text-slate-300">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 font-mono text-sm text-slate-100 outline-none focus:border-cyan-400/50" /></label>
+          <label className="block text-sm text-slate-300">Role<select value={role} onChange={(event) => setRole(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none focus:border-cyan-400/50"><option>Security Analyst</option><option>Admin</option><option>SOC Manager</option><option>Analyst</option><option>Viewer</option></select></label>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>
+          <button type="submit" className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-400/20">Save user</button>
+        </div>
+      </form>
     </div>
   );
 }
