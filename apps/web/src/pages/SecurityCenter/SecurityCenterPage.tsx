@@ -129,8 +129,11 @@ export function SecurityCenterPage() {
           <p className="text-sm text-slate-400 mt-1">Monitor security alerts, policies, and compliance status</p>
         </div>
         <button
+          type="button"
           onClick={() => setReportModalOpen(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-cyan-300 transition-all hover:bg-cyan-400/20 sm:w-auto"
+          aria-haspopup="dialog"
+          aria-expanded={reportModalOpen}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-cyan-300 transition-all hover:bg-cyan-400/20 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 active:scale-[0.98] sm:w-auto"
         >
           <FileText className="w-4 h-4" />
           Generate Report

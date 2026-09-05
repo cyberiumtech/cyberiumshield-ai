@@ -87,23 +87,28 @@ export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportM
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-white/10 bg-[#0F1729] shadow-2xl z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="generate-report-title"
+            className="fixed left-1/2 top-1/2 z-[61] max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-white/10 bg-[#0F1729] shadow-2xl"
           >
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 p-4 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-400/10 rounded-lg">
                   <FileText className="h-5 w-5 text-green-400" />
                 </div>
-                <h2 className="text-xl font-semibold text-slate-100">Generate Report</h2>
+                <h2 id="generate-report-title" className="text-lg font-semibold text-slate-100 sm:text-xl">Generate Report</h2>
               </div>
               <button
+                type="button"
                 onClick={onClose}
+                aria-label="Close report dialog"
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5 text-slate-400" />
@@ -167,6 +172,7 @@ export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportM
                 <button
                   type="submit"
                   disabled={isGenerating}
+                  aria-busy={isGenerating}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-400/10 hover:bg-green-400/20 border border-green-400/30 rounded-lg text-green-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="h-4 w-4" />
