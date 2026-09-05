@@ -7,6 +7,13 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'sonner';
 import App from './app/App';
 import './styles/global.css';
+import logoUrl from './assets/images/Cybershield-AI.png';
+
+const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement('link');
+favicon.rel = 'icon';
+favicon.type = 'image/png';
+favicon.href = logoUrl;
+document.head.appendChild(favicon);
 
 const queryClient = new QueryClient({
   defaultOptions: {
