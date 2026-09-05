@@ -29,6 +29,7 @@ import { AIAssistantPage } from '../pages/AIAssistant/AIAssistantPage';
 import { AdminPage } from '../pages/Admin/AdminPage';
 import { UnauthorizedPage } from '../pages/Unauthorized/UnauthorizedPage';
 import { NotFoundPage } from '../pages/NotFound/NotFoundPage';
+import { AccountPage } from '../pages/Account/AccountPage';
 
 /**
  * A placeholder component for pages that are not yet implemented.
@@ -84,8 +85,9 @@ export default function App() {
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
         <Route path="/users" element={<AdminPage />} />
         <Route path="/roles" element={<AdminPage />} />
-        <Route path="/profile" element={<PlaceholderRoute pageName="User Profile" />} />
-        <Route path="/settings" element={<PlaceholderRoute pageName="Settings" />} />
+        <Route path="/profile" element={<AccountPage />} />
+        <Route path="/settings" element={<AccountPage />} />
+        <Route path="/subscription" element={<PlaceholderRoute pageName="Subscription" />} />
       </Route>
 
       {/* Error routes */}

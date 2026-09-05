@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { Toaster } from 'sonner';
 import App from './app/App';
 import './styles/global.css';
 
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <LanguageProvider>
             <App />
+            <Toaster theme="dark" position="bottom-right" richColors />
           </LanguageProvider>
         </ThemeProvider>
       </BrowserRouter>
