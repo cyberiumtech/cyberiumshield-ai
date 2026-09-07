@@ -368,9 +368,6 @@ export function LandingPage() {
                     <span className="grid h-12 w-12 place-items-center border border-[#35d7ff]/25 bg-[#35d7ff]/[0.05] text-[#35d7ff] transition-colors group-hover:border-[#35d7ff]/55">
                       <capability.icon className="h-5 w-5" />
                     </span>
-                    <span className="font-mono text-[10px] tracking-[0.16em] text-[#5f7c8d]">
-                      CAP / {capability.number}
-                    </span>
                   </div>
                   <h3 className="mt-8 text-xl font-semibold tracking-[-0.02em] text-white">
                     {capability.title}
