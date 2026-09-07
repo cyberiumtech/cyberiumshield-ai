@@ -243,7 +243,7 @@ After verifying everything works:
 
 1. **API Integration**: Connect modals to backend endpoints
 2. **Real Reports**: Implement PDF/Excel generation
-3. **Scan Engine**: Build actual vulnerability scanning
+3. **Scan Engine**: Use the integrated authorized scanner under `/vulnerability`
 4. **User Management**: Complete CRUD operations
 5. **Notifications**: Add toast/alert system
 6. **Progress Tracking**: Show scan/report progress

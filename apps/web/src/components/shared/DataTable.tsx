@@ -17,7 +17,7 @@ export function DataTable<T extends { id: string | number }>({ columns, data, on
     if (typeof accessor === 'function') {
       return accessor(row);
     }
-    return row[accessor];
+    return row[accessor] as React.ReactNode;
   };
 
   return (

@@ -140,7 +140,7 @@ export function ProfileDropdown() {
                 <div className="mt-3 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-slate-400">Organization</p>
                   <p className="text-sm text-slate-200 font-medium">
-                    {user.organization}
+                    {user.organization_name}
                   </p>
                 </div>
               </div>

@@ -676,8 +676,8 @@ function GlobalThreatGlobe() {
         <Geographies
           geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
         >
-          {({ geographies }) =>
-            geographies.map((geo) => (
+          {({ geographies }: { geographies: Array<{ rsmKey: string; [key: string]: unknown }> }) =>
+            geographies.map((geo: { rsmKey: string; [key: string]: unknown }) => (
               <Geography
                 key={geo.rsmKey}
                 geography={geo}

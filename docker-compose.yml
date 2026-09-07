@@ -20,7 +20,8 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000
-    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
+      - VITE_VULNERABILITY_PROXY_TARGET=http://vulnerability-manager:5004
+    command: ["sh", "-c", "npm install && npm run dev:frontend -- --host 0.0.0.0 --port 5173"]
 
   backend:
     image: php:8.4-fpm
@@ -105,6 +106,25 @@ services:
     command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  vulnerability-manager:
+    image: python:3.11-slim
+    working_dir: /app
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./Vulnerability-Management:/app
+    environment:
+      - VULNERABILITY_HOST=0.0.0.0
+      - VULNERABILITY_MANAGER_PORT=5004
+      - VULNERABILITY_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5004/api/health')"]
       interval: 10s
       timeout: 5s
       retries: 5

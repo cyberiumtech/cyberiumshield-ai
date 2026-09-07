@@ -307,9 +307,9 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at **http://localhost:5173** (or 5174 if 5173 is in use).
+The frontend will be available at **http://localhost:5173** (or 5174 if 5173 is in use). The development launcher also starts the local vulnerability manager on port 5004 when its Python environment is available.
 
-> **Note:** The frontend runs with mock data by default. All 11 dashboard pages, authentication flows, and the AI assistant work without a backend connection.
+> **Note:** Most dashboard areas can render without their services, while Vulnerability Management, Network Monitoring, and the detection tools use their corresponding local APIs and show an explicit offline state when a service is unavailable.
 
 ### 2️⃣ Full Stack with Docker
 
@@ -321,6 +321,7 @@ docker-compose up -d
 # - Frontend: http://localhost:5173
 # - Laravel API: http://localhost:8000
 # - Python AI API: http://localhost:8000 (via FastAPI)
+# - Vulnerability Manager: http://localhost:5004
 # - MySQL: localhost:3306
 # - Redis: localhost:6379
 # - Nginx: http://localhost:80

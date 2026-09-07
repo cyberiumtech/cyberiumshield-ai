@@ -32,6 +32,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/network-api/, ''),
       },
+      '/vulnerability-api': {
+        target: process.env.VITE_VULNERABILITY_PROXY_TARGET || 'http://localhost:5004',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/vulnerability-api/, ''),
+      },
     },
   },
   resolve: {
