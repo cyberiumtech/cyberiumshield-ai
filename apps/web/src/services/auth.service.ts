@@ -66,7 +66,11 @@ class AuthService {
       name: credentials.email.split('@')[0],
       email: credentials.email,
       email_verified_at: new Date().toISOString(),
-      role: 'security_analyst',
+      // Deterministic demo RBAC: admin@* is an administrator. This is only a
+      // frontend mock convenience; production authorization must be enforced by the API.
+      role: credentials.email.trim().toLowerCase().startsWith('admin@')
+        ? 'administrator'
+        : 'security_analyst',
       organization_id: '1',
       organization_name: 'Demo Organization',
       created_at: new Date().toISOString(),

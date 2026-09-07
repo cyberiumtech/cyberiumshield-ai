@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network Monitor</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>Network Monitor</h1>
+    <p>Live Windows connection and traffic monitoring</p>
+  </div>
+  <div class="actions">
+    <button id="start">Start</button>
+    <button id="stop" class="secondary">Stop</button>
+    <a href="/api/export" class="button secondary">Export CSV</a>
+  </div>
+</header>
+
+<main>
+  <section class="cards">
+    <div class="card"><span>Status</span><strong id="status">Stopped</strong></div>
+    <div class="card"><span>Connections</span><strong id="connections">0</strong></div>
+    <div class="card"><span>TCP</span><strong id="tcp">0</strong></div>
+    <div class="card"><span>UDP</span><strong id="udp">0</strong></div>
+    <div class="card"><span>Upload</span><strong id="upload">0 B/s</strong></div>
+    <div class="card"><span>Download</span><strong id="download">0 B/s</strong></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Active Connections</h2>
+      <input id="filter" placeholder="Filter process, IP, port...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Process</th><th>PID</th><th>Protocol</th><th>Local</th>
+          <th>Remote</th><th>State</th>
+        </tr></thead>
+        <tbody id="table"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Network Interfaces</h2>
+    <div id="interfaces" class="interfaces"></div>
+  </section>
+  <p class="updated">Last updated: <span id="updated">—</span></p>
+</main>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

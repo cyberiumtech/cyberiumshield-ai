@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { isAdminRole } from '../AdminRoute/AdminRoute';
 
-const items: Array<{ label: string; path: string }> = [
+const items: Array<{ label: string; path: string; adminOnly?: boolean }> = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Security Center', path: '/security-center' },
   { label: 'Network Monitoring', path: '/network' },
@@ -15,16 +17,18 @@ const items: Array<{ label: string; path: string }> = [
   { label: 'Reports', path: '/reports' },
   { label: 'Analytics', path: '/analytics' },
   { label: 'AI Assistant', path: '/ai-assistant' },
-  { label: 'Administration', path: '/users' },
+  { label: 'Administration', path: '/admin', adminOnly: true },
 ];
 
 export function Sidebar({ activePath, mobile = false }: { activePath: string; mobile?: boolean }) {
+  const { user } = useAuth();
+  const visibleItems = items.filter(item => !item.adminOnly || isAdminRole(user?.role));
   return (
     <nav
       className={`${mobile ? 'h-auto px-0 py-0' : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4'}`}
     >
       <div className="space-y-2">
-        {items.map(it => {
+        {visibleItems.map(it => {
           // Use `startsWith` for parent paths to remain active on child routes,
           // but use an exact match for the main dashboard link.
           const active =

@@ -1,255 +1,1702 @@
-import React, { useMemo, useState } from 'react';
-import { Search, Users, UserPlus, Shield, Settings, Key, X } from 'lucide-react';
-import { StatCard } from '../../components/shared/StatCard';
-import { Badge } from '../../components/shared/Badge';
-import { DataTable } from '../../components/shared/DataTable';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Download,
+  FileClock,
+  FilterX,
+  KeyRound,
+  LockKeyhole,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Shield,
+  ShieldCheck,
+  Trash2,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  adminRepository,
+  AdminRole,
+  AdminUser,
+  AdminUserStatus,
+  filterAdminAudit,
+  filterAdminUsers,
+  permissionCatalog,
+  RoleInput,
+  UserInput,
+} from '../../services/admin.service';
 
-const stats = [
-  { title: 'Total Users', value: '156', delta: '+8 This Month', icon: Users, trend: 'up' as const },
-  { title: 'Active Sessions', value: '42', delta: 'Now Online', icon: Shield, trend: 'neutral' as const, color: 'text-emerald-400' },
-  { title: 'Admin Users', value: '12', delta: '7.7%', icon: Key, trend: 'neutral' as const, color: 'text-yellow-400' },
-  { title: 'Roles Defined', value: '8', delta: '3 Custom', icon: Settings, trend: 'neutral' as const },
-];
+type Section = 'overview' | 'users' | 'roles' | 'audit';
+type ConfirmState = {
+  title: string;
+  message: string;
+  tone?: 'danger' | 'warning';
+  confirmLabel: string;
+  action: () => void;
+} | null;
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: 'active' | 'inactive' | 'suspended';
-  lastLogin: string;
+const sectionByPath: Record<string, Section> = {
+  '/admin': 'overview',
+  '/admin/users': 'users',
+  '/admin/roles': 'roles',
+  '/admin/audit': 'audit',
+};
+const navItems = [
+  { id: 'overview', label: 'Overview', mobileLabel: 'Overview', path: '/admin' },
+  { id: 'users', label: 'Users', mobileLabel: 'Users', path: '/admin/users' },
+  { id: 'roles', label: 'Roles & permissions', mobileLabel: 'Roles', path: '/admin/roles' },
+  { id: 'audit', label: 'Audit activity', mobileLabel: 'Audit', path: '/admin/audit' },
+] as const;
+
+const panel =
+  'border border-slate-700/70 bg-[#111b2e] shadow-[0_18px_50px_-32px_rgba(6,182,212,.32)]';
+const input =
+  'w-full rounded-[10px] border border-slate-700 bg-[#0b1425] px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-400/70 focus:ring-2 focus:ring-cyan-400/10';
+const secondaryButton =
+  'inline-flex items-center justify-center gap-2 rounded-[10px] border border-slate-700 bg-slate-800/70 px-3.5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-700/70 focus:outline-none focus:ring-2 focus:ring-cyan-400/30 disabled:cursor-not-allowed disabled:opacity-40';
+const primaryButton =
+  'inline-flex items-center justify-center gap-2 rounded-[10px] border border-cyan-300/30 bg-cyan-400 px-3.5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_8px_22px_-12px_rgba(34,211,238,.9)] transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/50 disabled:cursor-not-allowed disabled:opacity-50';
+
+function formatDate(value: string | null, relative = false) {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  if (!relative)
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+      date
+    );
+  const diff = Date.now() - date.getTime();
+  const day = 86_400_000;
+  if (diff < 60_000) return 'Just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < day) return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+}
+function roleName(roles: AdminRole[], id: string) {
+  return roles.find(role => role.id === id)?.name ?? 'Unknown role';
+}
+function statusClass(status: AdminUserStatus) {
+  return status === 'active'
+    ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300'
+    : status === 'invited'
+      ? 'border-amber-400/20 bg-amber-400/10 text-amber-300'
+      : 'border-rose-400/20 bg-rose-400/10 text-rose-300';
 }
 
-const initialUsers: User[] = [
-  { id: '1', name: 'John Anderson', email: 'john.anderson@company.com', role: 'Security Analyst', status: 'active', lastLogin: '2 minutes ago' },
-  { id: '2', name: 'Sarah Mitchell', email: 'sarah.mitchell@company.com', role: 'Admin', status: 'active', lastLogin: '1 hour ago' },
-  { id: '3', name: 'Michael Chen', email: 'michael.chen@company.com', role: 'SOC Manager', status: 'active', lastLogin: '3 hours ago' },
-  { id: '4', name: 'Emily Rodriguez', email: 'emily.rodriguez@company.com', role: 'Analyst', status: 'active', lastLogin: '5 hours ago' },
-  { id: '5', name: 'David Kim', email: 'david.kim@company.com', role: 'Viewer', status: 'inactive', lastLogin: '2 days ago' },
-];
-
-const roles = [
-  { name: 'Admin', users: 12, permissions: ['Full Access', 'User Management', 'System Config'], color: 'text-red-400' },
-  { name: 'SOC Manager', users: 8, permissions: ['View All', 'Manage Incidents', 'Generate Reports'], color: 'text-orange-400' },
-  { name: 'Security Analyst', users: 45, permissions: ['View Threats', 'Analyze Logs', 'Create Incidents'], color: 'text-cyan-400' },
-  { name: 'Viewer', users: 91, permissions: ['View Dashboards', 'View Reports'], color: 'text-blue-400' },
-];
-
 export function AdminPage() {
-  const [selectedTab, setSelectedTab] = useState<'users' | 'roles'>('users');
-  const [userList, setUserList] = useState<User[]>(initialUsers);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-
-  const visibleUsers = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    if (!normalizedSearch) return userList;
-    return userList.filter((user) =>
-      [user.name, user.email, user.role, user.status].some((value) =>
-        value.toLowerCase().includes(normalizedSearch),
-      ),
-    );
-  }, [searchTerm, userList]);
-
-  const saveUser = (user: User) => {
-    setUserList((currentUsers) => {
-      const existingUser = currentUsers.some((currentUser) => currentUser.id === user.id);
-      return existingUser
-        ? currentUsers.map((currentUser) => (currentUser.id === user.id ? user : currentUser))
-        : [...currentUsers, user];
-    });
-    setEditingUser(null);
-    setIsAddUserOpen(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const section = sectionByPath[location.pathname] ?? 'overview';
+  const [state, setState] = useState(() => adminRepository.getState());
+  const [userModal, setUserModal] = useState<AdminUser | 'new' | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const actor = useMemo(
+    () => ({
+      id: authUser?.id ?? '1',
+      name: authUser?.name ?? 'Demo Administrator',
+      email: authUser?.email ?? 'admin@cyberiumshield.ai',
+    }),
+    [authUser]
+  );
+  const refresh = () => setState(adminRepository.getState());
+  const mutate = (work: () => void, message: string) => {
+    try {
+      work();
+      refresh();
+      toast.success(message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'The action could not be completed.');
+    }
   };
-
-  const columns = [
-    { header: 'Name', accessor: 'name' as keyof User },
-    { header: 'Email', accessor: 'email' as keyof User, className: 'font-mono text-xs' },
-    { header: 'Role', accessor: 'role' as keyof User },
-    {
-      header: 'Status',
-      accessor: (row: User) => {
-        const variants = {
-          active: 'success' as const,
-          inactive: 'default' as const,
-          suspended: 'critical' as const,
-        };
-        return <Badge variant={variants[row.status]}>{row.status.charAt(0).toUpperCase() + row.status.slice(1)}</Badge>;
-      },
-    },
-    { header: 'Last Login', accessor: 'lastLogin' as keyof User },
-    {
-      header: 'Actions',
-      accessor: (row: User) => (
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            const selectedUser = userList.find((user) => user.id === row.id);
-            if (selectedUser) setEditingUser(selectedUser);
-          }}
-          className="text-sm text-cyan-400 hover:text-cyan-300"
-        >
-          Edit
-        </button>
-      ),
-      className: 'text-center',
-    },
-  ];
+  useEffect(() => {
+    setState(adminRepository.getState());
+  }, [location.pathname]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">User Management</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage users, roles, and permissions</p>
-        </div>
-        <button
-          onClick={() => setIsAddUserOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add User
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.title} {...stat} />
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 border-b border-white/10">
-        {[
-          { id: 'users' as const, label: 'Users', count: 156 },
-          { id: 'roles' as const, label: 'Roles & Permissions', count: 8 },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelectedTab(tab.id)}
-            className={`px-4 py-3 text-sm font-medium transition-all relative ${
-              selectedTab === tab.id ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            {tab.label}
-            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-cyan-400/10 text-cyan-400">
-              {tab.count}
-            </span>
-            {selectedTab === tab.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {selectedTab === 'users' && (
-        <div className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Filter users..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-slate-200 outline-none transition focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/10 placeholder:text-slate-500"
-            />
-          </div>
-          <DataTable columns={columns} data={visibleUsers} />
-        </div>
-      )}
-
-      {selectedTab === 'roles' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {roles.map((role, index) => (
-            <div
-              key={index}
-              className="bg-[#0F1729]/50 backdrop-blur-sm border border-white/10 rounded-xl p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-cyan-400/10">
-                    <Shield className={`w-5 h-5 ${role.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-200">{role.name}</h3>
-                    <p className="text-xs text-slate-400">{role.users} users assigned</p>
-                  </div>
-                </div>
-                <button className="text-sm text-cyan-400 hover:text-cyan-300">Edit</button>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-slate-400 font-medium">Permissions:</p>
-                <div className="flex flex-wrap gap-2">
-                  {role.permissions.map((permission, i) => (
-                    <Badge key={i} variant="info">{permission}</Badge>
-                  ))}
-                </div>
-              </div>
+    <div className="mx-auto w-full min-w-0 max-w-[1540px] space-y-5 overflow-x-clip pb-12">
+      <header className={`${panel} overflow-hidden rounded-[14px]`}>
+        <div className="h-1 bg-[linear-gradient(90deg,#22d3ee,#14b8a6_48%,transparent_85%)]" />
+        <div className="flex flex-col gap-5 px-5 py-5 sm:px-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Workspace <span className="px-1 text-slate-700">/</span> Administration
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-[28px]">
+                Administration workspace
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
+                <LockKeyhole className="h-3 w-3" /> Admin controls
+              </span>
             </div>
-          ))}
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+              Manage people, access policies, and administrative activity for this demo workspace.
+            </p>
+          </div>
+          <button className={primaryButton} onClick={() => setUserModal('new')}>
+            <UserPlus className="h-4 w-4" /> Add user
+          </button>
         </div>
-      )}
+        <div className="min-w-0 overflow-hidden border-t border-slate-800 px-1 sm:px-5">
+          <nav
+            aria-label="Administration sections"
+            className="grid min-w-0 grid-cols-4 gap-0 sm:flex sm:gap-1"
+          >
+            {navItems.map(item => (
+              <Link
+                key={item.id}
+                to={item.path}
+                aria-current={section === item.id ? 'page' : undefined}
+                className={`relative min-w-0 px-1 py-3 text-center text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400 sm:shrink-0 sm:px-3 sm:text-sm ${section === item.id ? 'text-cyan-300' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                <span className="sm:hidden">{item.mobileLabel}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+                {section === item.id && (
+                  <motion.span
+                    layoutId="admin-tab"
+                    className="absolute inset-x-1 bottom-0 h-0.5 bg-cyan-300 sm:inset-x-3"
+                  />
+                )}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
 
-      {(isAddUserOpen || editingUser) && (
-        <UserFormModal
-          user={editingUser}
-          onClose={() => {
-            setIsAddUserOpen(false);
-            setEditingUser(null);
-          }}
-          onSave={saveUser}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={section}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -3 }}
+          transition={{ duration: 0.16 }}
+        >
+          {section === 'overview' && (
+            <Overview state={state} navigate={navigate} onAddUser={() => setUserModal('new')} />
+          )}
+          {section === 'users' && (
+            <UsersSection
+              state={state}
+              actor={actor}
+              mutate={mutate}
+              onEdit={setUserModal}
+              setConfirm={setConfirm}
+            />
+          )}
+          {section === 'roles' && (
+            <RolesSection state={state} actor={actor} mutate={mutate} setConfirm={setConfirm} />
+          )}
+          {section === 'audit' && <AuditSection entries={state.audit} />}
+        </motion.div>
+      </AnimatePresence>
+      <p className="flex items-start gap-2 rounded-[10px] border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs leading-5 text-slate-500">
+        <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" /> Demo administration
+        data is stored only in this browser. Client-side access checks are not a substitute for
+        production API authorization.
+      </p>
+      <AnimatePresence>
+        {userModal && (
+          <UserModal
+            user={userModal === 'new' ? null : userModal}
+            roles={state.roles}
+            onClose={() => setUserModal(null)}
+            onSave={values =>
+              mutate(
+                () => {
+                  userModal === 'new'
+                    ? adminRepository.createUser(values, actor)
+                    : adminRepository.updateUser(userModal.id, values, actor);
+                  setUserModal(null);
+                },
+                userModal === 'new' ? 'User invitation created.' : 'User updated.'
+              )
+            }
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {confirm && (
+          <ConfirmDialog
+            {...confirm}
+            onClose={() => setConfirm(null)}
+            onConfirm={() => {
+              confirm.action();
+              setConfirm(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function UserFormModal({
-  user,
-  onClose,
-  onSave,
+function Overview({
+  state,
+  navigate,
+  onAddUser,
 }: {
-  user: User | null;
-  onClose: () => void;
-  onSave: (user: User) => void;
+  state: ReturnType<typeof adminRepository.getState>;
+  navigate: ReturnType<typeof useNavigate>;
+  onAddUser: () => void;
 }) {
-  const [name, setName] = useState(user?.name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [role, setRole] = useState(user?.role ?? 'Security Analyst');
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onSave({
-      id: user?.id ?? `user-${Date.now()}`,
-      name,
-      email,
-      role,
-      status: user?.status ?? 'active',
-      lastLogin: user?.lastLogin ?? 'Never',
-    });
-  };
-
+  const active = state.users.filter(user => user.status === 'active').length;
+  const invited = state.users.filter(user => user.status === 'invited').length;
+  const suspended = state.users.filter(user => user.status === 'suspended').length;
+  const elevated = state.roles.filter(
+    role => role.permissions.includes('users.manage') || role.permissions.includes('roles.manage')
+  ).length;
+  const metrics = [
+    {
+      label: 'Total users',
+      value: state.users.length,
+      detail: 'Across this workspace',
+      icon: Users,
+      color: 'text-cyan-300',
+    },
+    {
+      label: 'Active users',
+      value: active,
+      detail: `${Math.round((active / state.users.length) * 100)}% enabled`,
+      icon: UserCheck,
+      color: 'text-emerald-300',
+    },
+    {
+      label: 'Pending invites',
+      value: invited,
+      detail: invited ? 'Awaiting first sign-in' : 'No invitations pending',
+      icon: UserPlus,
+      color: 'text-amber-300',
+    },
+    {
+      label: 'Access roles',
+      value: state.roles.length,
+      detail: `${state.roles.filter(role => !role.system).length} custom`,
+      icon: KeyRound,
+      color: 'text-violet-300',
+    },
+  ];
+  const roleCounts = state.roles.map(role => ({
+    ...role,
+    count: state.users.filter(user => user.roleId === role.id).length,
+  }));
+  const protectedAreas = permissionCatalog.map(group => ({
+    name: group.area,
+    permissions: group.permissions.map(permission => permission.id),
+  }));
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-xl border border-white/10 bg-[#0F1729] p-6 shadow-2xl shadow-cyan-950/30">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Administration</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-100">{user ? 'Edit user' : 'Add user'}</h2>
+    <div className="space-y-5">
+      <section aria-label="Workspace summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric, index) => (
+          <motion.article
+            key={metric.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.035 }}
+            className={`${panel} relative overflow-hidden rounded-[12px] p-4`}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500">{metric.label}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                  {metric.value}
+                </p>
+              </div>
+              <metric.icon className={`h-5 w-5 ${metric.color}`} />
+            </div>
+            <p className="mt-3 border-t border-slate-800 pt-3 text-xs text-slate-500">
+              {metric.detail}
+            </p>
+          </motion.article>
+        ))}
+      </section>
+      <section className="grid gap-5 xl:grid-cols-[1.45fr_.8fr]">
+        <article className={`${panel} min-w-0 rounded-[14px] p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[.15em] text-cyan-400">
+                Access map
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">
+                Roles across protected areas
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                A live map of which roles can reach each control plane.
+              </p>
+            </div>
+            <button className={secondaryButton} onClick={() => navigate('/admin/roles')}>
+              Review permissions <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-slate-100" aria-label="Close dialog">
+          <div className="mt-6 w-full max-w-full overflow-x-auto">
+            <div className="min-w-[610px]">
+              <div className="grid grid-cols-[170px_repeat(5,1fr)] gap-2 border-b border-slate-800 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <span>Role / members</span>
+                {protectedAreas.map(area => (
+                  <span key={area.name} className="text-center">
+                    {area.name}
+                  </span>
+                ))}
+              </div>
+              <div className="divide-y divide-slate-800/80">
+                {roleCounts.map(role => (
+                  <div
+                    key={role.id}
+                    className="group grid grid-cols-[170px_repeat(5,1fr)] items-center gap-2 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-200">{role.name}</p>
+                      <p className="text-xs text-slate-600">
+                        {role.count} member{role.count === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                    {protectedAreas.map(area => {
+                      const granted = area.permissions.some(permission =>
+                        role.permissions.includes(permission)
+                      );
+                      return (
+                        <div
+                          key={area.name}
+                          className="relative flex h-8 items-center justify-center"
+                        >
+                          <span className="absolute h-px w-full bg-slate-800" />
+                          <span
+                            className={`relative z-10 grid h-5 w-5 place-items-center rounded-full border ${granted ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-300 shadow-[0_0_16px_-4px_#22d3ee]' : 'border-slate-700 bg-slate-900 text-slate-700'}`}
+                          >
+                            {granted && <Check className="h-3 w-3" />}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </article>
+        <aside className={`${panel} rounded-[14px] p-5`}>
+          <p className="text-xs font-semibold uppercase tracking-[.15em] text-slate-500">
+            Access posture
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-white">Items needing attention</h2>
+          <div className="mt-5 space-y-3">
+            <PostureItem
+              color="rose"
+              value={suspended}
+              label="Suspended accounts"
+              action={() => navigate('/admin/users')}
+            />
+            <PostureItem
+              color="amber"
+              value={invited}
+              label="Pending invitations"
+              action={() => navigate('/admin/users')}
+            />
+            <PostureItem
+              color="cyan"
+              value={elevated}
+              label="Roles with admin access"
+              action={() => navigate('/admin/roles')}
+            />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className={primaryButton} onClick={onAddUser}>
+              <Plus className="h-4 w-4" /> Add user
+            </button>
+            <button className={secondaryButton} onClick={() => navigate('/admin/audit')}>
+              <FileClock className="h-4 w-4" /> Audit
+            </button>
+          </div>
+        </aside>
+      </section>
+      <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+        <article className={`${panel} rounded-[14px] p-5`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[.15em] text-slate-500">
+                Distribution
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Members by role</h2>
+            </div>
+            <Shield className="h-5 w-5 text-cyan-300" />
+          </div>
+          <div className="mt-5 space-y-4">
+            {roleCounts.map((role, index) => (
+              <div key={role.id}>
+                <div className="mb-1.5 flex justify-between text-xs">
+                  <span className="text-slate-300">{role.name}</span>
+                  <span className="font-mono text-slate-500">{role.count}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-sm bg-slate-800">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.max(5, (role.count / state.users.length) * 100)}%` }}
+                    transition={{ duration: 0.45, delay: index * 0.06 }}
+                    className="h-full bg-[linear-gradient(90deg,#0891b2,#2dd4bf)]"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className={`${panel} rounded-[14px]`}>
+          <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[.15em] text-slate-500">
+                Recent activity
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-white">Administration log</h2>
+            </div>
+            <button
+              onClick={() => navigate('/admin/audit')}
+              className="text-sm font-medium text-cyan-300 hover:text-cyan-200"
+            >
+              View all
+            </button>
+          </div>
+          <div className="divide-y divide-slate-800/80">
+            {state.audit.slice(0, 4).map(entry => (
+              <AuditRow key={entry.id} entry={entry} compact />
+            ))}
+          </div>
+        </article>
+      </section>
+    </div>
+  );
+}
+
+function PostureItem({
+  color,
+  value,
+  label,
+  action,
+}: {
+  color: 'rose' | 'amber' | 'cyan';
+  value: number;
+  label: string;
+  action: () => void;
+}) {
+  const styles = { rose: 'bg-rose-400', amber: 'bg-amber-400', cyan: 'bg-cyan-400' };
+  return (
+    <button
+      onClick={action}
+      className="group flex w-full items-center gap-3 border-b border-slate-800 pb-3 text-left last:border-0"
+    >
+      <span className={`h-8 w-1 ${styles[color]}`} />
+      <span className="text-xl font-semibold text-white">{value}</span>
+      <span className="flex-1 text-sm text-slate-400">{label}</span>
+      <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+    </button>
+  );
+}
+
+function UsersSection({
+  state,
+  actor,
+  mutate,
+  onEdit,
+  setConfirm,
+}: {
+  state: ReturnType<typeof adminRepository.getState>;
+  actor: { id: string; name: string; email: string };
+  mutate: (work: () => void, message: string) => void;
+  onEdit: (user: AdminUser) => void;
+  setConfirm: (state: ConfirmState) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sort, setSort] = useState<{
+    key: 'name' | 'email' | 'role' | 'status' | 'lastActive';
+    direction: 'asc' | 'desc';
+  }>({ key: 'name', direction: 'asc' });
+  const [page, setPage] = useState(1);
+  const pageSize = 7;
+  const filtered = useMemo(
+    () =>
+      filterAdminUsers(state.users, state.roles, {
+        search,
+        roleId: roleFilter,
+        status: statusFilter as AdminUserStatus | 'all',
+        sortKey: sort.key,
+        sortDirection: sort.direction,
+      }),
+    [state, search, roleFilter, statusFilter, sort]
+  );
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const visible = filtered.slice(
+    (Math.min(page, pages) - 1) * pageSize,
+    Math.min(page, pages) * pageSize
+  );
+  useEffect(() => setPage(1), [search, roleFilter, statusFilter]);
+  const toggleSort = (key: typeof sort.key) =>
+    setSort(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  const exportCsv = () => {
+    const csv = [
+      ['Name', 'Email', 'Role', 'Status', 'Last active', 'Created'],
+      ...filtered.map(user => [
+        user.name,
+        user.email,
+        roleName(state.roles, user.roleId),
+        user.status,
+        user.lastActive ?? '',
+        user.createdAt,
+      ]),
+    ]
+      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `cybershield-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    adminRepository.recordExport(actor, filtered.length);
+    toast.success(`${filtered.length} filtered users exported.`);
+  };
+  const clear = () => {
+    setSearch('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+  };
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`}>
+      <div className="flex flex-col gap-4 border-b border-slate-800 p-4 sm:p-5 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">User directory</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Search, invite, and control workspace access.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <label className="relative block min-w-[240px]">
+            <span className="sr-only">Search users</span>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+            <input
+              className={`${input} pl-9`}
+              placeholder="Search name or email"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </label>
+          <select
+            aria-label="Filter by role"
+            className={`${input} sm:w-48`}
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value)}
+          >
+            <option value="all">All roles</option>
+            {state.roles.map(role => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filter by status"
+            className={`${input} sm:w-40`}
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="invited">Invited</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <button className={secondaryButton} onClick={exportCsv} disabled={!filtered.length}>
+            <Download className="h-4 w-4" /> Export
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-5 py-3">
+        <p className="text-xs text-slate-500">
+          <span className="font-medium text-slate-300">{filtered.length}</span> of{' '}
+          {state.users.length} users
+        </p>
+        {(search || roleFilter !== 'all' || statusFilter !== 'all') && (
+          <button
+            onClick={clear}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-300 hover:text-cyan-200"
+          >
+            <FilterX className="h-3.5 w-3.5" /> Clear filters
+          </button>
+        )}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[850px] text-left">
+          <thead>
+            <tr className="border-b border-slate-800 bg-slate-950/25">
+              {(
+                [
+                  ['name', 'User'],
+                  ['role', 'Role'],
+                  ['status', 'Status'],
+                  ['lastActive', 'Last active'],
+                ] as const
+              ).map(([key, label]) => (
+                <th
+                  key={key}
+                  className="px-5 py-3 text-[10px] font-semibold uppercase tracking-[.13em] text-slate-500"
+                >
+                  <button
+                    onClick={() => toggleSort(key)}
+                    className="inline-flex items-center gap-1.5 hover:text-slate-300"
+                  >
+                    {label}
+                    {sort.key === key ? (
+                      sort.direction === 'asc' ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </button>
+                </th>
+              ))}
+              <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-[.13em] text-slate-500">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/80">
+            {visible.map(user => (
+              <UserRow
+                key={user.id}
+                user={user}
+                roles={state.roles}
+                actorId={actor.id}
+                onEdit={() => onEdit(user)}
+                onStatus={() => {
+                  const next = user.status === 'active' ? 'suspended' : 'active';
+                  setConfirm({
+                    title: `${next === 'active' ? 'Activate' : 'Suspend'} ${user.name}?`,
+                    message:
+                      next === 'active'
+                        ? 'This restores workspace access immediately.'
+                        : 'This user will lose workspace access until reactivated.',
+                    tone: next === 'active' ? 'warning' : 'danger',
+                    confirmLabel: next === 'active' ? 'Activate user' : 'Suspend user',
+                    action: () =>
+                      mutate(
+                        () => adminRepository.setUserStatus(user.id, next, actor),
+                        `User ${next === 'active' ? 'activated' : 'suspended'}.`
+                      ),
+                  });
+                }}
+                onDelete={() =>
+                  setConfirm({
+                    title: `Delete ${user.name}?`,
+                    message: 'This removes the local user record and cannot be undone.',
+                    tone: 'danger',
+                    confirmLabel: 'Delete user',
+                    action: () =>
+                      mutate(() => adminRepository.deleteUser(user.id, actor), 'User deleted.'),
+                  })
+                }
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="divide-y divide-slate-800 md:hidden">
+        {visible.map(user => (
+          <UserCard
+            key={user.id}
+            user={user}
+            roles={state.roles}
+            onEdit={() => onEdit(user)}
+            onStatus={() => {
+              const next = user.status === 'active' ? 'suspended' : 'active';
+              setConfirm({
+                title: `${next === 'active' ? 'Activate' : 'Suspend'} ${user.name}?`,
+                message: `Status will be changed to ${next}.`,
+                confirmLabel: next === 'active' ? 'Activate user' : 'Suspend user',
+                action: () =>
+                  mutate(
+                    () => adminRepository.setUserStatus(user.id, next, actor),
+                    `User ${next}.`
+                  ),
+              });
+            }}
+            onDelete={() =>
+              setConfirm({
+                title: `Delete ${user.name}?`,
+                message: 'This removes the local user record and cannot be undone.',
+                tone: 'danger',
+                confirmLabel: 'Delete user',
+                action: () =>
+                  mutate(() => adminRepository.deleteUser(user.id, actor), 'User deleted.'),
+              })
+            }
+          />
+        ))}
+      </div>
+      {!visible.length && (
+        <EmptyState
+          icon={Users}
+          title="No users found"
+          text="Adjust the search or filters to find a workspace member."
+          action={
+            <button className={secondaryButton} onClick={clear}>
+              Clear filters
+            </button>
+          }
+        />
+      )}
+      <div className="flex items-center justify-between border-t border-slate-800 px-5 py-3">
+        <p className="text-xs text-slate-500">
+          Page {Math.min(page, pages)} of {pages}
+        </p>
+        <div className="flex gap-2">
+          <button
+            aria-label="Previous page"
+            className={secondaryButton}
+            disabled={page <= 1}
+            onClick={() => setPage(value => value - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            aria-label="Next page"
+            className={secondaryButton}
+            disabled={page >= pages}
+            onClick={() => setPage(value => value + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UserRow({
+  user,
+  roles,
+  actorId,
+  onEdit,
+  onStatus,
+  onDelete,
+}: {
+  user: AdminUser;
+  roles: AdminRole[];
+  actorId: string;
+  onEdit: () => void;
+  onStatus: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <tr className="transition hover:bg-cyan-400/[.025]">
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-300">
+            {initials(user.name)}
+          </span>
+          <div>
+            <p className="text-sm font-medium text-slate-200">
+              {user.name}
+              {user.id === actorId && (
+                <span className="ml-2 text-[10px] uppercase tracking-wide text-cyan-400">You</span>
+              )}
+            </p>
+            <p className="text-xs text-slate-500">{user.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3.5 text-sm text-slate-400">{roleName(roles, user.roleId)}</td>
+      <td className="px-5 py-3.5">
+        <Status status={user.status} />
+      </td>
+      <td
+        className="px-5 py-3.5 font-mono text-xs text-slate-500"
+        title={formatDate(user.lastActive)}
+      >
+        {formatDate(user.lastActive, true)}
+      </td>
+      <td className="px-5 py-3.5">
+        <RowActions onEdit={onEdit} onStatus={onStatus} onDelete={onDelete} status={user.status} />
+      </td>
+    </tr>
+  );
+}
+function UserCard({
+  user,
+  roles,
+  onEdit,
+  onStatus,
+  onDelete,
+}: {
+  user: AdminUser;
+  roles: AdminRole[];
+  onEdit: () => void;
+  onStatus: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <article className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold">
+            {initials(user.name)}
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-medium text-slate-200">{user.name}</h3>
+            <p className="truncate text-xs text-slate-500">{user.email}</p>
+          </div>
+        </div>
+        <Status status={user.status} />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-3 text-xs">
+        <div>
+          <span className="text-slate-600">Role</span>
+          <p className="mt-1 text-slate-300">{roleName(roles, user.roleId)}</p>
+        </div>
+        <div>
+          <span className="text-slate-600">Last active</span>
+          <p className="mt-1 text-slate-300">{formatDate(user.lastActive, true)}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <button className={secondaryButton} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" /> Edit
+        </button>
+        <button className={secondaryButton} onClick={onStatus}>
+          {user.status === 'active' ? 'Suspend' : 'Activate'}
+        </button>
+        <button
+          aria-label={`Delete ${user.name}`}
+          className={`${secondaryButton} text-rose-300`}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </article>
+  );
+}
+function Status({ status }: { status: AdminUserStatus }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize ${statusClass(status)}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {status}
+    </span>
+  );
+}
+function RowActions({
+  onEdit,
+  onStatus,
+  onDelete,
+  status,
+}: {
+  onEdit: () => void;
+  onStatus: () => void;
+  onDelete: () => void;
+  status: AdminUserStatus;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+  return (
+    <div ref={ref} className="relative flex justify-end">
+      <button
+        aria-label="Open user actions"
+        aria-expanded={open}
+        onClick={() => setOpen(value => !value)}
+        className="rounded-lg border border-transparent p-2 text-slate-500 hover:border-slate-700 hover:bg-slate-800 hover:text-slate-200"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-[10px] border border-slate-700 bg-[#101a2d] p-1 shadow-2xl">
+          <Action
+            onClick={() => {
+              onEdit();
+              setOpen(false);
+            }}
+            icon={Pencil}
+          >
+            Edit user
+          </Action>
+          <Action
+            onClick={() => {
+              onStatus();
+              setOpen(false);
+            }}
+            icon={UserCheck}
+          >
+            {status === 'active' ? 'Suspend user' : 'Activate user'}
+          </Action>
+          <Action
+            danger
+            onClick={() => {
+              onDelete();
+              setOpen(false);
+            }}
+            icon={Trash2}
+          >
+            Delete user
+          </Action>
+        </div>
+      )}
+    </div>
+  );
+}
+function Action({
+  icon: Icon,
+  children,
+  danger,
+  onClick,
+}: {
+  icon: typeof Pencil;
+  children: React.ReactNode;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm ${danger ? 'text-rose-300 hover:bg-rose-400/10' : 'text-slate-300 hover:bg-slate-800'}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {children}
+    </button>
+  );
+}
+
+function RolesSection({
+  state,
+  actor,
+  mutate,
+  setConfirm,
+}: {
+  state: ReturnType<typeof adminRepository.getState>;
+  actor: { id: string; name: string; email: string };
+  mutate: (work: () => void, message: string) => void;
+  setConfirm: (state: ConfirmState) => void;
+}) {
+  const [selectedId, setSelectedId] = useState(state.roles[0]?.id);
+  const [createOpen, setCreateOpen] = useState(false);
+  const selected = state.roles.find(role => role.id === selectedId) ?? state.roles[0];
+  useEffect(() => {
+    if (!state.roles.some(role => role.id === selectedId)) setSelectedId(state.roles[0]?.id);
+  }, [state.roles, selectedId]);
+  return (
+    <div className="grid gap-5 xl:grid-cols-[340px_1fr]">
+      <aside className={`${panel} self-start overflow-hidden rounded-[14px]`}>
+        <div className="flex items-center justify-between border-b border-slate-800 p-4">
+          <div>
+            <h2 className="font-semibold text-white">Access roles</h2>
+            <p className="mt-1 text-xs text-slate-500">{state.roles.length} defined roles</p>
+          </div>
+          <button
+            aria-label="Create role"
+            className={primaryButton}
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="p-2">
+          {state.roles.map(role => {
+            const members = state.users.filter(user => user.roleId === role.id).length;
+            return (
+              <button
+                key={role.id}
+                onClick={() => setSelectedId(role.id)}
+                className={`mb-1 flex w-full items-center gap-3 rounded-[10px] border px-3 py-3 text-left transition ${selected?.id === role.id ? 'border-cyan-400/25 bg-cyan-400/10' : 'border-transparent hover:bg-slate-800/70'}`}
+              >
+                <span
+                  className={`grid h-9 w-9 place-items-center rounded-lg ${selected?.id === role.id ? 'bg-cyan-400/15 text-cyan-300' : 'bg-slate-800 text-slate-500'}`}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-slate-200">
+                    {role.name}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {members} member{members === 1 ? '' : 's'}
+                  </span>
+                </span>
+                {role.system && (
+                  <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-600">
+                    System
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+      {selected && (
+        <RoleEditor
+          key={`${selected.id}-${selected.permissions.join('.')}`}
+          role={selected}
+          memberCount={state.users.filter(user => user.roleId === selected.id).length}
+          onSave={values =>
+            mutate(
+              () => adminRepository.updateRole(selected.id, values, actor),
+              'Role permissions updated.'
+            )
+          }
+          onDelete={() =>
+            setConfirm({
+              title: `Delete ${selected.name}?`,
+              message: 'Custom roles can be deleted only when no users are assigned.',
+              tone: 'danger',
+              confirmLabel: 'Delete role',
+              action: () =>
+                mutate(() => adminRepository.deleteRole(selected.id, actor), 'Role deleted.'),
+            })
+          }
+        />
+      )}
+      <AnimatePresence>
+        {createOpen && (
+          <RoleModal
+            onClose={() => setCreateOpen(false)}
+            onSave={values =>
+              mutate(() => {
+                const role = adminRepository.createRole(values, actor);
+                setSelectedId(role.id);
+                setCreateOpen(false);
+              }, 'Custom role created.')
+            }
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+function RoleEditor({
+  role,
+  memberCount,
+  onSave,
+  onDelete,
+}: {
+  role: AdminRole;
+  memberCount: number;
+  onSave: (input: RoleInput) => void;
+  onDelete: () => void;
+}) {
+  const [name, setName] = useState(role.name);
+  const [description, setDescription] = useState(role.description);
+  const [permissions, setPermissions] = useState(role.permissions);
+  const toggle = (id: string) => {
+    if (
+      role.id === 'administrator' &&
+      ['users.manage', 'roles.manage', 'settings.manage'].includes(id)
+    ) {
+      toast.error('Critical administrator permissions cannot be removed.');
+      return;
+    }
+    setPermissions(current =>
+      current.includes(id) ? current.filter(item => item !== id) : [...current, id]
+    );
+  };
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`}>
+      <div className="flex flex-col gap-4 border-b border-slate-800 p-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-[10px] border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
+            <Shield className="h-5 w-5" />
+          </span>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-white">{role.name}</h2>
+              <span className="rounded border border-slate-700 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+                {role.system ? 'System' : 'Custom'}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              {memberCount} assigned member{memberCount === 1 ? '' : 's'} · {permissions.length}{' '}
+              permissions
+            </p>
+          </div>
+        </div>
+        {!role.system && (
+          <button className={`${secondaryButton} text-rose-300`} onClick={onDelete}>
+            <Trash2 className="h-4 w-4" /> Delete role
+          </button>
+        )}
+      </div>
+      <div className="grid gap-6 p-5 lg:grid-cols-[minmax(240px,.7fr)_1.3fr]">
+        <div className="space-y-4">
+          <label className="block text-xs font-medium text-slate-400">
+            Role name
+            <input
+              className={`${input} mt-1.5`}
+              value={name}
+              disabled={role.system}
+              onChange={e => setName(e.target.value)}
+            />
+          </label>
+          <label className="block text-xs font-medium text-slate-400">
+            Description
+            <textarea
+              className={`${input} mt-1.5 min-h-28 resize-y`}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          </label>
+          <div className="rounded-[10px] border border-slate-800 bg-slate-950/30 p-3 text-xs leading-5 text-slate-500">
+            <LockKeyhole className="mb-2 h-4 w-4 text-cyan-400" />
+            System role names are fixed. Critical Administrator controls remain enabled to protect
+            workspace continuity.
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-500">
+            Permission matrix
+          </p>
+          <div className="mt-3 divide-y divide-slate-800 rounded-[10px] border border-slate-800">
+            {permissionCatalog.map(group => (
+              <div key={group.area} className="grid gap-3 p-4 sm:grid-cols-[150px_1fr]">
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{group.area}</p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    {
+                      group.permissions.filter(permission => permissions.includes(permission.id))
+                        .length
+                    }
+                    /{group.permissions.length} granted
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {group.permissions.map(permission => {
+                    const checked = permissions.includes(permission.id);
+                    return (
+                      <label
+                        key={permission.id}
+                        className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-transparent px-2 py-1.5 hover:border-slate-800 hover:bg-slate-900/60"
+                      >
+                        <span className="text-sm text-slate-400">{permission.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggle(permission.id)}
+                          className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400 focus:ring-cyan-400/40"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end border-t border-slate-800 bg-slate-950/20 px-5 py-4">
+        <button
+          className={primaryButton}
+          onClick={() => onSave({ name, description, permissions })}
+        >
+          <Check className="h-4 w-4" /> Save role
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AuditSection({
+  entries,
+}: {
+  entries: ReturnType<typeof adminRepository.getState>['audit'];
+}) {
+  const [search, setSearch] = useState('');
+  const [type, setType] = useState<'all' | 'user' | 'role' | 'export'>('all');
+  const filtered = filterAdminAudit(entries, search, type);
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`}>
+      <div className="flex flex-col gap-4 border-b border-slate-800 p-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Audit activity</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            A browser-local record of every administration change.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label className="relative min-w-[260px]">
+            <span className="sr-only">Search audit activity</span>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+            <input
+              className={`${input} pl-9`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search actor, target, detail"
+            />
+          </label>
+          <select
+            aria-label="Filter activity type"
+            className={`${input} sm:w-44`}
+            value={type}
+            onChange={e => setType(e.target.value as typeof type)}
+          >
+            <option value="all">All activity</option>
+            <option value="user">User changes</option>
+            <option value="role">Role changes</option>
+            <option value="export">Exports</option>
+          </select>
+        </div>
+      </div>
+      <div className="divide-y divide-slate-800/80">
+        {filtered.map(entry => (
+          <AuditRow key={entry.id} entry={entry} />
+        ))}
+      </div>
+      {!filtered.length && (
+        <EmptyState
+          icon={FileClock}
+          title="No activity found"
+          text="Try another search or activity type."
+          action={
+            <button
+              className={secondaryButton}
+              onClick={() => {
+                setSearch('');
+                setType('all');
+              }}
+            >
+              Clear filters
+            </button>
+          }
+        />
+      )}
+    </section>
+  );
+}
+function AuditRow({
+  entry,
+  compact = false,
+}: {
+  entry: ReturnType<typeof adminRepository.getState>['audit'][number];
+  compact?: boolean;
+}) {
+  const isDelete = entry.action.endsWith('deleted');
+  const isCreate = entry.action.endsWith('created');
+  const Icon = entry.action.startsWith('role')
+    ? ShieldCheck
+    : entry.action === 'users.exported'
+      ? Download
+      : isDelete
+        ? Trash2
+        : isCreate
+          ? UserPlus
+          : Activity;
+  return (
+    <div
+      className={`grid gap-3 px-5 ${compact ? 'py-3.5' : 'py-4 sm:grid-cols-[42px_1fr_auto] sm:items-center'}`}
+    >
+      <span
+        className={`hidden h-9 w-9 place-items-center rounded-lg sm:grid ${isDelete ? 'bg-rose-400/10 text-rose-300' : isCreate ? 'bg-emerald-400/10 text-emerald-300' : 'bg-cyan-400/10 text-cyan-300'}`}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm text-slate-300">
+          <span className="font-medium text-slate-100">{entry.actor}</span>{' '}
+          <span className="text-slate-500">{entry.action.replace('.', ' ')}</span>{' '}
+          <span className="font-medium">{entry.target}</span>
+        </p>
+        <p className="mt-1 truncate text-xs text-slate-500">{entry.metadata}</p>
+      </div>
+      <time className="font-mono text-[11px] text-slate-600" dateTime={entry.timestamp}>
+        {formatDate(entry.timestamp, true)}
+      </time>
+    </div>
+  );
+}
+
+function ModalShell({
+  title,
+  eyebrow,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string;
+  eyebrow: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    previousFocus.current = document.activeElement as HTMLElement | null;
+    const focusableSelector =
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+    const frame = requestAnimationFrame(() => {
+      const initial =
+        dialogRef.current?.querySelector<HTMLElement>('[data-dialog-initial-focus]') ??
+        dialogRef.current?.querySelector<HTMLElement>(focusableSelector);
+      initial?.focus({ preventScroll: true });
+    });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter(element => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus.current?.focus({ preventScroll: true });
+    };
+  }, []);
+  return (
+    <motion.div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-dialog-title"
+        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, y: 5 }}
+        transition={{ duration: 0.16 }}
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[14px] border border-slate-700 bg-[#101a2d] shadow-2xl"
+      >
+        <div className="flex items-start justify-between border-b border-slate-800 p-5">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-cyan-400">
+              {eyebrow}
+            </p>
+            <h2 id="admin-dialog-title" className="mt-1 text-xl font-semibold text-white">
+              {title}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-800 hover:text-white"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="space-y-4">
-          <label className="block text-sm text-slate-300">Name<input required value={name} onChange={(event) => setName(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-slate-100 outline-none focus:border-cyan-400/50" /></label>
-          <label className="block text-sm text-slate-300">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 font-mono text-sm text-slate-100 outline-none focus:border-cyan-400/50" /></label>
-          <label className="block text-sm text-slate-300">Role<select value={role} onChange={(event) => setRole(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2.5 text-slate-100 outline-none focus:border-cyan-400/50"><option>Security Analyst</option><option>Admin</option><option>SOC Manager</option><option>Analyst</option><option>Viewer</option></select></label>
+        <div className="p-5">{children}</div>
+        <div className="flex justify-end gap-2 border-t border-slate-800 bg-slate-950/20 px-5 py-4">
+          {footer}
         </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>
-          <button type="submit" className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-400/20">Save user</button>
+      </motion.div>
+    </motion.div>
+  );
+}
+function UserModal({
+  user,
+  roles,
+  onClose,
+  onSave,
+}: {
+  user: AdminUser | null;
+  roles: AdminRole[];
+  onClose: () => void;
+  onSave: (input: UserInput) => void;
+}) {
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [roleId, setRoleId] = useState(user?.roleId ?? 'security-analyst');
+  const [status, setStatus] = useState<AdminUserStatus>(user?.status ?? 'invited');
+  const [error, setError] = useState('');
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!name.trim()) return setError('Name is required.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Enter a valid email address.');
+    setError('');
+    onSave({ name, email, roleId, status });
+  };
+  return (
+    <ModalShell
+      title={user ? 'Edit user' : 'Invite a user'}
+      eyebrow="User access"
+      onClose={onClose}
+      footer={
+        <>
+          <button className={secondaryButton} onClick={onClose}>
+            Cancel
+          </button>
+          <button form="user-form" className={primaryButton} type="submit">
+            {user ? 'Save changes' : 'Create invitation'}
+          </button>
+        </>
+      }
+    >
+      <form id="user-form" onSubmit={submit} className="space-y-4">
+        <label className="block text-xs font-medium text-slate-400">
+          Full name
+          <input
+            data-dialog-initial-focus
+            className={`${input} mt-1.5`}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Samira Joshi"
+          />
+        </label>
+        <label className="block text-xs font-medium text-slate-400">
+          Work email
+          <input
+            type="email"
+            className={`${input} mt-1.5`}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="name@company.com"
+          />
+        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-400">
+            Role
+            <select
+              className={`${input} mt-1.5`}
+              value={roleId}
+              onChange={e => setRoleId(e.target.value)}
+            >
+              {roles.map(role => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-medium text-slate-400">
+            Status
+            <select
+              className={`${input} mt-1.5`}
+              value={status}
+              onChange={e => setStatus(e.target.value as AdminUserStatus)}
+            >
+              <option value="invited">Invited</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </label>
         </div>
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-rose-400/20 bg-rose-400/10 px-3 py-2 text-xs text-rose-300"
+          >
+            {error}
+          </p>
+        )}
+        <p className="text-xs leading-5 text-slate-600">
+          Invitations are simulated locally in this frontend demo; no email is sent.
+        </p>
       </form>
+    </ModalShell>
+  );
+}
+function RoleModal({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (input: RoleInput) => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [permissions, setPermissions] = useState<string[]>(['dashboard.view']);
+  return (
+    <ModalShell
+      title="Create custom role"
+      eyebrow="Access policy"
+      onClose={onClose}
+      footer={
+        <>
+          <button className={secondaryButton} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className={primaryButton}
+            onClick={() => onSave({ name, description, permissions })}
+          >
+            Create role
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <label className="block text-xs font-medium text-slate-400">
+          Role name
+          <input
+            data-dialog-initial-focus
+            className={`${input} mt-1.5`}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Incident coordinator"
+          />
+        </label>
+        <label className="block text-xs font-medium text-slate-400">
+          Description
+          <textarea
+            className={`${input} mt-1.5 min-h-20`}
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+        </label>
+        <fieldset>
+          <legend className="mb-2 text-xs font-medium text-slate-400">Starting permissions</legend>
+          <div className="max-h-52 divide-y divide-slate-800 overflow-y-auto rounded-[10px] border border-slate-800">
+            {permissionCatalog
+              .flatMap(group => group.permissions)
+              .map(permission => (
+                <label
+                  key={permission.id}
+                  className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm text-slate-300"
+                >
+                  <span>{permission.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={permissions.includes(permission.id)}
+                    onChange={() =>
+                      setPermissions(current =>
+                        current.includes(permission.id)
+                          ? current.filter(item => item !== permission.id)
+                          : [...current, permission.id]
+                      )
+                    }
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400"
+                  />
+                </label>
+              ))}
+          </div>
+        </fieldset>
+      </div>
+    </ModalShell>
+  );
+}
+function ConfirmDialog({
+  title,
+  message,
+  tone = 'warning',
+  confirmLabel,
+  onClose,
+  onConfirm,
+}: NonNullable<ConfirmState> & { onClose: () => void; onConfirm: () => void }) {
+  return (
+    <ModalShell
+      title={title}
+      eyebrow="Confirm action"
+      onClose={onClose}
+      footer={
+        <>
+          <button className={secondaryButton} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            data-dialog-initial-focus
+            className={`${primaryButton} ${tone === 'danger' ? '!border-rose-300/30 !bg-rose-400 !text-white hover:!bg-rose-300' : ''}`}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </button>
+        </>
+      }
+    >
+      <div className="flex gap-3">
+        <span
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${tone === 'danger' ? 'bg-rose-400/10 text-rose-300' : 'bg-amber-400/10 text-amber-300'}`}
+        >
+          <CircleAlert className="h-5 w-5" />
+        </span>
+        <p className="pt-1 text-sm leading-6 text-slate-400">{message}</p>
+      </div>
+    </ModalShell>
+  );
+}
+function EmptyState({
+  icon: Icon,
+  title,
+  text,
+  action,
+}: {
+  icon: typeof Users;
+  title: string;
+  text: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="grid min-h-64 place-items-center p-6 text-center">
+      <div>
+        <span className="mx-auto grid h-11 w-11 place-items-center rounded-[10px] border border-slate-800 bg-slate-900 text-slate-500">
+          <Icon className="h-5 w-5" />
+        </span>
+        <h3 className="mt-3 text-sm font-semibold text-slate-200">{title}</h3>
+        <p className="mt-1 text-sm text-slate-500">{text}</p>
+        {action && <div className="mt-4">{action}</div>}
+      </div>
     </div>
   );
 }

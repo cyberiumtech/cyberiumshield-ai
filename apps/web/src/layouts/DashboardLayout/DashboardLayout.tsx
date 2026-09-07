@@ -13,7 +13,7 @@ export function DashboardLayout() {
         <aside className="w-72 hidden lg:block shrink-0">
           <Sidebar activePath={location.pathname} />
         </aside>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="min-w-0 flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

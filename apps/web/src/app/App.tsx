@@ -4,6 +4,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 // Components
 import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
 import { GuestRoute } from '../components/GuestRoute/GuestRoute';
+import { AdminRoute } from '../components/AdminRoute/AdminRoute';
 
 // Layouts
 import { DashboardLayout } from '../layouts/DashboardLayout/DashboardLayout';
@@ -98,8 +99,40 @@ export default function App() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/analytics" element={<PlaceholderRoute pageName="Analytics" />} />
           <Route path="/ai-assistant" element={<AIAssistantPage />} />
-          <Route path="/users" element={<AdminPage />} />
-          <Route path="/roles" element={<AdminPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/roles"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route path="/users" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/roles" element={<Navigate to="/admin/roles" replace />} />
           <Route path="/profile" element={<AccountPage />} />
           <Route path="/settings" element={<AccountPage />} />
           <Route path="/subscription" element={<PlaceholderRoute pageName="Subscription" />} />
