@@ -27,6 +27,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/email-spam-api/, ''),
       },
+      '/network-api': {
+        target: 'http://localhost:5003',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/network-api/, ''),
+      },
     },
   },
   resolve: {

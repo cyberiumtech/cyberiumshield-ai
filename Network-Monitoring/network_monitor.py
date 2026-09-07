@@ -2,7 +2,6 @@ import psutil
 import socket
 import threading
 import time
-from collections import defaultdict
 
 PROTO = {socket.SOCK_STREAM: "TCP", socket.SOCK_DGRAM: "UDP"}
 
@@ -11,16 +10,23 @@ class NetworkMonitor:
         self.running = False
         self.started_at = None
         self._lock = threading.Lock()
-        self._previous = {}
-        self._rates = defaultdict(lambda: {"sent": 0, "recv": 0})
-        self._last_net = psutil.net_io_counters(pernic=True)
+        self._last_snapshot = None
+        try:
+            self._last_net = psutil.net_io_counters(pernic=True)
+        except (psutil.Error, OSError):
+            self._last_net = {}
         self._last_time = time.time()
 
     def start(self):
         with self._lock:
-            self.running = True
-            if self.started_at is None:
+            if not self.running:
                 self.started_at = time.time()
+                try:
+                    self._last_net = psutil.net_io_counters(pernic=True)
+                except (psutil.Error, OSError):
+                    self._last_net = {}
+                self._last_time = time.time()
+            self.running = True
 
     def stop(self):
         with self._lock:
@@ -70,7 +76,12 @@ class NetworkMonitor:
 
     def _traffic(self):
         now = time.time()
-        current = psutil.net_io_counters(pernic=True)
+        try:
+            current = psutil.net_io_counters(pernic=True)
+            stats = psutil.net_if_stats()
+        except (psutil.Error, OSError):
+            current = {}
+            stats = {}
         dt = max(now - self._last_time, 0.001)
         total_sent = total_recv = 0
         interfaces = []
@@ -83,7 +94,7 @@ class NetworkMonitor:
                 "name": name,
                 "bytes_sent": stat.bytes_sent,
                 "bytes_recv": stat.bytes_recv,
-                "is_up": bool(psutil.net_if_stats().get(name).isup) if name in psutil.net_if_stats() else False
+                "is_up": bool(stats.get(name).isup) if name in stats else False
             })
         self._last_net, self._last_time = current, now
         return {
@@ -93,14 +104,22 @@ class NetworkMonitor:
         }
 
     def snapshot(self):
+        with self._lock:
+            running = self.running
+            started_at = self.started_at
+            cached = self._last_snapshot
+
+        if not running and cached is not None:
+            return {**cached, "monitoring": False, "upload_bps": 0, "download_bps": 0}
+
         conns = self.connections()
         traffic = self._traffic()
         tcp = sum(x["protocol"] == "TCP" for x in conns)
         udp = sum(x["protocol"] == "UDP" for x in conns)
         established = sum(x["status"] == "ESTABLISHED" for x in conns)
-        return {
-            "monitoring": self.running,
-            "uptime_seconds": int(time.time() - self.started_at) if self.started_at else 0,
+        snapshot = {
+            "monitoring": running,
+            "uptime_seconds": int(time.time() - started_at) if running and started_at else 0,
             "connection_count": len(conns),
             "tcp": tcp,
             "udp": udp,
@@ -111,3 +130,6 @@ class NetworkMonitor:
             "connections": conns,
             "updated": time.strftime("%H:%M:%S")
         }
+        with self._lock:
+            self._last_snapshot = snapshot
+        return snapshot

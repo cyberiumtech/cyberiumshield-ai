@@ -24,6 +24,7 @@ import { ThreatIntelligencePage } from '../pages/ThreatIntelligence/ThreatIntell
 import { MalwarePage } from '../pages/Malware/MalwarePage';
 import { PhishingPage } from '../pages/Phishing/PhishingPage';
 import { EmailSpamPage } from '../pages/EmailSpam/EmailSpamPage';
+import { NetworkPage } from '../pages/Network/NetworkPage';
 import { ReportsPage } from '../pages/Reports/ReportsPage';
 import { AIAssistantPage } from '../pages/AIAssistant/AIAssistantPage';
 import { AdminPage } from '../pages/Admin/AdminPage';
@@ -88,7 +89,7 @@ export default function App() {
         >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/security-center" element={<SecurityCenterPage />} />
-          <Route path="/network" element={<PlaceholderRoute pageName="Network Monitoring" />} />
+          <Route path="/network" element={<NetworkPage />} />
           <Route path="/vulnerability" element={<VulnerabilityPage />} />
           <Route path="/threat-intelligence" element={<ThreatIntelligencePage />} />
           <Route path="/malware" element={<MalwarePage />} />

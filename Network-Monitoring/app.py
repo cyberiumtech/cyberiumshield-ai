@@ -1,9 +1,29 @@
-from flask import Flask, render_template, jsonify, Response
-import csv, io, time
+from flask import Flask, render_template, jsonify, Response, request
+import csv, io, os
+from werkzeug.exceptions import HTTPException
 from network_monitor import NetworkMonitor
 
 app = Flask(__name__)
 monitor = NetworkMonitor()
+
+
+@app.after_request
+def add_response_headers(response):
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    origin = request.headers.get("Origin", "")
+    if origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:"):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    if isinstance(error, HTTPException):
+        return error
+    return jsonify({"ok": False, "error": "The network monitor could not read host network data."}), 500
 
 @app.route("/")
 def index():
@@ -40,4 +60,5 @@ def export_csv():
 
 if __name__ == "__main__":
     monitor.start()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    port = int(os.environ.get("NETWORK_MONITOR_PORT", "5003"))
+    app.run(host="127.0.0.1", port=port, debug=False)
