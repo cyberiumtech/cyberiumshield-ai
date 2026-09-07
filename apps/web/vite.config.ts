@@ -15,12 +15,17 @@ export default defineConfig({
       '/malware-api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/malware-api/, ''),
+        rewrite: path => path.replace(/^\/malware-api/, ''),
       },
       '/phishing-api': {
         target: 'http://localhost:5001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/phishing-api/, ''),
+        rewrite: path => path.replace(/^\/phishing-api/, ''),
+      },
+      '/email-spam-api': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/email-spam-api/, ''),
       },
     },
   },
@@ -34,4 +39,3 @@ export default defineConfig({
     sourcemap: true,
   },
 });
-

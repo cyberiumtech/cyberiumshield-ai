@@ -5,12 +5,12 @@ import App from './app/App';
 
 describe('App', () => {
   it('renders without crashing', () => {
-    render(
+    const { container } = render(
       <BrowserRouter>
         <App />
       </BrowserRouter>
     );
-    expect(document.querySelector('#root')).toBeTruthy();
+    expect(container.firstChild).toBeTruthy();
   });
 
   it('renders app structure', () => {
