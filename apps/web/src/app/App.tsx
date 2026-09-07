@@ -57,9 +57,6 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/dashboard-preview" element={<DashboardLayout />}>
-          <Route index element={<DashboardPage />} />
-        </Route>
         {/* Public routes */}
         <Route element={<LandingLayout />}>
           <Route index element={<LandingPage />} />
