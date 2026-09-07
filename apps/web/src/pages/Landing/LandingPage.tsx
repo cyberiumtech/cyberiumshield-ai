@@ -253,7 +253,7 @@ export function LandingPage() {
                 Act with clarity.
               </h1>
               <p className="mt-7 max-w-xl text-base leading-7 text-[#a9bcc8] sm:text-lg sm:leading-8">
-                Analyze suspicious links, files, and threat signals with AI—then get clear
+                Analyze suspicious links, files, and threat signals with AI - then get clear
                 findings that help you decide what to do next.
               </p>
 
@@ -275,14 +275,6 @@ export function LandingPage() {
                 </a>
               </div>
 
-              <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#8eb0c4]/15 pt-5 font-mono text-[10px] tracking-[0.14em] text-[#7893a2] sm:text-[11px]">
-                <span className="text-[#a6ff4d]">ANALYSIS SCOPE</span>
-                <span>FILES</span>
-                <span aria-hidden="true">/</span>
-                <span>LINKS</span>
-                <span aria-hidden="true">/</span>
-                <span>THREAT SIGNALS</span>
-              </div>
             </motion.div>
 
             <motion.div
