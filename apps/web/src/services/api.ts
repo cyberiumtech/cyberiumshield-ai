@@ -6,7 +6,7 @@ export const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
   withCredentials: true,
 });
@@ -67,22 +67,50 @@ export async function scanPhishingUrl(url: string): Promise<PhishingScanResult> 
   return response.data;
 }
 
+export interface EmailSpamAnalysis {
+  verdict: 'spam' | 'suspicious' | 'legitimate';
+  score: number;
+  spam_probability: number;
+  confidence: number;
+  sender: string;
+  subject: string;
+  linkCount: number;
+  signals: Array<{ id: string; label: string; detail: string; detected: boolean }>;
+  model: string;
+  model_version: string;
+  scannedAt: string;
+}
+
+const emailSpamApi = axios.create({
+  baseURL: import.meta.env.VITE_EMAIL_SPAM_API_URL || '/email-spam-api',
+  headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+});
+
+export async function scanEmailSpam(input: {
+  sender: string;
+  subject: string;
+  content: string;
+}): Promise<EmailSpamAnalysis> {
+  const response = await emailSpamApi.post<EmailSpamAnalysis>('/api/predict', input);
+  return response.data;
+}
+
 api.interceptors.request.use(
-  (config) => {
+  config => {
     const token = localStorage.getItem('cyberiumshield_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

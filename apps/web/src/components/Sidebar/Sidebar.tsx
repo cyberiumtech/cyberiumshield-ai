@@ -9,6 +9,7 @@ const items: Array<{ label: string; path: string }> = [
   { label: 'Threat Intelligence', path: '/threat-intelligence' },
   { label: 'Malware Detection', path: '/malware' },
   { label: 'Phishing Detection', path: '/phishing' },
+  { label: 'Email Spam Detector', path: '/email-spam' },
   { label: 'Logs', path: '/logs' },
   { label: 'Incidents', path: '/incidents' },
   { label: 'Reports', path: '/reports' },
@@ -19,12 +20,15 @@ const items: Array<{ label: string; path: string }> = [
 
 export function Sidebar({ activePath, mobile = false }: { activePath: string; mobile?: boolean }) {
   return (
-    <nav className={`${mobile ? 'h-auto px-0 py-0' : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4'}`}>
+    <nav
+      className={`${mobile ? 'h-auto px-0 py-0' : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4'}`}
+    >
       <div className="space-y-2">
-        {items.map((it) => {
+        {items.map(it => {
           // Use `startsWith` for parent paths to remain active on child routes,
           // but use an exact match for the main dashboard link.
-          const active = it.path === '/dashboard' ? activePath === it.path : activePath.startsWith(it.path);
+          const active =
+            it.path === '/dashboard' ? activePath === it.path : activePath.startsWith(it.path);
           return (
             <Link
               key={it.path}

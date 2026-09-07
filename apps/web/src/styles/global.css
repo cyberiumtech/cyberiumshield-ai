@@ -5,10 +5,10 @@
 /* Dark Theme (Default) */
 :root,
 :root.dark,
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
-  --bg-primary: #0B1120;
-  --bg-secondary: #0F1729;
+  --bg-primary: #0b1120;
+  --bg-secondary: #0f1729;
   --bg-tertiary: #1a2332;
   --text-primary: #e5e7eb;
   --text-secondary: #94a3b8;
@@ -21,7 +21,7 @@
 
 /* Light Theme */
 :root.light,
-[data-theme="light"] {
+[data-theme='light'] {
   color-scheme: light;
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
@@ -42,11 +42,21 @@ body {
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
-    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    'Apple Color Emoji',
+    'Segoe UI Emoji';
   background: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 * {
@@ -68,8 +78,8 @@ body {
 }
 
 /* Light theme specific overrides */
-.light .bg-\[#0B1120\],
-.light .bg-\[#0F1729\] {
+.light .bg-\[\#0B1120\],
+.light .bg-\[\#0F1729\] {
   background-color: var(--bg-secondary) !important;
 }
 
@@ -112,4 +122,3 @@ body {
     backdrop-filter: blur(24px);
   }
 }
-

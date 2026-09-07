@@ -1,0 +1,40 @@
+{
+  "name": "Apache SpamAssassin Public Corpus",
+  "homepage": "https://spamassassin.apache.org/old/publiccorpus/",
+  "description": "Real public ham and spam emails normalized without modification to labels.",
+  "messages": 6046,
+  "ham": 4150,
+  "spam": 1896,
+  "sources": {
+    "easy_ham": {
+      "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham.tar.bz2",
+      "archive_sha256": "2b7b65904bcfcc31d2b5f51946f2d261370b257402cbbd62930b46ab83367438",
+      "messages": 2500,
+      "label": "ham"
+    },
+    "easy_ham_2": {
+      "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham_2.tar.bz2",
+      "archive_sha256": "b4bd3dc5ae5b40f38e99a0e41ad7d16b428b56e818e3a6ffa07330d62004dd38",
+      "messages": 1400,
+      "label": "ham"
+    },
+    "hard_ham": {
+      "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_hard_ham.tar.bz2",
+      "archive_sha256": "ce2ce67880643dbde65ea7f85bffbfe4417349c4bd80b6b0de56262ae6b0a9c9",
+      "messages": 250,
+      "label": "ham"
+    },
+    "spam": {
+      "url": "https://spamassassin.apache.org/old/publiccorpus/20030228_spam.tar.bz2",
+      "archive_sha256": "c08debc32413804949a866be45ef78195cec2cbafd1da744ed76cdb860589743",
+      "messages": 500,
+      "label": "spam"
+    },
+    "spam_2": {
+      "url": "https://spamassassin.apache.org/old/publiccorpus/20050311_spam_2.tar.bz2",
+      "archive_sha256": "44280a0e28bf7645b2279e8e42659271ad82c6f40bf8d364dbda7f1df344a765",
+      "messages": 1396,
+      "label": "spam"
+    }
+  }
+}

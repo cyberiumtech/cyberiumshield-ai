@@ -76,10 +76,10 @@ The platform is designed for Security Operations Centers (SOCs), security analys
 - **Anomaly Detection** — Behavioral analysis for lateral movement detection
 - **Bandwidth Monitoring** — Network utilization tracking
 
-### 🦠 Malware & Phishing Detection
+### 🦠 Malware, Phishing & Email Spam Detection
 - **File Scanner** — Static & dynamic malware analysis with sandboxing
 - **URL Scanner** — Real-time URL reputation checking
-- **Email Scanner** — Header analysis and phishing detection
+- **Email Spam Detector** — Real-email-trained text classification, header analysis, explainable signals, and local scan history
 - **QR Code Scanner** — QR-based threat detection
 
 ### 🤖 AI Security Assistant
@@ -177,6 +177,7 @@ cyberiumshield-ai/
 │   │   │   │   ├── Network/         # Network monitoring
 │   │   │   │   ├── Malware/         # Malware detection
 │   │   │   │   ├── Phishing/        # Phishing detection
+│   │   │   │   ├── EmailSpam/       # Email spam detection
 │   │   │   │   ├── Logs/            # Log analysis
 │   │   │   │   ├── Reports/         # Reporting
 │   │   │   │   ├── AIAssistant/     # AI chat interface
@@ -427,6 +428,7 @@ npm run lint
 | `/threat-intelligence` | Threat Intelligence | ✅ Complete |
 | `/malware` | Malware Detection | ✅ Complete |
 | `/phishing` | Phishing Detection | ✅ Complete |
+| `/email-spam` | Email Spam Detection | ✅ Complete |
 | `/logs` | Log Analysis | ✅ Complete |
 | `/incidents` | Incidents | ⏳ Placeholder |
 | `/reports` | Reports | ✅ Complete |
