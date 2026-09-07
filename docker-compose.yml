@@ -92,6 +92,24 @@ services:
       retries: 5
       start_period: 30s
 
+  email-spam-detector:
+    image: python:3.11-slim
+    working_dir: /app
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./email-spam-detector:/app
+    environment:
+      - EMAIL_SPAM_PORT=5002
+      - EMAIL_SPAM_CORS_ORIGIN=http://localhost:5173
+    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   mysql:
     image: mysql:8.0
     environment:
