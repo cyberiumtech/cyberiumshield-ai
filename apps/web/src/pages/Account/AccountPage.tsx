@@ -131,7 +131,7 @@ export function AccountPage() {
 
     const profile = { name: name.trim(), email: email.trim(), avatar };
     const updatedUser: User = { ...user, ...profile, updated_at: new Date().toISOString() };
-    localStorage.setItem('cyberiumshield_user', JSON.stringify(updatedUser));
+    localStorage.setItem('cybershield_user', JSON.stringify(updatedUser));
     queryClient.setQueryData(['user'], updatedUser);
     setSavedProfile(profile);
     setEditing(false);

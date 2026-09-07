@@ -158,7 +158,7 @@ The platform is designed for Security Operations Centers (SOCs), security analys
 ## 📁 Project Architecture
 
 ```
-cyberiumshield-ai/
+cybershield-ai/
 ├── apps/
 │   ├── web/                          # React 19 Frontend
 │   │   ├── src/
@@ -342,9 +342,9 @@ cp .env.example .env
 # DB_CONNECTION=mysql
 # DB_HOST=127.0.0.1
 # DB_PORT=3306
-# DB_DATABASE=cyberiumshield
-# DB_USERNAME=cyberiumshield
-# DB_PASSWORD=cyberiumshield
+# DB_DATABASE=cybershield
+# DB_USERNAME=cybershield
+# DB_PASSWORD=cybershield
 
 # Generate app key
 php artisan key:generate

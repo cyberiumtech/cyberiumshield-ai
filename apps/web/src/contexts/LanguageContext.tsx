@@ -88,13 +88,13 @@ const translations = {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const stored = localStorage.getItem('cyberiumshield_language');
+    const stored = localStorage.getItem('cybershield_language');
     return (stored as Language) || 'en';
   });
 
   const setLanguage = (newLanguage: Language) => {
     setLanguageState(newLanguage);
-    localStorage.setItem('cyberiumshield_language', newLanguage);
+    localStorage.setItem('cybershield_language', newLanguage);
     document.documentElement.setAttribute('lang', newLanguage);
   };
 

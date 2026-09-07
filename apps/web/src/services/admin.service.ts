@@ -196,7 +196,7 @@ export function createSeedState(): AdminState {
     {
       id: '1',
       name: 'Demo Administrator',
-      email: 'admin@cyberiumshield.ai',
+      email: 'admin@cybershield.ai',
       roleId: 'administrator',
       status: 'active',
       lastActive: new Date().toISOString(),
@@ -205,7 +205,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-2',
       name: 'Aarav Sharma',
-      email: 'aarav@cyberiumshield.ai',
+      email: 'aarav@cybershield.ai',
       roleId: 'security-analyst',
       status: 'active',
       lastActive: isoDaysAgo(0, 8),
@@ -214,7 +214,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-3',
       name: 'Maya Thapa',
-      email: 'maya@cyberiumshield.ai',
+      email: 'maya@cybershield.ai',
       roleId: 'security-analyst',
       status: 'active',
       lastActive: isoDaysAgo(1),
@@ -232,7 +232,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-5',
       name: 'Sofia Garcia',
-      email: 'sofia@cyberiumshield.ai',
+      email: 'sofia@cybershield.ai',
       roleId: 'viewer',
       status: 'active',
       lastActive: isoDaysAgo(4),
@@ -241,7 +241,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-6',
       name: 'Ethan Lee',
-      email: 'ethan@cyberiumshield.ai',
+      email: 'ethan@cybershield.ai',
       roleId: 'security-analyst',
       status: 'suspended',
       lastActive: isoDaysAgo(18),
@@ -250,7 +250,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-7',
       name: 'Priya Rai',
-      email: 'priya@cyberiumshield.ai',
+      email: 'priya@cybershield.ai',
       roleId: 'administrator',
       status: 'active',
       lastActive: isoDaysAgo(0, 7),
@@ -268,7 +268,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-9',
       name: 'Anisha Karki',
-      email: 'anisha@cyberiumshield.ai',
+      email: 'anisha@cybershield.ai',
       roleId: 'security-analyst',
       status: 'active',
       lastActive: isoDaysAgo(2),
@@ -277,7 +277,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-10',
       name: 'Oliver Smith',
-      email: 'oliver@cyberiumshield.ai',
+      email: 'oliver@cybershield.ai',
       roleId: 'viewer',
       status: 'active',
       lastActive: isoDaysAgo(7),
@@ -295,7 +295,7 @@ export function createSeedState(): AdminState {
     {
       id: 'usr-12',
       name: 'Lucas Martin',
-      email: 'lucas@cyberiumshield.ai',
+      email: 'lucas@cybershield.ai',
       roleId: 'security-analyst',
       status: 'active',
       lastActive: isoDaysAgo(1, 14),

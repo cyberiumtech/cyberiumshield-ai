@@ -53,7 +53,7 @@ def message_body(message) -> str:
 
 
 def download(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "CyberiumShield-DatasetBuilder/1.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "cybershield-DatasetBuilder/1.0"})
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 

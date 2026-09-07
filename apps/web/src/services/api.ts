@@ -97,7 +97,7 @@ export async function scanEmailSpam(input: {
 
 api.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('cyberiumshield_token');
+    const token = localStorage.getItem('cybershield_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -116,8 +116,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      localStorage.removeItem('cyberiumshield_token');
-      localStorage.removeItem('cyberiumshield_user');
+      localStorage.removeItem('cybershield_token');
+      localStorage.removeItem('cybershield_user');
 
       window.location.href = '/auth/login';
     }

@@ -10,7 +10,7 @@ export function useAuth() {
     queryKey: ['user'],
     queryFn: async () => {
       try {
-        const token = localStorage.getItem('cyberiumshield_token');
+        const token = localStorage.getItem('cybershield_token');
         if (!token) return null;
 
         return await authService.getCurrentUser();
@@ -25,8 +25,8 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
     onSuccess: (data) => {
-      localStorage.setItem('cyberiumshield_token', data.token);
-      localStorage.setItem('cyberiumshield_user', JSON.stringify(data.user));
+      localStorage.setItem('cybershield_token', data.token);
+      localStorage.setItem('cybershield_user', JSON.stringify(data.user));
       queryClient.setQueryData(['user'], data.user);
 
       if (data.user.email_verified_at) {
@@ -40,8 +40,8 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: (data: RegisterData) => authService.register(data),
     onSuccess: (data) => {
-      localStorage.setItem('cyberiumshield_token', data.token);
-      localStorage.setItem('cyberiumshield_user', JSON.stringify(data.user));
+      localStorage.setItem('cybershield_token', data.token);
+      localStorage.setItem('cybershield_user', JSON.stringify(data.user));
       queryClient.setQueryData(['user'], data.user);
       navigate('/auth/verify-email');
     },
@@ -50,8 +50,8 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: () => authService.logout(),
     onSuccess: () => {
-      localStorage.removeItem('cyberiumshield_token');
-      localStorage.removeItem('cyberiumshield_user');
+      localStorage.removeItem('cybershield_token');
+      localStorage.removeItem('cybershield_user');
       queryClient.setQueryData(['user'], null);
       queryClient.clear();
       navigate('/');

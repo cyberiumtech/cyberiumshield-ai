@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('cyberiumshield_theme');
+    const stored = localStorage.getItem('cybershield_theme');
     return (stored as Theme) || 'dark';
   });
 
@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('cyberiumshield_theme', newTheme);
+    localStorage.setItem('cybershield_theme', newTheme);
   };
 
   return (

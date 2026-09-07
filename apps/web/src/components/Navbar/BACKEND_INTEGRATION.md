@@ -32,9 +32,9 @@ Accept: application/json
   "data": {
     "id": "uuid-string",
     "name": "John Anderson",
-    "email": "john.anderson@cyberiumshield.com",
+    "email": "john.anderson@cybershield.com",
     "role": "Security Analyst",
-    "organization": "CyberiumShield Security Ops",
+    "organization": "cybershield Security Ops",
     "avatar": "https://cdn.example.com/avatars/user.jpg",
     "permissions": ["read:threats", "write:incidents"],
     "preferences": {

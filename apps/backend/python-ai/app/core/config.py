@@ -39,7 +39,7 @@ class Settings(BaseSettings):
         return v
 
     # Database
-    DATABASE_URL: str = "mysql+pymysql://cyberiumshield:cyberiumshield@mysql:3306/cyberiumshield"
+    DATABASE_URL: str = "mysql+pymysql://cybershield:cybershield@mysql:3306/cybershield"
     DB_ECHO: bool = False
 
     # Redis

@@ -1,4 +1,4 @@
-# CyberiumShield Email Spam Detector
+# cybershield Email Spam Detector
 
 A standalone machine-learning service trained on real public email messages from the [Apache SpamAssassin Public Corpus](https://spamassassin.apache.org/old/publiccorpus/).
 

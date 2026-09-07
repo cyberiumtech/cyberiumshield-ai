@@ -96,7 +96,7 @@ def seed_admin_user(session):
     """Seed admin user from environment variables."""
 
     # Get admin credentials from env
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@cyberiumshield.local")
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@cybershield.local")
     admin_username = os.getenv("ADMIN_USERNAME", "admin")
     admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
     admin_full_name = os.getenv("ADMIN_FULL_NAME", "System Administrator")

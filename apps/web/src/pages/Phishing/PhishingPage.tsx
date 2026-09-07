@@ -51,6 +51,7 @@ export function PhishingPage() {
       setResult(scan);
       setLogs(nextLogs);
       localStorage.setItem('phishing_scan_logs', JSON.stringify(nextLogs));
+      window.dispatchEvent(new Event('cyberium:scan-history-updated'));
       toast.success(scan.prediction === 'phishing' ? 'Phishing indicators detected.' : 'No phishing pattern detected.');
     } catch (scanError) {
       const message = scanError instanceof Error ? scanError.message : 'Unable to reach the phishing detector.';
@@ -63,6 +64,7 @@ export function PhishingPage() {
 
   const clearLogs = () => {
     localStorage.removeItem('phishing_scan_logs');
+    window.dispatchEvent(new Event('cyberium:scan-history-updated'));
     setLogs([]);
   };
 

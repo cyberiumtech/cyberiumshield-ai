@@ -1,0 +1,271 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/modals/ScanModal.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=6ab91572"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=6ab91572"; const useState = __vite__cjsImport3_react["useState"];
+import { X, Scan } from "/node_modules/.vite/deps/lucide-react.js?v=176a2da8";
+import { motion, AnimatePresence } from "/node_modules/.vite/deps/framer-motion.js?v=7438c8a1";
+export function ScanModal({ isOpen, onClose }) {
+  _s();
+  const [scanType, setScanType] = useState("full");
+  const [target, setTarget] = useState("");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Starting scan:", { scanType, target });
+    onClose();
+  };
+  return /* @__PURE__ */ jsxDEV(AnimatePresence, { children: isOpen && /* @__PURE__ */ jsxDEV(Fragment, { children: [
+    /* @__PURE__ */ jsxDEV(
+      motion.div,
+      {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        onClick: onClose,
+        className: "fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+      },
+      void 0,
+      false,
+      {
+        fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+        lineNumber: 44,
+        columnNumber: 11
+      },
+      this
+    ),
+    /* @__PURE__ */ jsxDEV(
+      motion.div,
+      {
+        initial: { opacity: 0, scale: 0.95, y: 20 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.95, y: 20 },
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#0F1729] border border-white/10 rounded-xl shadow-2xl z-50",
+        children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between p-6 border-b border-white/10", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "p-2 bg-blue-400/10 rounded-lg", children: /* @__PURE__ */ jsxDEV(Scan, { className: "h-5 w-5 text-blue-400" }, void 0, false, {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 60,
+                columnNumber: 19
+              }, this) }, void 0, false, {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 59,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV("h2", { className: "text-xl font-semibold text-slate-100", children: "New Security Scan" }, void 0, false, {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 62,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+              lineNumber: 58,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: onClose,
+                className: "p-2 hover:bg-white/10 rounded-lg transition-colors",
+                children: /* @__PURE__ */ jsxDEV(X, { className: "h-5 w-5 text-slate-400" }, void 0, false, {
+                  fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                  lineNumber: 68,
+                  columnNumber: 17
+                }, this)
+              },
+              void 0,
+              false,
+              {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 64,
+                columnNumber: 15
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+            lineNumber: 57,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("form", { onSubmit: handleSubmit, className: "p-6 space-y-4", children: [
+            /* @__PURE__ */ jsxDEV("div", { children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-slate-300 mb-2", children: "Scan Type" }, void 0, false, {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 74,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "select",
+                {
+                  value: scanType,
+                  onChange: (e) => setScanType(e.target.value),
+                  className: "w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400",
+                  children: [
+                    /* @__PURE__ */ jsxDEV("option", { value: "full", children: "Full System Scan" }, void 0, false, {
+                      fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                      lineNumber: 82,
+                      columnNumber: 19
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("option", { value: "quick", children: "Quick Scan" }, void 0, false, {
+                      fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                      lineNumber: 83,
+                      columnNumber: 19
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("option", { value: "vulnerability", children: "Vulnerability Scan" }, void 0, false, {
+                      fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                      lineNumber: 84,
+                      columnNumber: 19
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("option", { value: "malware", children: "Malware Scan" }, void 0, false, {
+                      fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                      lineNumber: 85,
+                      columnNumber: 19
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("option", { value: "network", children: "Network Scan" }, void 0, false, {
+                      fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                      lineNumber: 86,
+                      columnNumber: 19
+                    }, this)
+                  ]
+                },
+                void 0,
+                true,
+                {
+                  fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                  lineNumber: 77,
+                  columnNumber: 17
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+              lineNumber: 73,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-slate-300 mb-2", children: "Target (Optional)" }, void 0, false, {
+                fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                lineNumber: 91,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "input",
+                {
+                  type: "text",
+                  value: target,
+                  onChange: (e) => setTarget(e.target.value),
+                  placeholder: "e.g., 192.168.1.0/24, www.example.com",
+                  className: "w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                  lineNumber: 94,
+                  columnNumber: 17
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+              lineNumber: 90,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3 pt-4", children: [
+              /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  type: "submit",
+                  className: "flex-1 px-4 py-2 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 rounded-lg text-cyan-300 font-medium transition-colors",
+                  children: "Start Scan"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                  lineNumber: 104,
+                  columnNumber: 17
+                },
+                this
+              ),
+              /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  type: "button",
+                  onClick: onClose,
+                  className: "flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-slate-300 font-medium transition-colors",
+                  children: "Cancel"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+                  lineNumber: 110,
+                  columnNumber: 17
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+              lineNumber: 103,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+            lineNumber: 72,
+            columnNumber: 13
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+        lineNumber: 51,
+        columnNumber: 11
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+    lineNumber: 43,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx",
+    lineNumber: 41,
+    columnNumber: 5
+  }, this);
+}
+_s(ScanModal, "hUDmDlKdv6PTGi3kbaRcUDjktB4=");
+_c = ScanModal;
+var _c;
+$RefreshReg$(_c, "ScanModal");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/cyberiumshield-ai/apps/web/src/components/modals/ScanModal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBdUJRLG1CQUNFLGNBREY7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBdkJSLFNBQWdCQSxnQkFBZ0I7QUFDaEMsU0FBU0MsR0FBR0MsWUFBWTtBQUN4QixTQUFTQyxRQUFRQyx1QkFBdUI7QUFPakMsZ0JBQVNDLFVBQVUsRUFBRUMsUUFBUUMsUUFBd0IsR0FBRztBQUFBQyxLQUFBO0FBQzdELFFBQU0sQ0FBQ0MsVUFBVUMsV0FBVyxJQUFJVixTQUFTLE1BQU07QUFDL0MsUUFBTSxDQUFDVyxRQUFRQyxTQUFTLElBQUlaLFNBQVMsRUFBRTtBQUV2QyxRQUFNYSxlQUFlQSxDQUFDQyxNQUF1QjtBQUMzQ0EsTUFBRUMsZUFBZTtBQUNqQkMsWUFBUUMsSUFBSSxrQkFBa0IsRUFBRVIsVUFBVUUsT0FBTyxDQUFDO0FBRWxESixZQUFRO0FBQUEsRUFDVjtBQUVBLFNBQ0UsdUJBQUMsbUJBQ0VELG9CQUNDLG1DQUNFO0FBQUE7QUFBQSxNQUFDLE9BQU87QUFBQSxNQUFQO0FBQUEsUUFDQyxTQUFTLEVBQUVZLFNBQVMsRUFBRTtBQUFBLFFBQ3RCLFNBQVMsRUFBRUEsU0FBUyxFQUFFO0FBQUEsUUFDdEIsTUFBTSxFQUFFQSxTQUFTLEVBQUU7QUFBQSxRQUNuQixTQUFTWDtBQUFBQSxRQUNULFdBQVU7QUFBQTtBQUFBLE1BTFo7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLElBSzZEO0FBQUEsSUFFN0Q7QUFBQSxNQUFDLE9BQU87QUFBQSxNQUFQO0FBQUEsUUFDQyxTQUFTLEVBQUVXLFNBQVMsR0FBR0MsT0FBTyxNQUFNQyxHQUFHLEdBQUc7QUFBQSxRQUMxQyxTQUFTLEVBQUVGLFNBQVMsR0FBR0MsT0FBTyxHQUFHQyxHQUFHLEVBQUU7QUFBQSxRQUN0QyxNQUFNLEVBQUVGLFNBQVMsR0FBR0MsT0FBTyxNQUFNQyxHQUFHLEdBQUc7QUFBQSxRQUN2QyxXQUFVO0FBQUEsUUFFVjtBQUFBLGlDQUFDLFNBQUksV0FBVSxrRUFDYjtBQUFBLG1DQUFDLFNBQUksV0FBVSwyQkFDYjtBQUFBLHFDQUFDLFNBQUksV0FBVSxpQ0FDYixpQ0FBQyxRQUFLLFdBQVUsMkJBQWhCO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBQXVDLEtBRHpDO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBRUE7QUFBQSxjQUNBLHVCQUFDLFFBQUcsV0FBVSx3Q0FBdUMsaUNBQXJEO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBQXNFO0FBQUEsaUJBSnhFO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBS0E7QUFBQSxZQUNBO0FBQUEsY0FBQztBQUFBO0FBQUEsZ0JBQ0MsU0FBU2I7QUFBQUEsZ0JBQ1QsV0FBVTtBQUFBLGdCQUVWLGlDQUFDLEtBQUUsV0FBVSw0QkFBYjtBQUFBO0FBQUE7QUFBQTtBQUFBLHVCQUFxQztBQUFBO0FBQUEsY0FKdkM7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFlBS0E7QUFBQSxlQVpGO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBYUE7QUFBQSxVQUVBLHVCQUFDLFVBQUssVUFBVU0sY0FBYyxXQUFVLGlCQUN0QztBQUFBLG1DQUFDLFNBQ0M7QUFBQSxxQ0FBQyxXQUFNLFdBQVUsaURBQStDLHlCQUFoRTtBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQUVBO0FBQUEsY0FDQTtBQUFBLGdCQUFDO0FBQUE7QUFBQSxrQkFDQyxPQUFPSjtBQUFBQSxrQkFDUCxVQUFVLENBQUNLLE1BQU1KLFlBQVlJLEVBQUVILE9BQU9VLEtBQUs7QUFBQSxrQkFDM0MsV0FBVTtBQUFBLGtCQUVWO0FBQUEsMkNBQUMsWUFBTyxPQUFNLFFBQU8sZ0NBQXJCO0FBQUE7QUFBQTtBQUFBO0FBQUEsMkJBQXFDO0FBQUEsb0JBQ3JDLHVCQUFDLFlBQU8sT0FBTSxTQUFRLDBCQUF0QjtBQUFBO0FBQUE7QUFBQTtBQUFBLDJCQUFnQztBQUFBLG9CQUNoQyx1QkFBQyxZQUFPLE9BQU0saUJBQWdCLGtDQUE5QjtBQUFBO0FBQUE7QUFBQTtBQUFBLDJCQUFnRDtBQUFBLG9CQUNoRCx1QkFBQyxZQUFPLE9BQU0sV0FBVSw0QkFBeEI7QUFBQTtBQUFBO0FBQUE7QUFBQSwyQkFBb0M7QUFBQSxvQkFDcEMsdUJBQUMsWUFBTyxPQUFNLFdBQVUsNEJBQXhCO0FBQUE7QUFBQTtBQUFBO0FBQUEsMkJBQW9DO0FBQUE7QUFBQTtBQUFBLGdCQVR0QztBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsY0FVQTtBQUFBLGlCQWRGO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBZUE7QUFBQSxZQUVBLHVCQUFDLFNBQ0M7QUFBQSxxQ0FBQyxXQUFNLFdBQVUsaURBQStDLGlDQUFoRTtBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQUVBO0FBQUEsY0FDQTtBQUFBLGdCQUFDO0FBQUE7QUFBQSxrQkFDQyxNQUFLO0FBQUEsa0JBQ0wsT0FBT1Y7QUFBQUEsa0JBQ1AsVUFBVSxDQUFDRyxNQUFNRixVQUFVRSxFQUFFSCxPQUFPVSxLQUFLO0FBQUEsa0JBQ3pDLGFBQVk7QUFBQSxrQkFDWixXQUFVO0FBQUE7QUFBQSxnQkFMWjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsY0FLb0s7QUFBQSxpQkFUdEs7QUFBQTtBQUFBO0FBQUE7QUFBQSxtQkFXQTtBQUFBLFlBRUEsdUJBQUMsU0FBSSxXQUFVLGdDQUNiO0FBQUE7QUFBQSxnQkFBQztBQUFBO0FBQUEsa0JBQ0MsTUFBSztBQUFBLGtCQUNMLFdBQVU7QUFBQSxrQkFBdUk7QUFBQTtBQUFBLGdCQUZuSjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsY0FLQTtBQUFBLGNBQ0E7QUFBQSxnQkFBQztBQUFBO0FBQUEsa0JBQ0MsTUFBSztBQUFBLGtCQUNMLFNBQVNkO0FBQUFBLGtCQUNULFdBQVU7QUFBQSxrQkFBOEg7QUFBQTtBQUFBLGdCQUgxSTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsY0FNQTtBQUFBLGlCQWJGO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBY0E7QUFBQSxlQTdDRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQThDQTtBQUFBO0FBQUE7QUFBQSxNQW5FRjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsSUFvRUE7QUFBQSxPQTVFRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBNkVBLEtBL0VKO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FpRkE7QUFFSjtBQUFDQyxHQS9GZUgsV0FBUztBQUFBLEtBQVRBO0FBQVMsSUFBQWlCO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwiWCIsIlNjYW4iLCJtb3Rpb24iLCJBbmltYXRlUHJlc2VuY2UiLCJTY2FuTW9kYWwiLCJpc09wZW4iLCJvbkNsb3NlIiwiX3MiLCJzY2FuVHlwZSIsInNldFNjYW5UeXBlIiwidGFyZ2V0Iiwic2V0VGFyZ2V0IiwiaGFuZGxlU3VibWl0IiwiZSIsInByZXZlbnREZWZhdWx0IiwiY29uc29sZSIsImxvZyIsIm9wYWNpdHkiLCJzY2FsZSIsInkiLCJ2YWx1ZSIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlNjYW5Nb2RhbC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgWCwgU2NhbiB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5pbXBvcnQgeyBtb3Rpb24sIEFuaW1hdGVQcmVzZW5jZSB9IGZyb20gJ2ZyYW1lci1tb3Rpb24nO1xuXG5pbnRlcmZhY2UgU2Nhbk1vZGFsUHJvcHMge1xuICBpc09wZW46IGJvb2xlYW47XG4gIG9uQ2xvc2U6ICgpID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBTY2FuTW9kYWwoeyBpc09wZW4sIG9uQ2xvc2UgfTogU2Nhbk1vZGFsUHJvcHMpIHtcbiAgY29uc3QgW3NjYW5UeXBlLCBzZXRTY2FuVHlwZV0gPSB1c2VTdGF0ZSgnZnVsbCcpO1xuICBjb25zdCBbdGFyZ2V0LCBzZXRUYXJnZXRdID0gdXNlU3RhdGUoJycpO1xuXG4gIGNvbnN0IGhhbmRsZVN1Ym1pdCA9IChlOiBSZWFjdC5Gb3JtRXZlbnQpID0+IHtcbiAgICBlLnByZXZlbnREZWZhdWx0KCk7XG4gICAgY29uc29sZS5sb2coJ1N0YXJ0aW5nIHNjYW46JywgeyBzY2FuVHlwZSwgdGFyZ2V0IH0pO1xuICAgIC8vIFRPRE86IEltcGxlbWVudCBhY3R1YWwgc2NhbiBsb2dpY1xuICAgIG9uQ2xvc2UoKTtcbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxBbmltYXRlUHJlc2VuY2U+XG4gICAgICB7aXNPcGVuICYmIChcbiAgICAgICAgPD5cbiAgICAgICAgICA8bW90aW9uLmRpdlxuICAgICAgICAgICAgaW5pdGlhbD17eyBvcGFjaXR5OiAwIH19XG4gICAgICAgICAgICBhbmltYXRlPXt7IG9wYWNpdHk6IDEgfX1cbiAgICAgICAgICAgIGV4aXQ9e3sgb3BhY2l0eTogMCB9fVxuICAgICAgICAgICAgb25DbGljaz17b25DbG9zZX1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImZpeGVkIGluc2V0LTAgYmctYmxhY2svNjAgYmFja2Ryb3AtYmx1ci1zbSB6LTUwXCJcbiAgICAgICAgICAvPlxuICAgICAgICAgIDxtb3Rpb24uZGl2XG4gICAgICAgICAgICBpbml0aWFsPXt7IG9wYWNpdHk6IDAsIHNjYWxlOiAwLjk1LCB5OiAyMCB9fVxuICAgICAgICAgICAgYW5pbWF0ZT17eyBvcGFjaXR5OiAxLCBzY2FsZTogMSwgeTogMCB9fVxuICAgICAgICAgICAgZXhpdD17eyBvcGFjaXR5OiAwLCBzY2FsZTogMC45NSwgeTogMjAgfX1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImZpeGVkIGxlZnQtMS8yIHRvcC0xLzIgLXRyYW5zbGF0ZS14LTEvMiAtdHJhbnNsYXRlLXktMS8yIHctZnVsbCBtYXgtdy1tZCBiZy1bIzBGMTcyOV0gYm9yZGVyIGJvcmRlci13aGl0ZS8xMCByb3VuZGVkLXhsIHNoYWRvdy0yeGwgei01MFwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC02IGJvcmRlci1iIGJvcmRlci13aGl0ZS8xMFwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTIgYmctYmx1ZS00MDAvMTAgcm91bmRlZC1sZ1wiPlxuICAgICAgICAgICAgICAgICAgPFNjYW4gY2xhc3NOYW1lPVwiaC01IHctNSB0ZXh0LWJsdWUtNDAwXCIgLz5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC14bCBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtMTAwXCI+TmV3IFNlY3VyaXR5IFNjYW48L2gyPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9e29uQ2xvc2V9XG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicC0yIGhvdmVyOmJnLXdoaXRlLzEwIHJvdW5kZWQtbGcgdHJhbnNpdGlvbi1jb2xvcnNcIlxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPFggY2xhc3NOYW1lPVwiaC01IHctNSB0ZXh0LXNsYXRlLTQwMFwiIC8+XG4gICAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIDxmb3JtIG9uU3VibWl0PXtoYW5kbGVTdWJtaXR9IGNsYXNzTmFtZT1cInAtNiBzcGFjZS15LTRcIj5cbiAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwiYmxvY2sgdGV4dC1zbSBmb250LW1lZGl1bSB0ZXh0LXNsYXRlLTMwMCBtYi0yXCI+XG4gICAgICAgICAgICAgICAgICBTY2FuIFR5cGVcbiAgICAgICAgICAgICAgICA8L2xhYmVsPlxuICAgICAgICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtzY2FuVHlwZX1cbiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0U2NhblR5cGUoZS50YXJnZXQudmFsdWUpfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHB4LTQgcHktMiBiZy13aGl0ZS81IGJvcmRlciBib3JkZXItd2hpdGUvMTAgcm91bmRlZC1sZyB0ZXh0LXNsYXRlLTIwMCBmb2N1czpvdXRsaW5lLW5vbmUgZm9jdXM6cmluZy0yIGZvY3VzOnJpbmctY3lhbi00MDBcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJmdWxsXCI+RnVsbCBTeXN0ZW0gU2Nhbjwvb3B0aW9uPlxuICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cInF1aWNrXCI+UXVpY2sgU2Nhbjwvb3B0aW9uPlxuICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cInZ1bG5lcmFiaWxpdHlcIj5WdWxuZXJhYmlsaXR5IFNjYW48L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJtYWx3YXJlXCI+TWFsd2FyZSBTY2FuPC9vcHRpb24+XG4gICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwibmV0d29ya1wiPk5ldHdvcmsgU2Nhbjwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtMzAwIG1iLTJcIj5cbiAgICAgICAgICAgICAgICAgIFRhcmdldCAoT3B0aW9uYWwpXG4gICAgICAgICAgICAgICAgPC9sYWJlbD5cbiAgICAgICAgICAgICAgICA8aW5wdXRcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJ0ZXh0XCJcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXt0YXJnZXR9XG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFRhcmdldChlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cImUuZy4sIDE5Mi4xNjguMS4wLzI0LCB3d3cuZXhhbXBsZS5jb21cIlxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHB4LTQgcHktMiBiZy13aGl0ZS81IGJvcmRlciBib3JkZXItd2hpdGUvMTAgcm91bmRlZC1sZyB0ZXh0LXNsYXRlLTIwMCBwbGFjZWhvbGRlci1zbGF0ZS01MDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWN5YW4tNDAwXCJcbiAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHB0LTRcIj5cbiAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICB0eXBlPVwic3VibWl0XCJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXgtMSBweC00IHB5LTIgYmctY3lhbi00MDAvMTAgaG92ZXI6YmctY3lhbi00MDAvMjAgYm9yZGVyIGJvcmRlci1jeWFuLTQwMC8zMCByb3VuZGVkLWxnIHRleHQtY3lhbi0zMDAgZm9udC1tZWRpdW0gdHJhbnNpdGlvbi1jb2xvcnNcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIFN0YXJ0IFNjYW5cbiAgICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcbiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e29uQ2xvc2V9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4LTEgcHgtNCBweS0yIGJnLXdoaXRlLzUgaG92ZXI6Ymctd2hpdGUvMTAgYm9yZGVyIGJvcmRlci13aGl0ZS8xMCByb3VuZGVkLWxnIHRleHQtc2xhdGUtMzAwIGZvbnQtbWVkaXVtIHRyYW5zaXRpb24tY29sb3JzXCJcbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICBDYW5jZWxcbiAgICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Zvcm0+XG4gICAgICAgICAgPC9tb3Rpb24uZGl2PlxuICAgICAgICA8Lz5cbiAgICAgICl9XG4gICAgPC9BbmltYXRlUHJlc2VuY2U+XG4gICk7XG59XG4iXSwiZmlsZSI6IkQ6L2N5YmVyaXVtc2hpZWxkLWFpL2FwcHMvd2ViL3NyYy9jb21wb25lbnRzL21vZGFscy9TY2FuTW9kYWwudHN4In0=

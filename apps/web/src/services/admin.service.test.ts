@@ -13,7 +13,7 @@ class MemoryStorage {
 
 describe('AdminRepository', () => {
   let repository: AdminRepository;
-  const actor = { id: '1', name: 'Demo Administrator', email: 'admin@cyberiumshield.ai' };
+  const actor = { id: '1', name: 'Demo Administrator', email: 'admin@cybershield.ai' };
 
   beforeEach(() => {
     repository = new AdminRepository(new MemoryStorage());
@@ -62,7 +62,7 @@ describe('AdminRepository', () => {
   it('filters by search, role, and status and sorts the result', () => {
     const state = repository.getState();
     const result = filterAdminUsers(state.users, state.roles, {
-      search: 'cyberiumshield.ai',
+      search: 'cybershield.ai',
       roleId: 'security-analyst',
       status: 'active',
       sortKey: 'name',

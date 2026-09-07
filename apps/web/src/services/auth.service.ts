@@ -119,8 +119,8 @@ class AuthService {
     // TODO: Replace with actual Laravel Sanctum endpoint
     // await api.post('/auth/logout');
 
-    localStorage.removeItem('cyberiumshield_token');
-    localStorage.removeItem('cyberiumshield_user');
+    localStorage.removeItem('cybershield_token');
+    localStorage.removeItem('cybershield_user');
   }
 
   async forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
@@ -166,7 +166,7 @@ class AuthService {
     // const response = await api.get<User>('/auth/user');
     // return response.data;
 
-    const storedUser = localStorage.getItem('cyberiumshield_user');
+    const storedUser = localStorage.getItem('cybershield_user');
     if (storedUser) {
       return JSON.parse(storedUser);
     }

@@ -43,7 +43,7 @@ export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportM
     setIsGenerating(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const reportName = `cyberiumshield-${reportType}-${dateRange}`;
+      const reportName = `cybershield-${reportType}-${dateRange}`;
       const rows = alerts.map((alert) => [alert.title, alert.severity, alert.status, alert.timestamp]);
       const csv = [
         ['Title', 'Severity', 'Status', 'Time'],
@@ -58,7 +58,7 @@ export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportM
       } else {
         const pdf = new jsPDF();
         pdf.setFontSize(16);
-        pdf.text('CyberiumShield AI Security Report', 20, 20);
+        pdf.text('cybershield AI Security Report', 20, 20);
         pdf.setFontSize(10);
         pdf.text(`Type: ${reportType} | Range: ${dateRange}`, 20, 30);
         alerts.forEach((alert, index) => {

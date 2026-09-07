@@ -109,6 +109,7 @@ export function EmailSpamPage() {
       const log = { ...analysis, id: `${Date.now()}-${analysis.subject}` };
       const nextLogs = [log, ...logs].slice(0, 25);
       localStorage.setItem('email_spam_scan_logs', JSON.stringify(nextLogs));
+      window.dispatchEvent(new Event('cyberium:scan-history-updated'));
       setLogs(nextLogs);
       setResult(analysis);
       toast.success(
@@ -371,6 +372,7 @@ export function EmailSpamPage() {
               type="button"
               onClick={() => {
                 localStorage.removeItem('email_spam_scan_logs');
+                window.dispatchEvent(new Event('cyberium:scan-history-updated'));
                 setLogs([]);
               }}
               className="flex items-center gap-2 text-xs text-slate-500 transition hover:text-red-300"

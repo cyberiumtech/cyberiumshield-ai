@@ -42,7 +42,7 @@ services:
     volumes:
       - ./apps/backend/python-ai:/app
     environment:
-      - DATABASE_URL=mysql+pymysql://cyberiumshield:cyberiumshield@mysql:3306/cyberiumshield
+      - DATABASE_URL=mysql+pymysql://cybershield:cybershield@mysql:3306/cybershield
       - REDIS_URL=redis://redis:6379/0
       - APP_ENV=development
       - DEBUG=true
@@ -133,16 +133,16 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      - MYSQL_DATABASE=cyberiumshield
-      - MYSQL_USER=cyberiumshield
-      - MYSQL_PASSWORD=cyberiumshield
-      - MYSQL_ROOT_PASSWORD=cyberiumshield_root
+      - MYSQL_DATABASE=cybershield
+      - MYSQL_USER=cybershield
+      - MYSQL_PASSWORD=cybershield
+      - MYSQL_ROOT_PASSWORD=cybershield_root
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "cyberiumshield", "-pcyberiumshield"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "cybershield", "-pcybershield"]
       interval: 10s
       timeout: 5s
       retries: 5

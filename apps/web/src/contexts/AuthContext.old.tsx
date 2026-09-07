@@ -28,12 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('cyberiumshield_user');
+    const storedUser = localStorage.getItem('cybershield_user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        localStorage.removeItem('cyberiumshield_user');
+        localStorage.removeItem('cybershield_user');
       }
     }
     setIsLoading(false);
@@ -60,10 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
           email,
           role: 'Security Analyst',
-          organization: 'CyberiumShield Security',
+          organization: 'cybershield Security',
         };
 
-        localStorage.setItem('cyberiumshield_user', JSON.stringify(mockUser));
+        localStorage.setItem('cybershield_user', JSON.stringify(mockUser));
         setUser(mockUser);
         navigate('/dashboard');
       } else {
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         organization,
       };
 
-      localStorage.setItem('cyberiumshield_user', JSON.stringify(mockUser));
+      localStorage.setItem('cybershield_user', JSON.stringify(mockUser));
       setUser(mockUser);
       navigate('/dashboard');
     } catch (error) {
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('cyberiumshield_user');
+    localStorage.removeItem('cybershield_user');
     setUser(null);
     navigate('/');
   };

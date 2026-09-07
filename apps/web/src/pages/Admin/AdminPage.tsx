@@ -122,7 +122,7 @@ export function AdminPage() {
     () => ({
       id: authUser?.id ?? '1',
       name: authUser?.name ?? 'Demo Administrator',
-      email: authUser?.email ?? 'admin@cyberiumshield.ai',
+      email: authUser?.email ?? 'admin@cybershield.ai',
     }),
     [authUser]
   );

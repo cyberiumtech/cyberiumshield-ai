@@ -209,7 +209,7 @@ export function RegisterPage() {
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Used for your organization's URL: cyberiumshield.ai/{organizationSlug || 'your-org'}
+                Used for your organization's URL: cybershield.ai/{organizationSlug || 'your-org'}
               </p>
             </div>
 

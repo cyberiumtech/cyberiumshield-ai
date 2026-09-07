@@ -1,1503 +1,238 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-
+import { useEffect, useMemo, useState, type ElementType, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Shield,
-  ShieldCheck,
-  AlertTriangle,
-  Activity,
-  Server,
-  Monitor,
-  Database,
-  Cpu,
-  ArrowRight,
-  Radar,
-  Sparkles,
-  Terminal,
-  Clock3,
-  LockKeyhole,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
+  Activity, ArrowDown, ArrowRight, ArrowUp, Bug, Clock3, CloudOff, FileWarning,
+  Globe2, MailWarning, Network, Radar, RefreshCw, ScanSearch, Server, ShieldCheck,
+  Siren, Wifi, WifiOff,
 } from 'lucide-react';
-
 import {
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  RadialBarChart,
-  RadialBar,
-} from 'recharts';
-
-import { Badge } from '../../components/shared/Badge';
-
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  Marker,
-  Line,
-  Sphere,
-  Graticule,
+  ComposableMap, Geographies, Geography, Graticule, Line, Marker, Sphere,
 } from 'react-simple-maps';
+import { useSecurityDashboard, type SourceKey, type SourceState } from '../../hooks/useSecurityDashboard';
+import { formatDataRate } from '../../services/network-monitor.service';
 
-/* ------------------------------------------------------------------ */
-/* Types                                                              */
-/* ------------------------------------------------------------------ */
+const mapPoints = [
+  { name: 'London', coordinates: [-0.13, 51.5] as [number, number], tone: '#22d3ee' },
+  { name: 'São Paulo', coordinates: [-46.63, -23.55] as [number, number], tone: '#a78bfa' },
+  { name: 'Virginia', coordinates: [-77.44, 37.54] as [number, number], tone: '#22d3ee' },
+  { name: 'Singapore', coordinates: [103.82, 1.35] as [number, number], tone: '#f59e0b' },
+  { name: 'Tokyo', coordinates: [139.69, 35.68] as [number, number], tone: '#a78bfa' },
+  { name: 'Mumbai', coordinates: [72.88, 19.08] as [number, number], tone: '#fb7185' },
+  { name: 'Sydney', coordinates: [151.21, -33.87] as [number, number], tone: '#22d3ee' },
+  { name: 'Frankfurt', coordinates: [8.68, 50.11] as [number, number], tone: '#22d3ee' },
+];
 
-type Severity =
-  | 'critical'
-  | 'high'
-  | 'medium'
-  | 'low';
-
-type LogStatusType =
-  | 'success'
-  | 'blocked'
-  | 'warning'
-  | 'investigating';
-
-/* ------------------------------------------------------------------ */
-/* Data                                                               */
-/* ------------------------------------------------------------------ */
-
-const riskScore = {
-  value: 72,
-  max: 100,
-  label: 'Medium Risk',
-  delta: '8 pts vs yesterday',
-  trend: 'up' as const,
-  spark: [61, 58, 64, 60, 66, 70, 68, 72],
+const sourceNames: Record<SourceKey, string> = {
+  email: 'Email detector', phishing: 'Phishing engine', malware: 'Malware scanner',
+  network: 'Network monitor', vulnerability: 'Vulnerability API', intel: 'CISA KEV feed',
 };
 
-const headlineStats = [
-  {
-    title: 'Threats Detected',
-    value: '348',
-    delta: '+28% vs yesterday',
-    trend: 'up' as const,
-    icon: Radar,
-    accent: '#38bdf8',
-    spark: [18, 22, 19, 26, 24, 30, 27, 34],
-  },
-  {
-    title: 'Incidents',
-    value: '27',
-    delta: '+17% vs yesterday',
-    trend: 'up' as const,
-    icon: AlertTriangle,
-    accent: '#fb923c',
-    spark: [12, 14, 13, 15, 18, 16, 20, 21],
-  },
-  {
-    title: 'Assets Monitored',
-    value: '1,247',
-    delta: '+6% vs yesterday',
-    trend: 'up' as const,
-    icon: Monitor,
-    accent: '#818cf8',
-    spark: [
-      1100,
-      1120,
-      1140,
-      1160,
-      1190,
-      1210,
-      1230,
-      1247,
-    ],
-  },
-  {
-    title: 'Designated Safe',
-    value: '98.3%',
-    delta: '+2.1% vs yesterday',
-    trend: 'up' as const,
-    icon: ShieldCheck,
-    accent: '#34d399',
-    spark: [95, 95.5, 96, 96.8, 97.2, 97.6, 98, 98.3],
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* Global Threat Map Data                                             */
-/* ------------------------------------------------------------------ */
-
-const threatMapPoints = [
-  {
-    name: 'Moscow',
-    coordinates: [37.6173, 55.7558] as [number, number],
-    level: 'high' as const,
-  },
-  {
-    name: 'Beijing',
-    coordinates: [116.4074, 39.9042] as [number, number],
-    level: 'high' as const,
-  },
-  {
-    name: 'New York',
-    coordinates: [-74.006, 40.7128] as [number, number],
-    level: 'medium' as const,
-  },
-  {
-    name: 'São Paulo',
-    coordinates: [-46.6333, -23.5505] as [number, number],
-    level: 'medium' as const,
-  },
-  {
-    name: 'Lagos',
-    coordinates: [3.3792, 6.5244] as [number, number],
-    level: 'low' as const,
-  },
-  {
-    name: 'Mumbai',
-    coordinates: [72.8777, 19.076] as [number, number],
-    level: 'high' as const,
-  },
-  {
-    name: 'London',
-    coordinates: [-0.1276, 51.5074] as [number, number],
-    level: 'low' as const,
-  },
-  {
-    name: 'Sydney',
-    coordinates: [151.2093, -33.8688] as [number, number],
-    level: 'low' as const,
-  },
-  {
-    name: 'Tokyo',
-    coordinates: [139.6917, 35.6895] as [number, number],
-    level: 'medium' as const,
-  },
-  {
-    name: 'Cairo',
-    coordinates: [31.2357, 30.0444] as [number, number],
-    level: 'medium' as const,
-  },
-];
-
-const levelColor: Record<string, string> = {
-  high: '#f87171',
-  medium: '#fbbf24',
-  low: '#38bdf8',
-};
-
-const threatsByType = [
-  {
-    name: 'Malware',
-    value: 132,
-    pct: '37.9%',
-    color: '#ef4444',
-  },
-  {
-    name: 'Phishing',
-    value: 86,
-    pct: '24.7%',
-    color: '#38bdf8',
-  },
-  {
-    name: 'Ransomware',
-    value: 54,
-    pct: '15.5%',
-    color: '#f59e0b',
-  },
-  {
-    name: 'Exploits',
-    value: 41,
-    pct: '11.8%',
-    color: '#a78bfa',
-  },
-  {
-    name: 'DDoS',
-    value: 24,
-    pct: '6.9%',
-    color: '#06b6d4',
-  },
-  {
-    name: 'Others',
-    value: 11,
-    pct: '3.2%',
-    color: '#6366f1',
-  },
-];
-
-const criticalAlerts: Array<{
-  title: string;
-  detail: string;
-  time: string;
-  severity: Severity;
-}> = [
-  {
-    title: 'Ransomware Attack Detected',
-    detail: 'On endpoint: FIN-SRV-09',
-    time: '2 min ago',
-    severity: 'critical',
-  },
-  {
-    title: 'Suspicious Login Attempt',
-    detail: 'User: admin@company.com',
-    time: '5 min ago',
-    severity: 'medium',
-  },
-  {
-    title: 'Malware Detected',
-    detail: 'On endpoint: HR-LAPTOP-21',
-    time: '10 min ago',
-    severity: 'high',
-  },
-  {
-    title: 'Unusual Data Exfiltration',
-    detail: 'From: 192.168.1.45',
-    time: '15 min ago',
-    severity: 'high',
-  },
-];
-
-const activityLogs: Array<{
-  time: string;
-  event: string;
-  source: string;
-  action: string;
-  status: LogStatusType;
-}> = [
-  {
-    time: '22:01:42',
-    event: 'Ransomware signature detected',
-    source: 'FIN-SRV-09',
-    action: 'Blocked',
-    status: 'blocked',
-  },
-  {
-    time: '21:59:18',
-    event: 'Suspicious authentication attempt',
-    source: 'admin@company.com',
-    action: 'Challenged',
-    status: 'warning',
-  },
-  {
-    time: '21:55:03',
-    event: 'Malware payload detected',
-    source: 'HR-LAPTOP-21',
-    action: 'Quarantined',
-    status: 'blocked',
-  },
-  {
-    time: '21:49:27',
-    event: 'Outbound data anomaly detected',
-    source: '192.168.1.45',
-    action: 'Inspected',
-    status: 'investigating',
-  },
-  {
-    time: '21:44:11',
-    event: 'Firewall policy violation',
-    source: 'EDGE-FW-01',
-    action: 'Blocked',
-    status: 'blocked',
-  },
-  {
-    time: '21:39:56',
-    event: 'Endpoint security scan completed',
-    source: 'ENG-LAPTOP-14',
-    action: 'Completed',
-    status: 'success',
-  },
-];
-
-const recentIncidents: Array<{
-  id: string;
-  title: string;
-  severity: Severity;
-  status: string;
-  time: string;
-}> = [
-  {
-    id: 'INC-2025-0729',
-    title: 'Ransomware Attack',
-    severity: 'critical',
-    status: 'Investigating',
-    time: '2 min ago',
-  },
-  {
-    id: 'INC-2025-0728',
-    title: 'Malware Infection',
-    severity: 'high',
-    status: 'Containment',
-    time: '10 min ago',
-  },
-  {
-    id: 'INC-2025-0727',
-    title: 'Phishing Attempt',
-    severity: 'medium',
-    status: 'Resolved',
-    time: '1 hr ago',
-  },
-  {
-    id: 'INC-2025-0726',
-    title: 'Brute Force Attempt',
-    severity: 'low',
-    status: 'Resolved',
-    time: '3 hr ago',
-  },
-  {
-    id: 'INC-2025-0725',
-    title: 'Suspicious Activity',
-    severity: 'medium',
-    status: 'Investigating',
-    time: '5 hr ago',
-  },
-];
-
-const vulnerabilities = [
-  {
-    name: 'Critical',
-    value: 23,
-    pct: '12.5%',
-    color: '#f87171',
-  },
-  {
-    name: 'High',
-    value: 61,
-    pct: '33.2%',
-    color: '#fb923c',
-  },
-  {
-    name: 'Medium',
-    value: 67,
-    pct: '36.4%',
-    color: '#fbbf24',
-  },
-  {
-    name: 'Low',
-    value: 23,
-    pct: '12.5%',
-    color: '#38bdf8',
-  },
-  {
-    name: 'Info',
-    value: 10,
-    pct: '5.4%',
-    color: '#94a3b8',
-  },
-];
-
-const aiInsights = [
-  {
-    title: 'Anomaly Detected',
-    body: 'Unusual network activity detected from IP 203.0.113.45',
-    cta: 'View Insight',
-    icon: Sparkles,
-    tone: 'violet' as const,
-  },
-  {
-    title: 'Threat Prediction',
-    body: 'High probability of phishing attacks in HR department',
-    cta: 'View Prediction',
-    icon: Radar,
-    tone: 'cyan' as const,
-  },
-];
-
-const footerStats = [
-  {
-    label: 'Uptime',
-    value: '99.98%',
-    icon: Server,
-  },
-  {
-    label: 'Threats Blocked',
-    value: '12,449',
-    icon: Shield,
-  },
-  {
-    label: 'Data Analyzed',
-    value: '2.45 TB',
-    icon: Database,
-  },
-  {
-    label: 'AI Model Version',
-    value: 'v2.4.1',
-    icon: Cpu,
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* Small Building Blocks                                              */
-/* ------------------------------------------------------------------ */
-
-function Sparkline({
-  data,
-  color,
-  id,
-}: {
-  data: number[];
-  color: string;
-  id: string;
-}) {
-  const points = data.map((v, i) => ({
-    i,
-    v,
-  }));
-
-  const gradientId = `spark-${id}`;
-
-  return (
-    <ResponsiveContainer width="100%" height={40}>
-      <AreaChart
-        data={points}
-        margin={{
-          top: 4,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        }}
-      >
-        <defs>
-          <linearGradient
-            id={gradientId}
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              stopColor={color}
-              stopOpacity={0.35}
-            />
-
-            <stop
-              offset="100%"
-              stopColor={color}
-              stopOpacity={0}
-            />
-          </linearGradient>
-        </defs>
-
-        <Area
-          type="monotone"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={2}
-          fill={`url(#${gradientId})`}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
+function formatDate(value?: string | null, includeDate = false) {
+  if (!value) return 'Not available';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not available';
+  return new Intl.DateTimeFormat(undefined, includeDate
+    ? { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+    : { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
 }
 
-function Panel({
-  className = '',
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`rounded-2xl border border-white/10 bg-[#0F1729]/60 p-5 backdrop-blur-sm ${className}`}
-    >
-      {children}
-    </div>
-  );
+function relativeTime(value?: string | null) {
+  if (!value) return 'Time unavailable';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Time unavailable';
+  const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  if (Math.abs(seconds) < 60) return formatter.format(seconds, 'second');
+  const minutes = Math.round(seconds / 60);
+  if (Math.abs(minutes) < 60) return formatter.format(minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return formatter.format(hours, 'hour');
+  return formatter.format(Math.round(hours / 24), 'day');
 }
 
-function LogStatus({
-  status,
-}: {
-  status: LogStatusType;
-}) {
-  const config: Record<
-    LogStatusType,
-    {
-      label: string;
-      className: string;
-      icon: React.ElementType;
-    }
-  > = {
-    success: {
-      label: 'Success',
-      className:
-        'border-emerald-400/20 bg-emerald-400/10 text-emerald-300',
-      icon: CheckCircle2,
-    },
-    blocked: {
-      label: 'Blocked',
-      className:
-        'border-red-400/20 bg-red-400/10 text-red-300',
-      icon: XCircle,
-    },
-    warning: {
-      label: 'Warning',
-      className:
-        'border-amber-400/20 bg-amber-400/10 text-amber-300',
-      icon: AlertTriangle,
-    },
-    investigating: {
-      label: 'Investigating',
-      className:
-        'border-cyan-400/20 bg-cyan-400/10 text-cyan-300',
-      icon: RefreshCw,
-    },
-  };
+function Surface({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <section className={`border border-white/[0.09] bg-[#0b1424]/90 shadow-[0_20px_80px_rgba(0,0,0,.24)] ${className}`}>{children}</section>;
+}
 
-  const item = config[status];
-  const Icon = item.icon;
-
+function SourceDot({ source, compact = false }: { source: SourceState; compact?: boolean }) {
+  const styles = source.status === 'online'
+    ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.7)]'
+    : source.status === 'loading' ? 'bg-amber-300 animate-pulse' : 'bg-rose-400';
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium ${item.className}`}
-    >
-      <Icon className="h-3 w-3" />
-      {item.label}
+    <span className={`inline-flex items-center ${compact ? 'gap-1.5' : 'gap-2'}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${styles}`} aria-hidden="true" />
+      <span className={compact ? 'sr-only' : 'capitalize'}>{source.status}</span>
     </span>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Global Threat Globe                                                 */
-/* ------------------------------------------------------------------ */
-
 function GlobalThreatGlobe() {
-  const [rotation, setRotation] = useState<
-    [number, number, number]
-  >([0, -8, 0]);
-
-  const [seconds, setSeconds] = useState(30);
-
-  const projectionConfig = useMemo(
-    () => ({
-      rotate: rotation,
-      scale: 255,
-    }),
-    [rotation]
-  );
+  const [rotation, setRotation] = useState<[number, number, number]>([18, -12, 0]);
 
   useEffect(() => {
-    const rotationTimer = window.setInterval(() => {
-      setRotation((current) => [
-        current[0] + 0.35,
-        current[1],
-        current[2],
-      ]);
-    }, 80);
-
-    return () => {
-      window.clearInterval(rotationTimer);
-    };
-  }, []);
-
-  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = window.setInterval(() => {
-      setSeconds((current) => {
-        if (current <= 1) {
-          return 30;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
+      setRotation(current => [current[0] + 0.22, current[1], current[2]]);
+    }, 70);
+    return () => window.clearInterval(timer);
   }, []);
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-xl border border-white/5 bg-[#08111f]"
-      style={{
-        height: '500px',
-      }}
-    >
-      {/* Main atmospheric glow */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0"
-        style={{
-          width: '620px',
-          height: '620px',
-          transform: 'translate(-50%, -50%)',
-          borderRadius: '9999px',
-          background:
-            'radial-gradient(circle, rgba(14,165,233,0.14) 0%, rgba(14,165,233,0.07) 35%, rgba(14,165,233,0.025) 55%, transparent 72%)',
-          filter: 'blur(8px)',
-        }}
-      />
-
-      {/* Outer globe halo */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0"
-        style={{
-          width: '535px',
-          height: '535px',
-          transform: 'translate(-50%, -50%)',
-          borderRadius: '9999px',
-          border: '1px solid rgba(56,189,248,0.06)',
-          boxShadow:
-            '0 0 70px rgba(14,165,233,0.06), inset 0 0 70px rgba(14,165,233,0.04)',
-        }}
-      />
-
-      <ComposableMap
-        projection="geoOrthographic"
-        projectionConfig={projectionConfig}
-        width={900}
-        height={500}
-        className="relative z-10 h-full w-full"
-        style={{
-          width: '100%',
-          height: '100%',
-          background: 'transparent',
-        }}
-      >
-        {/* Earth sphere */}
-        <Sphere
-          id="globe-sphere"
-          fill="#0b1a2d"
-          stroke="#1e4162"
-          strokeWidth={1.2}
-        />
-
-        {/* Latitude / longitude grid */}
-        <Graticule
-          stroke="#1c4568"
-          strokeWidth={0.35}
-          strokeOpacity={0.28}
-        />
-
-        {/* World countries */}
-        <Geographies
-          geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
-        >
+    <div className="relative h-[390px] overflow-hidden sm:h-[470px] lg:h-[560px]">
+      <div className="pointer-events-none absolute inset-x-[8%] top-[10%] aspect-square rounded-full bg-cyan-400/[0.055] blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_46%,transparent_35%,#07101e_75%)]" />
+      <ComposableMap projection="geoOrthographic" projectionConfig={{ rotate: rotation, scale: 258 }} width={900} height={560} className="relative h-full w-full" aria-label="Rotating illustrative world activity map">
+        <Sphere id="dashboard-globe" fill="#0b2034" stroke="#276079" strokeWidth={0.8} />
+        <Graticule stroke="#54d3ea" strokeWidth={0.28} strokeOpacity={0.22} />
+        <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
           {({ geographies }: { geographies: Array<{ rsmKey: string; [key: string]: unknown }> }) =>
-            geographies.map((geo: { rsmKey: string; [key: string]: unknown }) => (
-              <Geography
-                key={geo.rsmKey}
-                geography={geo}
-                fill="#10243a"
-                stroke="#284766"
-                strokeWidth={0.45}
-                style={{
-                  default: {
-                    outline: 'none',
-                  },
-                  hover: {
-                    outline: 'none',
-                    fill: '#173553',
-                  },
-                  pressed: {
-                    outline: 'none',
-                  },
-                }}
-              />
-            ))
-          }
+            geographies.map(geo => (
+              <Geography key={geo.rsmKey} geography={geo} fill="#123149" stroke="#32708b" strokeWidth={0.38}
+                style={{ default: { outline: 'none' }, hover: { outline: 'none', fill: '#16405d' }, pressed: { outline: 'none' } }} />
+            ))}
         </Geographies>
-
-        {/* Threat connections */}
-        {threatMapPoints.slice(0, 6).map((point, i) => {
-          const target =
-            threatMapPoints[
-              (i + 4) % threatMapPoints.length
-            ];
-
-          return (
-            <Line
-              key={`${point.name}-${target.name}`}
-              from={point.coordinates}
-              to={target.coordinates}
-              stroke="#38bdf8"
-              strokeWidth={1.15}
-              strokeLinecap="round"
-              strokeDasharray="3 5"
-              opacity={0.42}
-            />
-          );
-        })}
-
-        {/* Threat locations */}
-        {threatMapPoints.map((point) => (
-          <Marker
-            key={point.name}
-            coordinates={point.coordinates}
-          >
-            <g className="cursor-pointer">
-              <circle
-                r={9}
-                fill={levelColor[point.level]}
-                opacity={0.08}
-              />
-
-              <circle
-                r={6}
-                fill={levelColor[point.level]}
-                opacity={0.16}
-              />
-
-              <circle
-                r={4}
-                fill={levelColor[point.level]}
-                opacity={0.35}
-              />
-
-              <circle
-                r={2.5}
-                fill={levelColor[point.level]}
-                stroke="#07111f"
-                strokeWidth={1.3}
-              />
-
-              <title>{point.name}</title>
-            </g>
+        {mapPoints.slice(0, 5).map((point, index) => (
+          <Line key={point.name} from={point.coordinates} to={mapPoints[(index + 3) % mapPoints.length].coordinates}
+            stroke="#22d3ee" strokeWidth={0.8} strokeDasharray="2 5" opacity={0.36} />
+        ))}
+        {mapPoints.map(point => (
+          <Marker key={point.name} coordinates={point.coordinates}>
+            <g><circle r={8} fill={point.tone} opacity={0.11} /><circle r={4} fill={point.tone} opacity={0.35} /><circle r={1.9} fill={point.tone} stroke="#06101c" strokeWidth={0.8} /><title>{point.name} illustrative activity marker</title></g>
           </Marker>
         ))}
       </ComposableMap>
-
-      {/* Edge vignette */}
-      <div
-        className="pointer-events-none absolute inset-0 z-20"
-        style={{
-          background:
-            'radial-gradient(circle at center, transparent 48%, rgba(8,17,31,0.18) 68%, rgba(8,17,31,0.72) 100%)',
-        }}
-      />
-
-      {/* Live indicator */}
-      <div className="absolute left-4 top-4 z-30 flex items-center gap-2 rounded-full border border-emerald-400/20 bg-[#08111f]/75 px-3 py-1.5 backdrop-blur-md">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-        </span>
-
-        <span className="text-[11px] font-medium text-emerald-300">
-          LIVE
-        </span>
-      </div>
-
-      {/* Globe status */}
-      <div className="absolute bottom-4 left-4 z-30 rounded-lg border border-white/10 bg-[#08111f]/70 px-3 py-2 backdrop-blur-md">
-        <p className="text-[10px] uppercase tracking-wider text-slate-500">
-          Global Network
-        </p>
-
-        <p className="mt-0.5 text-xs font-medium text-slate-300">
-          10 active threat locations
-        </p>
-      </div>
-
-      {/* Feed status */}
-      <div className="absolute bottom-4 right-4 z-30 rounded-lg border border-white/10 bg-[#08111f]/70 px-3 py-2 text-right backdrop-blur-md">
-        <p className="text-[10px] uppercase tracking-wider text-slate-500">
-          Threat Feed
-        </p>
-
-        <p className="mt-0.5 text-xs font-medium text-cyan-300">
-          Next update in {seconds}s
-        </p>
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#07101e_0%,transparent_18%,transparent_82%,#07101e_100%)]" />
+      <div className="absolute bottom-5 left-5 right-5 flex flex-col gap-2 border-l border-cyan-300/40 bg-[#07101e]/80 px-3 py-2 text-[11px] leading-relaxed text-slate-400 backdrop-blur-sm sm:right-auto sm:max-w-sm">
+        <span className="font-medium uppercase tracking-[0.16em] text-cyan-200">Illustrative activity layer</span>
+        <span>Markers show ambient global context, not live geolocation. Quantitative panels use connected sources.</span>
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Page                                                               */
-/* ------------------------------------------------------------------ */
+type ModuleProps = {
+  title: string; eyebrow: string; value: string; detail: string; route: string; icon: ElementType;
+  source: SourceState; accent: 'cyan' | 'violet' | 'amber' | 'rose' | 'emerald'; note: string;
+};
+
+const accentStyles = {
+  cyan: 'text-cyan-300 border-cyan-300/30 bg-cyan-300/[0.06]', violet: 'text-violet-300 border-violet-300/30 bg-violet-300/[0.06]',
+  amber: 'text-amber-300 border-amber-300/30 bg-amber-300/[0.06]', rose: 'text-rose-300 border-rose-300/30 bg-rose-300/[0.06]',
+  emerald: 'text-emerald-300 border-emerald-300/30 bg-emerald-300/[0.06]',
+};
+
+function ModuleSummary({ title, eyebrow, value, detail, route, icon: Icon, source, accent, note }: ModuleProps) {
+  return (
+    <Link to={route} className="group relative flex min-h-48 flex-col overflow-hidden border-t border-white/10 px-5 py-5 transition hover:bg-white/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300 sm:border-l sm:border-t-0">
+      <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{eyebrow}</p><h3 className="mt-2 text-base font-semibold text-slate-100">{title}</h3></div><span className={`grid h-9 w-9 place-items-center border ${accentStyles[accent]}`}><Icon className="h-[18px] w-[18px]" /></span></div>
+      <div className="mt-6 font-mono text-3xl font-semibold tracking-tight text-white">{value}</div>
+      <p className="mt-1 text-xs text-slate-400">{detail}</p>
+      <div className="mt-auto flex items-end justify-between gap-3 pt-5 text-[11px]"><span className="flex min-w-0 items-center gap-2 text-slate-500"><SourceDot source={source} compact /><span className="truncate">{note}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-cyan-300" /></div>
+    </Link>
+  );
+}
 
 export function DashboardPage() {
+  const data = useSecurityDashboard();
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const recentKev = useMemo(() => {
+    const cutoff = Date.now() - 30 * 86400000;
+    return data.intel?.vulnerabilities.filter(item => {
+      const time = new Date(`${item.dateAdded}T00:00:00`).getTime();
+      return Number.isFinite(time) && time >= cutoff;
+    }).length ?? null;
+  }, [data.intel]);
+
+  const posture = useMemo(() => {
+    const factors: Array<{ label: string; points: number }> = [];
+    if (data.network) factors.push({ label: data.network.monitoring ? 'Network monitor active' : 'Network monitor stopped', points: data.network.monitoring ? 0 : 22 });
+    if (data.vulnerability) {
+      factors.push({ label: `${data.vulnerability.counts.critical} critical vulnerabilities`, points: Math.min(35, data.vulnerability.counts.critical * 7) });
+      factors.push({ label: `${data.vulnerability.counts.high} high vulnerabilities`, points: Math.min(20, data.vulnerability.counts.high * 2) });
+    }
+    const scans = data.email.length + data.phishing.length + data.malware.length;
+    if (scans) {
+      const detections = data.email.filter(item => item.verdict !== 'legitimate').length + data.phishing.filter(item => item.prediction === 'phishing').length + data.malware.filter(item => item.classification === 'Malware').length;
+      factors.push({ label: `${detections} flagged across ${scans} local scans`, points: Math.min(20, Math.round((detections / scans) * 20)) });
+    }
+    if (recentKev !== null) factors.push({ label: `${recentKev} KEV additions in 30 days`, points: Math.min(12, Math.ceil(recentKev / 3)) });
+    if (!factors.length) return { score: null, label: 'Awaiting signals', factors };
+    const score = Math.min(100, factors.reduce((sum, factor) => sum + factor.points, 0));
+    return { score, label: score >= 70 ? 'Critical exposure' : score >= 40 ? 'Elevated risk' : score >= 15 ? 'Guarded' : 'Stable', factors };
+  }, [data.email, data.malware, data.network, data.phishing, data.vulnerability, recentKev]);
+
+  const activities = useMemo(() => {
+    const items: Array<{ id: string; title: string; detail: string; source: string; time: string | null; severity: 'critical' | 'warning' | 'info' | 'ok'; route: string }> = [];
+    data.email.slice(0, 3).forEach((item, index) => items.push({ id: `e-${item.id || index}`, title: item.verdict === 'legitimate' ? 'Email cleared' : `${item.verdict} email detected`, detail: item.subject || item.sender || 'Message scan', source: 'Email Spam', time: item.scannedAt, severity: item.verdict === 'spam' ? 'critical' : item.verdict === 'suspicious' ? 'warning' : 'ok', route: '/email-spam' }));
+    data.phishing.slice(0, 3).forEach((item, index) => items.push({ id: `p-${item.id || index}`, title: item.prediction === 'phishing' ? 'Phishing URL detected' : 'URL cleared', detail: item.url, source: 'Phishing', time: item.scannedAt, severity: item.prediction === 'phishing' ? 'critical' : 'ok', route: '/phishing' }));
+    data.malware.slice(0, 3).forEach((item, index) => items.push({ id: `m-${item.id || index}`, title: item.classification === 'Malware' ? 'Malware detected' : 'File scan completed', detail: `${item.filename} · ${item.family}`, source: 'Threat Detection', time: item.timestamp, severity: item.classification === 'Malware' ? 'critical' : 'ok', route: '/malware' }));
+    data.vulnerability?.recent.slice(0, 4).forEach(item => items.push({ id: `v-${item.id}`, title: `${item.severity} vulnerability`, detail: `${item.cve || 'Finding'} · ${item.title}`, source: 'Vulnerability', time: item.updated_at || item.created_at, severity: item.severity === 'Critical' ? 'critical' : item.severity === 'High' ? 'warning' : 'info', route: '/vulnerability' }));
+    data.intel?.vulnerabilities.slice(0, 3).forEach(item => items.push({ id: `i-${item.cveID}`, title: 'Known exploited vulnerability', detail: `${item.cveID} · ${item.vulnerabilityName}`, source: 'CISA KEV', time: item.dateAdded, severity: 'warning', route: '/threat-intelligence' }));
+    if (data.network) items.push({ id: 'network-status', title: data.network.monitoring ? 'Network telemetry active' : 'Network monitor stopped', detail: `${data.network.connection_count} connections · ${data.network.established} established`, source: 'Network', time: data.network.updated, severity: data.network.monitoring ? 'info' : 'critical', route: '/network' });
+    return items.sort((a, b) => {
+      const severity = { critical: 4, warning: 3, info: 2, ok: 1 };
+      const score = severity[b.severity] - severity[a.severity];
+      if (score) return score;
+      return (new Date(b.time || 0).getTime() || 0) - (new Date(a.time || 0).getTime() || 0);
+    }).slice(0, 9);
+  }, [data.email, data.intel, data.malware, data.network, data.phishing, data.vulnerability]);
+
+  const detectorCount = data.email.length + data.phishing.length + data.malware.length;
+  const detectionCount = data.email.filter(item => item.verdict !== 'legitimate').length + data.phishing.filter(item => item.prediction === 'phishing').length + data.malware.filter(item => item.classification === 'Malware').length;
+  const sourceSummary = data.summary.loading ? 'Connecting sources' : data.summary.offline ? 'Partial coverage' : 'All sources online';
+  const sourceTone = data.summary.loading || data.summary.offline ? 'text-amber-300' : 'text-emerald-300';
+  const modules: ModuleProps[] = [
+    { title: 'Email Spam', eyebrow: 'Message intelligence', value: data.email.length ? String(data.email.length) : '—', detail: data.email.length ? `${data.email.filter(item => item.verdict === 'spam').length} spam · latest ${data.email[0].verdict}` : 'No scans yet', route: '/email-spam', icon: MailWarning, source: data.sources.email, accent: 'cyan', note: data.sources.email.status === 'online' ? 'Detector ready' : 'Local history available' },
+    { title: 'Phishing', eyebrow: 'URL analysis', value: data.phishing.length ? String(data.phishing.length) : '—', detail: data.phishing.length ? `${data.phishing.filter(item => item.prediction === 'phishing').length} malicious · latest ${data.phishing[0].prediction}` : 'No scans yet', route: '/phishing', icon: FileWarning, source: data.sources.phishing, accent: 'amber', note: data.sources.phishing.status === 'online' ? 'Engine ready' : 'Service unavailable' },
+    { title: 'Threat Detection', eyebrow: 'File intelligence', value: data.malware.length ? String(data.malware.length) : '—', detail: data.malware.length ? `${data.malware.filter(item => item.classification === 'Malware').length} threats · latest ${data.malware[0].classification}` : 'No scans yet', route: '/malware', icon: Bug, source: data.sources.malware, accent: 'rose', note: data.sources.malware.status === 'online' ? 'Scanner ready' : 'Service unavailable' },
+    { title: 'Vulnerability Management', eyebrow: 'Exposure', value: data.vulnerability ? String(data.vulnerability.counts.total) : '—', detail: data.vulnerability ? `${data.vulnerability.counts.critical} critical · ${data.vulnerability.counts.high} high` : 'Inventory unavailable', route: '/vulnerability', icon: ScanSearch, source: data.sources.vulnerability, accent: 'violet', note: data.vulnerability ? `${data.vulnerability.counts.assets} assets` : 'API unavailable' },
+    { title: 'Network Monitoring', eyebrow: 'Traffic', value: data.network ? String(data.network.connection_count) : '—', detail: data.network ? `${data.network.established} established · ${data.network.interfaces.filter(item => item.is_up).length} interfaces up` : 'Telemetry unavailable', route: '/network', icon: Network, source: data.sources.network, accent: 'emerald', note: data.network?.monitoring ? 'Monitoring active' : 'Monitor unavailable' },
+    { title: 'Threat Intelligence', eyebrow: 'CISA KEV', value: data.intel ? String(data.intel.declaredCount ?? data.intel.vulnerabilities.length) : '—', detail: data.intel ? `${recentKev ?? 0} catalog additions in 30 days` : 'Catalog unavailable', route: '/threat-intelligence', icon: Radar, source: data.sources.intel, accent: 'violet', note: data.intel ? `Catalog ${data.intel.catalogVersion || 'current'}` : 'Feed unavailable' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm text-slate-400">
-            Welcome back,
-          </p>
+    <div className="relative mx-auto max-w-[1640px] overflow-hidden pb-8 text-slate-200">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(rgba(34,211,238,.025)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,.025)_1px,transparent_1px)] bg-[size:34px_34px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+      <header className="mb-5 flex flex-col justify-between gap-5 border-b border-white/[0.08] pb-5 xl:flex-row xl:items-end">
+        <div><div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300"><ShieldCheck className="h-4 w-4" /> Cyberium Shield / Command Center</div><h1 className="text-3xl font-semibold tracking-[-0.035em] text-white sm:text-4xl">Security Operations Overview</h1><p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">Live posture across detection, infrastructure exposure, traffic and global threat intelligence.</p></div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="border-l border-white/10 px-4"><p className="font-mono text-sm text-slate-200">{formatDate(now.toISOString())}</p><p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-slate-500">{now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Local time</p></div>
+          <div className="border-l border-white/10 px-4"><p className={`flex items-center gap-2 text-sm font-medium ${sourceTone}`}><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-40" /><span className="relative inline-flex h-2 w-2 rounded-full bg-current" /></span>{sourceSummary}</p><p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-slate-500">{data.summary.online}/6 online · {data.summary.offline} offline</p></div>
+          <button type="button" onClick={() => void data.refreshAll()} disabled={data.isRefreshing} className="inline-flex min-h-11 items-center gap-2 border border-cyan-300/30 bg-cyan-300/[0.08] px-4 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-300/[0.14] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-wait disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${data.isRefreshing ? 'animate-spin' : ''}`} /> Refresh</button>
+        </div>
+      </header>
 
-          <div className="mt-0.5 flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-100">
-              CyberShield Operator
-            </h1>
-          </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(310px,.68fr)]">
+        <Surface className="relative overflow-hidden bg-[#07101e]"><div className="absolute left-5 top-5 z-10"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Global signal canvas</p><h2 className="mt-1 text-xl font-semibold text-white">Activity orbit</h2></div><div className="absolute right-5 top-5 z-10 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-slate-400"><Globe2 className="h-3.5 w-3.5 text-cyan-300" /> Auto-rotating</div><GlobalThreatGlobe /></Surface>
+        <Surface className="relative flex min-h-[480px] flex-col overflow-hidden p-6">
+          <div className="absolute right-0 top-0 h-48 w-48 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,.13),transparent_67%)]" />
+          <div className="relative flex items-start justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Derived posture</p><h2 className="mt-2 text-xl font-semibold text-white">Operational risk</h2></div><Siren className={posture.score !== null && posture.score >= 40 ? 'h-6 w-6 text-rose-300' : 'h-6 w-6 text-cyan-300'} /></div>
+          <div className="relative mt-10 flex items-end gap-3"><span className="font-mono text-7xl font-light leading-none tracking-[-0.08em] text-white">{posture.score ?? '—'}</span><span className="mb-1 text-xs uppercase tracking-[0.16em] text-slate-500">/ 100<br />risk pressure</span></div>
+          <div className="relative mt-5 h-1.5 overflow-hidden bg-white/[0.07]" role="meter" aria-label="Operational risk score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={posture.score ?? undefined}>{posture.score !== null && <div className={`h-full transition-[width] duration-700 ${posture.score >= 70 ? 'bg-rose-400' : posture.score >= 40 ? 'bg-amber-300' : 'bg-cyan-300'}`} style={{ width: `${posture.score}%` }} />}</div>
+          <div className="relative mt-3 flex items-center justify-between"><span className="text-sm font-semibold text-slate-200">{posture.label}</span><span className="text-[11px] text-slate-500" title="Risk is derived from available network status, vulnerability severity, local scan verdicts and recent CISA KEV additions.">Available signals only</span></div>
+          <div className="relative mt-7 border-t border-white/[0.08] pt-4"><p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Contributing factors</p><div className="space-y-3">{posture.factors.length ? posture.factors.slice(0, 5).map(factor => <div key={factor.label} className="flex items-center justify-between gap-4 text-xs"><span className="flex min-w-0 items-center gap-2 text-slate-400"><span className={`h-1 w-1 shrink-0 rounded-full ${factor.points ? 'bg-amber-300' : 'bg-emerald-300'}`} />{factor.label}</span><span className="font-mono text-slate-300">+{factor.points}</span></div>) : <p className="text-sm text-slate-500">Connect a data source or run a local scan to calculate posture.</p>}</div></div>
+          <p className="relative mt-auto pt-6 text-[11px] leading-relaxed text-slate-600">This score is an explainable snapshot, not a compliance grade. Missing sources are excluded rather than estimated.</p>
+        </Surface>
+      </div>
+
+      <Surface className="mt-5 overflow-hidden"><div className="flex flex-col border-b border-white/[0.08] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Detection fabric</p><h2 className="mt-1 text-lg font-semibold text-white">Six connected operations</h2></div><p className="mt-2 font-mono text-xs text-slate-500 sm:mt-0">{detectorCount} local scans / {detectionCount} flagged</p></div><div className="grid sm:grid-cols-2 xl:grid-cols-6">{modules.map(module => <ModuleSummary key={module.title} {...module} />)}</div></Surface>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
+        <Surface className="overflow-hidden"><div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-300">Prioritized queue</p><h2 className="mt-1 text-lg font-semibold text-white">Live attention feed</h2></div><Activity className="h-5 w-5 text-cyan-300" /></div>
+          {activities.length ? <div className="divide-y divide-white/[0.06]">{activities.map(item => { const tone = item.severity === 'critical' ? 'bg-rose-400' : item.severity === 'warning' ? 'bg-amber-300' : item.severity === 'ok' ? 'bg-emerald-300' : 'bg-cyan-300'; return <Link key={item.id} to={item.route} className="group grid gap-3 px-5 py-4 transition hover:bg-white/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300 sm:grid-cols-[12px_minmax(0,1fr)_150px_18px] sm:items-center"><span className={`h-1.5 w-1.5 rounded-full ${tone}`} /><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-200">{item.title}</p><p className="mt-1 truncate text-xs text-slate-500">{item.detail}</p></div><div className="text-left sm:text-right"><p className="text-[11px] font-medium text-slate-400">{item.source}</p><p className="mt-1 font-mono text-[10px] text-slate-600" title={formatDate(item.time, true)}>{relativeTime(item.time)}</p></div><ArrowRight className="hidden h-4 w-4 text-slate-700 transition group-hover:translate-x-0.5 group-hover:text-cyan-300 sm:block" /></Link>; })}</div> : <div className="grid min-h-72 place-items-center px-6 text-center"><div><CloudOff className="mx-auto h-8 w-8 text-slate-600" /><p className="mt-3 text-sm font-medium text-slate-300">No activity yet</p><p className="mt-1 text-xs text-slate-500">Run a scan or connect a service to populate this feed.</p></div></div>}
+        </Surface>
+        <div className="grid gap-5">
+          <Surface className="p-5"><div className="flex items-center justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">Network pulse</p><h2 className="mt-1 text-lg font-semibold text-white">Traffic now</h2></div>{data.network?.monitoring ? <Wifi className="h-5 w-5 text-emerald-300" /> : <WifiOff className="h-5 w-5 text-slate-600" />}</div><div className="mt-6 grid grid-cols-2 gap-px bg-white/[0.08]"><div className="bg-[#0b1424] py-4 pr-4"><ArrowUp className="h-4 w-4 text-violet-300" /><p className="mt-3 font-mono text-xl text-white">{data.network ? formatDataRate(data.network.upload_bps) : '—'}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">Outbound</p></div><div className="bg-[#0b1424] py-4 pl-4"><ArrowDown className="h-4 w-4 text-cyan-300" /><p className="mt-3 font-mono text-xl text-white">{data.network ? formatDataRate(data.network.download_bps) : '—'}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">Inbound</p></div></div></Surface>
+          <Surface className="overflow-hidden"><div className="border-b border-white/[0.08] px-5 py-4"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300">Data integrity</p><h2 className="mt-1 text-lg font-semibold text-white">Source health</h2></div><div className="divide-y divide-white/[0.06]">{(Object.keys(sourceNames) as SourceKey[]).map(key => { const source = data.sources[key]; return <div key={key} className="flex items-center justify-between gap-3 px-5 py-3 text-xs"><span className="flex items-center gap-2 text-slate-300"><SourceDot source={source} compact />{sourceNames[key]}</span><span className="font-mono text-[10px] text-slate-600">{source.status === 'loading' ? 'Connecting' : source.updatedAt ? formatDate(source.updatedAt) : 'Unavailable'}</span></div>; })}</div><div className="flex items-center gap-2 border-t border-white/[0.08] bg-white/[0.015] px-5 py-3 text-[10px] text-slate-600"><Clock3 className="h-3.5 w-3.5" />Last full refresh {data.lastSync ? relativeTime(data.lastSync) : 'in progress'}</div></Surface>
         </div>
       </div>
-
-      {/* Top stat row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {/* Risk gauge */}
-        <Panel className="lg:col-span-1">
-          <p className="mb-3 text-sm text-slate-400">
-            Overall Risk Score
-          </p>
-
-          <div className="flex items-center gap-4">
-            <div className="relative h-20 w-20 shrink-0">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <RadialBarChart
-                  innerRadius="72%"
-                  outerRadius="100%"
-                  data={[
-                    {
-                      value: riskScore.value,
-                      fill: '#f59e0b',
-                    },
-                  ]}
-                  startAngle={90}
-                  endAngle={-270}
-                  cx="50%"
-                  cy="50%"
-                >
-                  <RadialBar
-                    dataKey="value"
-                    background={{
-                      fill: 'rgba(255,255,255,0.06)',
-                    }}
-                    cornerRadius={8}
-                  />
-                </RadialBarChart>
-              </ResponsiveContainer>
-
-              <div className="absolute inset-0 flex items-baseline justify-center gap-0.5 whitespace-nowrap">
-                <span className="text-lg font-bold leading-none text-slate-100">
-                  {riskScore.value}
-                </span>
-
-                <span className="text-[10px] font-semibold leading-none text-slate-500">
-                  /{riskScore.max}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-amber-400">
-                {riskScore.label}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                ▲ {riskScore.delta}
-              </p>
-            </div>
-          </div>
-
-          <div className="-mx-1 mt-3">
-            <Sparkline
-              data={riskScore.spark}
-              color="#f59e0b"
-              id="risk"
-            />
-          </div>
-        </Panel>
-
-        {/* Headline statistics */}
-        {headlineStats.map((stat) => {
-          const Icon = stat.icon;
-
-          return (
-            <Panel key={stat.title}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-400">
-                  {stat.title}
-                </p>
-
-                <Icon
-                  className="h-4 w-4"
-                  style={{
-                    color: stat.accent,
-                  }}
-                />
-              </div>
-
-              <p className="mt-2 text-2xl font-bold text-slate-100">
-                {stat.value}
-              </p>
-
-              <p className="mt-1 text-xs text-emerald-400">
-                ▲ {stat.delta}
-              </p>
-
-              <div className="-mx-1 mt-2">
-                <Sparkline
-                  data={stat.spark}
-                  color={stat.accent}
-                  id={stat.title
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')}
-                />
-              </div>
-            </Panel>
-          );
-        })}
-      </div>
-
-      {/* Threat map + breakdown + alerts */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Global Threat Map */}
-        <Panel className="lg:col-span-2 lg:row-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-200">
-              Global Threat Map
-            </h3>
-
-            <span className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Live · updates every 30s
-            </span>
-          </div>
-
-          <GlobalThreatGlobe />
-
-          {/* Legend */}
-          <div className="mt-4 flex items-center gap-5 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-red-400" />
-              High
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Medium
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-sky-400" />
-              Low
-            </span>
-          </div>
-        </Panel>
-
-        {/* Threats by type */}
-        <Panel>
-          <h3 className="mb-2 text-lg font-semibold text-slate-200">
-            Threats by Type
-          </h3>
-
-          <div className="flex items-center gap-4">
-            <div className="relative h-28 w-28 shrink-0">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <PieChart>
-                  <Pie
-                    data={threatsByType}
-                    dataKey="value"
-                    innerRadius={38}
-                    outerRadius={54}
-                    paddingAngle={2}
-                  >
-                    {threatsByType.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={entry.color}
-                      />
-                    ))}
-                  </Pie>
-
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold text-slate-100">
-                  348
-                </span>
-
-                <span className="text-[10px] text-slate-500">
-                  Total
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-1.5">
-              {threatsByType.map((threat) => (
-                <div
-                  key={threat.name}
-                  className="flex items-center justify-between text-xs"
-                >
-                  <span className="flex items-center gap-1.5 text-slate-400">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{
-                        backgroundColor: threat.color,
-                      }}
-                    />
-
-                    {threat.name}
-                  </span>
-
-                  <span className="text-slate-300">
-                    {threat.value}{' '}
-                    <span className="text-slate-500">
-                      ({threat.pct})
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-
-        {/* AI Detection Engine */}
-        <Panel>
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
-              <Sparkles className="h-4 w-4 text-cyan-300" />
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-slate-200">
-                AI Detection Engine
-              </p>
-
-              <p className="text-xs text-emerald-400">
-                Active &amp; Learning
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
-            <span>Model Accuracy</span>
-
-            <span className="font-medium text-slate-200">
-              98.7%
-            </span>
-          </div>
-
-          <div className="h-2 overflow-hidden rounded-full bg-white/5">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-              style={{
-                width: '98.7%',
-              }}
-            />
-          </div>
-        </Panel>
-
-        {/* Critical Alerts */}
-        <Panel>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-200">
-              Critical Alerts
-            </h3>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
-            >
-              View all
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {criticalAlerts.map((alert) => (
-              <div
-                key={alert.title}
-                className="rounded-lg border-l-2 bg-white/5 p-3"
-                style={{
-                  borderColor:
-                    alert.severity === 'critical' ||
-                    alert.severity === 'high'
-                      ? '#f87171'
-                      : '#fbbf24',
-                }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-200">
-                    {alert.title}
-                  </p>
-
-                  <Badge variant={alert.severity as any}>
-                    {alert.severity}
-                  </Badge>
-                </div>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  {alert.detail}
-                </p>
-
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {alert.time}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-
-      {/* Live Activity Logs */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Panel className="lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
-                <Terminal className="h-4 w-4 text-cyan-300" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-slate-200">
-                  Live Activity Logs
-                </h3>
-
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Security events across monitored infrastructure
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                LIVE
-              </span>
-
-              <button
-                type="button"
-                className="ml-2 flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
-              >
-                View all
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-white/5 bg-[#0B1220]/50">
-            {/* Log Header */}
-            <div className="hidden grid-cols-[90px_1fr_130px_110px_90px] gap-3 border-b border-white/5 bg-white/[0.025] px-4 py-2.5 text-[10px] uppercase tracking-wider text-slate-500 md:grid">
-              <span>Time</span>
-              <span>Event</span>
-              <span>Source</span>
-              <span>Action</span>
-              <span>Status</span>
-            </div>
-
-            {/* Log Rows */}
-            <div className="divide-y divide-white/5">
-              {activityLogs.map((log, index) => (
-                <div
-                  key={`${log.time}-${index}`}
-                  className="grid grid-cols-1 gap-2 px-4 py-3 transition-colors hover:bg-white/[0.035] md:grid-cols-[90px_1fr_130px_110px_90px] md:items-center md:gap-3"
-                >
-                  <span className="text-[11px] font-mono text-slate-500">
-                    {log.time}
-                  </span>
-
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Activity className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-
-                    <span className="truncate text-xs text-slate-300">
-                      {log.event}
-                    </span>
-                  </div>
-
-                  <span className="truncate text-[11px] font-mono text-slate-500">
-                    {log.source}
-                  </span>
-
-                  <span className="text-[11px] text-slate-400">
-                    {log.action}
-                  </span>
-
-                  <span className="text-[11px]">
-                    <LogStatus status={log.status} />
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Log footer */}
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 text-[11px] text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <Clock3 className="h-3.5 w-3.5" />
-                Retention: 30 days
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <LockKeyhole className="h-3.5 w-3.5" />
-                Encrypted
-              </span>
-            </div>
-
-            <span className="text-[11px] text-slate-500">
-              1,842 events processed today
-            </span>
-          </div>
-        </Panel>
-      </div>
-
-      {/* Recent incidents / vulnerability overview / AI insights */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Recent Incidents */}
-        <Panel className="h-full">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-200">
-              Recent Incidents
-            </h3>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
-            >
-              View all
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {recentIncidents.map((incident) => (
-              <div
-                key={incident.id}
-                className="flex cursor-pointer items-center justify-between rounded-lg bg-white/5 p-3 transition-colors hover:bg-white/10"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <AlertTriangle
-                    className="h-4 w-4 shrink-0"
-                    style={{
-                      color:
-                        incident.severity === 'critical'
-                          ? '#f87171'
-                          : incident.severity === 'high'
-                          ? '#fb923c'
-                          : incident.severity === 'medium'
-                          ? '#fbbf24'
-                          : '#60a5fa',
-                    }}
-                  />
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-200">
-                      {incident.title}
-                    </p>
-
-                    <p className="text-xs text-slate-500">
-                      {incident.id}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <Badge
-                    variant={incident.severity as any}
-                  >
-                    {incident.severity}
-                  </Badge>
-
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {incident.time}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        {/* Vulnerability Overview */}
-        <Panel className="h-full">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-200">
-              Vulnerability Overview
-            </h3>
-
-            <button
-              type="button"
-              className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300"
-            >
-              View all
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative h-28 w-28 shrink-0">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <PieChart>
-                  <Pie
-                    data={vulnerabilities}
-                    dataKey="value"
-                    innerRadius={38}
-                    outerRadius={54}
-                    paddingAngle={2}
-                  >
-                    {vulnerabilities.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={entry.color}
-                      />
-                    ))}
-                  </Pie>
-
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold text-slate-100">
-                  184
-                </span>
-
-                <span className="text-[10px] text-slate-500">
-                  Total
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-1.5">
-              {vulnerabilities.map((vulnerability) => (
-                <div
-                  key={vulnerability.name}
-                  className="flex items-center justify-between text-xs"
-                >
-                  <span className="flex items-center gap-1.5 text-slate-400">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{
-                        backgroundColor:
-                          vulnerability.color,
-                      }}
-                    />
-
-                    {vulnerability.name}
-                  </span>
-
-                  <span className="text-slate-300">
-                    {vulnerability.value}{' '}
-                    <span className="text-slate-500">
-                      ({vulnerability.pct})
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-
-        {/* AI Insights */}
-        <Panel className="h-full space-y-3">
-          <h3 className="mb-1 text-lg font-semibold text-slate-200">
-            AI Insights
-          </h3>
-
-          {aiInsights.map((insight) => {
-            const InsightIcon = insight.icon;
-
-            return (
-              <div
-                key={insight.title}
-                className={`flex items-start gap-3 rounded-xl border p-4 ${
-                  insight.tone === 'violet'
-                    ? 'border-violet-400/20 bg-violet-400/5'
-                    : 'border-cyan-400/20 bg-cyan-400/5'
-                }`}
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-200">
-                    {insight.title}
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    {insight.body}
-                  </p>
-
-                  <button
-                    type="button"
-                    className={`mt-2 flex items-center gap-1 text-xs font-medium ${
-                      insight.tone === 'violet'
-                        ? 'text-violet-300'
-                        : 'text-cyan-300'
-                    }`}
-                  >
-                    {insight.cta}
-
-                    <ArrowRight className="h-3 w-3" />
-                  </button>
-                </div>
-
-                <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                    insight.tone === 'violet'
-                      ? 'bg-violet-500/20'
-                      : 'bg-cyan-500/20'
-                  }`}
-                >
-                  <InsightIcon
-                    className={`h-4 w-4 ${
-                      insight.tone === 'violet'
-                        ? 'text-violet-300'
-                        : 'text-cyan-300'
-                    }`}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </Panel>
-      </div>
-
-      {/* Footer stat bar */}
-      <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0F1729]/50 px-6 py-4 backdrop-blur-sm sm:flex-row">
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-cyan-400" />
-
-          <span className="text-sm font-medium text-cyan-300">
-            CyberShield AI
-          </span>
-
-          <span className="text-sm text-slate-400">
-            is protecting your digital world
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          {footerStats.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <div
-                key={stat.label}
-                className="flex items-center gap-2"
-              >
-                <Icon className="h-4 w-4 text-emerald-400" />
-
-                <div className="leading-tight">
-                  <p className="text-[11px] text-slate-500">
-                    {stat.label}
-                  </p>
-
-                  <p className="text-sm font-semibold text-slate-200">
-                    {stat.value}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <footer className="mt-5 flex flex-col gap-2 border-t border-white/[0.08] pt-4 text-[10px] uppercase tracking-[0.14em] text-slate-600 sm:flex-row sm:items-center sm:justify-between"><span className="flex items-center gap-2"><Server className="h-3.5 w-3.5" />Cyberium Shield telemetry fabric</span><span>Unavailable values are never estimated</span></footer>
     </div>
   );
 }
