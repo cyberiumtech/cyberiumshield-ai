@@ -72,7 +72,9 @@
     const badge = document.getElementById("verdict-badge");
     badge.textContent = data.prediction === "phishing"
       ? "Likely phishing"
-      : "Looks legitimate";
+      : data.prediction === "suspicious"
+        ? "Suspicious — verify before opening"
+        : "Looks legitimate";
     badge.className = "verdict-badge " + data.prediction;
 
     document.getElementById("verdict-url").textContent = data.url;

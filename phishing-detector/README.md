@@ -1,74 +1,104 @@
-# CyberShield AI — Phishing URL Detection Module
+# CyberShield AI — Phishing URL Detection (Fixed v2)
 
-A full-stack phishing URL detector: a 200-sample labeled dataset, a trained
-gradient-boosted classifier, a Flask API, and a single-page scanner UI.
+This version fixes the biggest problem in the original detector: the shipped
+model was trained on only **200 synthetic URLs**, while the supplied CSV
+contains **54,807 phishing URLs**. The old model therefore produced dangerous
+false negatives on real-world patterns such as abused free-hosting platforms.
 
-## What's included
+## What changed
 
-```
-phishing-detector/
-├── data/
-│   └── urls.csv              200 labeled URLs (100 legitimate, 100 phishing-pattern)
-├── model/
-│   ├── phishing_model.joblib the trained classifier (created by train_model.py)
-│   └── metadata.json         metrics + feature list (created by train_model.py)
-├── templates/
-│   └── index.html            scanner UI
-├── static/
-│   ├── style.css
-│   └── app.js
-├── features.py                shared feature extraction (used by training AND serving)
-├── generate_dataset.py        builds data/urls.csv
-├── train_model.py             trains + evaluates the model, saves it to model/
-├── app.py                     Flask app (UI + JSON API)
-└── requirements.txt
-```
+- `data/phishing_urls.csv` contains the supplied phishing CSV.
+- **All unique phishing URLs from the supplied file are used for training.**
+- `data/training_urls.csv` contains the phishing samples plus a balanced benign
+  corpus with legitimate login/account URLs, normal cloud/PaaS subdomains and
+  normal shortener examples.
+- The old RandomForest/XGBoost-only toy model was replaced with a
+  **character-level TF-IDF + Logistic Regression + structural URL features**
+  model. Character n-grams are much better at learning obfuscation,
+  lookalike strings, subdomain patterns and URL-specific spelling.
+- URL parsing is defensive: malformed ports, invalid IPv4-looking hosts and
+  unusual URL strings no longer crash the scanner.
+- Shorteners are treated as **suspicious** rather than automatically proven
+  phishing because the destination cannot be known from the short URL alone.
+- Abused dynamic hosting (Pages, Web Apps, tunnels, etc.) is not automatically
+  considered malicious; it is escalated only when combined with additional
+  suspicious URL structure.
+- The API now supports three outcomes:
+  - `legitimate`
+  - `suspicious`
+  - `phishing`
 
-## How it works
+## Current validation
 
-1. **`features.py`** turns any URL into 25 numeric features: length stats,
-   punctuation counts, IP-as-host detection, suspicious keywords
-   (`login`, `verify`, `secure`, …), link-shortener detection, subdomain
-   depth, Shannon entropy of the string, and suspicious TLDs. This exact
-   function is used both to build the training set and to score URLs live,
-   so there's no train/serve mismatch.
-2. **`generate_dataset.py`** builds `data/urls.csv`: 100 legitimate URLs
-   (real, well-known root domains with ordinary paths) and 100
-   phishing-pattern URLs synthesized from well-documented phishing
-   techniques (lookalike hyphenated domains, raw IPs, suspicious TLDs,
-   credential-harvesting keywords). No real malicious sites are included.
-3. **`train_model.py`** extracts features for all 200 rows, does an 80/20
-   stratified split, trains both a Random Forest and an XGBoost classifier,
-   and keeps whichever scores higher on F1. Metrics are saved to
-   `model/metadata.json`.
-4. **`app.py`** loads the saved model once at startup and exposes:
-   - `GET /` — the scanner UI
-   - `POST /api/predict` — `{"url": "..."}` → prediction, probability, risk
-     level, and a breakdown of which signals fired
-   - `GET /api/health` — model name, dataset size, held-out metrics
+The included model was trained on **109,611 unique URL strings** after
+deduplication during training:
 
-The scanner **never fetches the submitted URL** — it only analyzes the
-string structure, so it's safe to paste a suspicious link straight in.
+- Legitimate: 54,807
+- Phishing: 54,804
+- Held-out accuracy: **99.24%**
+- Precision: **99.82%**
+- Recall: **98.66%**
+- F1: **99.23%**
+- ROC-AUC: **99.97%**
 
-## Running it
+These are random held-out metrics from the supplied dataset plus the generated
+benign corpus. They should not be interpreted as production-grade real-world
+accuracy because URLs from the same source can be correlated.
 
-```bash
+## Run on Windows / Python 3.13
+
+Open Command Prompt or PowerShell:
+
+```powershell
+cd phishing-detector
+py -3.13 -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-python3 generate_dataset.py   # writes data/urls.csv (200 rows)
-python3 train_model.py        # trains + saves model/phishing_model.joblib
-python3 app.py                # serves http://localhost:5000
+python app.py
 ```
 
-Re-run `generate_dataset.py` + `train_model.py` any time you want to expand
-past 200 rows — just add more URLs to `data/urls.csv` (or extend
-`generate_dataset.py`) and retrain; nothing else needs to change.
+Then open:
 
-## Notes on the "200 datasets" scope
+```text
+http://127.0.0.1:5001
+```
 
-200 labeled URLs is enough for the classifier to learn the structural
-patterns cleanly (100% held-out accuracy on this synthetic set, per
-`model/metadata.json`) and is well suited to a student project. For a
-production deployment you'd want a much larger, continuously updated
-dataset (e.g. PhishTank, OpenPhish feeds) — the code here is already
-structured so that swapping in a bigger `data/urls.csv` requires no other
-changes.
+The port is 5001 by default.
+
+## Retrain after adding more phishing URLs
+
+Put additional labeled phishing URLs into `data/phishing_urls.csv` with the
+columns:
+
+```text
+url,Type
+https://example.com/something,Phishing
+```
+
+Then rebuild `data/training_urls.csv` if your dataset changes, and run:
+
+```powershell
+python train_model.py
+python app.py
+```
+
+The training script expects `data/training_urls.csv` to contain:
+
+```text
+url,label
+...
+```
+
+where `1 = phishing` and `0 = legitimate`.
+
+## Important detection limitation
+
+This scanner analyzes the URL string only. It does **not** visit or resolve
+the URL. Therefore it cannot prove where a URL shortener redirects, whether a
+legitimate site has been compromised, or whether a page's HTML/login form is
+malicious.
+
+For a stronger production system, the next layer should combine this model
+with safe reputation/redirect intelligence, DNS/domain-age signals, TLS
+certificate information and a regularly updated threat feed.

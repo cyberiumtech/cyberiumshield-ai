@@ -1,5 +1,6 @@
 {
-  "model_name": "XGBoost",
+  "model_name": "Character TF-IDF + Logistic Regression + URL structural features",
+  "version": "2.0",
   "feature_names": [
     "url_length",
     "domain_length",
@@ -31,24 +32,27 @@
     "subdomain_word_count"
   ],
   "metrics": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "accuracy": 0.9924,
+    "precision": 0.9982,
+    "recall": 0.9866,
+    "f1": 0.9923,
+    "roc_auc": 0.9997
   },
-  "rf_metrics": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+  "train_size": 87688,
+  "test_size": 21923,
+  "dataset_size": 109611,
+  "class_counts": {
+    "legitimate": 54807,
+    "phishing": 54804
   },
-  "xgb_metrics": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+  "thresholds": {
+    "phishing": 0.75,
+    "suspicious": 0.35,
+    "note": "Shorteners and abused cloud-hosting URLs can be suspicious without proving destination intent."
   },
-  "train_size": 160,
-  "test_size": 40,
-  "dataset_size": 200
+  "training_notes": [
+    "All URLs from the supplied phishing CSV are included as positive samples.",
+    "Negative samples include legitimate authentication URLs, cloud-hosting subdomains and normal shortener URLs.",
+    "Random train/test metrics can still be optimistic because URLs from the same source may be correlated."
+  ]
 }

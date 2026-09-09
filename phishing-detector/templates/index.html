@@ -89,9 +89,9 @@
     <div class="about-col">
       <h3>How it scores a URL</h3>
       <p>
-        Every request is converted into 25 structural features — domain
+        Every request is converted into 28 structural features — domain
         entropy, subdomain depth, suspicious keywords, IP-as-host, redirect
-        tricks — then passed to a gradient-boosted classifier trained on
+        tricks — plus character-level URL patterns, then passed to a classifier trained on
         {{ metadata.dataset_size }} labeled examples.
       </p>
     </div>
