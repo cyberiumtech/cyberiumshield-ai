@@ -2,18 +2,26 @@
 CyberShield AI — Phishing URL Detection
 Loads the v2 character/numeric model and never requests the submitted URL.
 """
-import json, joblib, numpy as np, pandas as pd
+import json
+import logging
+from pathlib import Path
+
+import joblib
+import numpy as np
 from scipy.sparse import hstack, csr_matrix
 from flask import Flask, request, jsonify, render_template
-from features import extract_features, features_to_vector, FEATURE_NAMES
+from features import extract_features, features_to_vector
 
 app = Flask(__name__)
-BUNDLE = joblib.load("model/phishing_model.joblib")
+LOGGER = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+
+BUNDLE = joblib.load(BASE_DIR / "model" / "phishing_model.joblib")
 MODEL = BUNDLE["model"]
 VECTORIZER = BUNDLE["vectorizer"]
 SCALER = BUNDLE["scaler"]
 
-with open("model/metadata.json", encoding="utf-8") as f:
+with (BASE_DIR / "model" / "metadata.json").open(encoding="utf-8") as f:
     METADATA = json.load(f)
 
 FEATURE_LABELS = {
@@ -68,7 +76,7 @@ def score_url(url):
         p = max(p, 0.55)
 
     # Malformed/obfuscated authority is a strong signal.
-    if feats["has_at"] or feats["has_double_slash_redirect"]:
+    if feats["num_at"] or feats["has_double_slash_redirect"]:
         p = max(p, 0.70)
 
     if p >= 0.75:
@@ -103,16 +111,26 @@ def index():
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
-    data=request.get_json(silent=True) or {}
-    url=str(data.get("url") or "").strip()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error":"Request body must be a JSON object."}),400
+
+    raw_url = data.get("url")
+    if not isinstance(raw_url, str):
+        return jsonify({"error":"The url field must be a string."}),400
+
+    url=raw_url.strip()
     if not url:
         return jsonify({"error":"Please provide a URL to scan."}),400
     if len(url)>2048:
         return jsonify({"error":"URL is too long (max 2048 characters)."}),400
     try:
         return jsonify(score_url(url))
-    except Exception:
+    except (TypeError, ValueError):
         return jsonify({"error":"The URL format could not be parsed safely."}),400
+    except Exception:
+        LOGGER.exception("Phishing model inference failed")
+        return jsonify({"error":"The phishing detector could not complete the scan."}),500
 
 @app.route("/api/health")
 def health():

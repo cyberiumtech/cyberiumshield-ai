@@ -49,7 +49,7 @@ export async function scanMalwareFile(file: File): Promise<MalwareScanResult> {
 
 export interface PhishingScanResult {
   url: string;
-  prediction: 'phishing' | 'legitimate';
+  prediction: 'phishing' | 'suspicious' | 'legitimate';
   phishing_probability: number;
   confidence: number;
   risk_level: 'critical' | 'high' | 'low' | 'minimal';
@@ -63,8 +63,21 @@ const phishingApi = axios.create({
 });
 
 export async function scanPhishingUrl(url: string): Promise<PhishingScanResult> {
-  const response = await phishingApi.post<PhishingScanResult>('/api/predict', { url });
-  return response.data;
+  try {
+    const response = await phishingApi.post<PhishingScanResult>('/api/predict', { url });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError<{ error?: unknown }>(error)) {
+      const apiMessage = error.response?.data?.error;
+      if (typeof apiMessage === 'string' && apiMessage.trim()) {
+        throw new Error(apiMessage);
+      }
+      if (!error.response) {
+        throw new Error('Unable to reach the phishing detector. Make sure the service is running.');
+      }
+    }
+    throw error;
+  }
 }
 
 export interface EmailSpamAnalysis {

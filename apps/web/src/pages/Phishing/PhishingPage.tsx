@@ -15,6 +15,18 @@ const riskStyles: Record<PhishingScanResult['risk_level'], string> = {
   minimal: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
 };
 
+const verdictStyles: Record<PhishingScanResult['prediction'], string> = {
+  phishing: 'text-red-300',
+  suspicious: 'text-orange-300',
+  legitimate: 'text-emerald-300',
+};
+
+const verdictLabels: Record<PhishingScanResult['prediction'], string> = {
+  phishing: 'Phishing',
+  suspicious: 'Suspicious',
+  legitimate: 'Legitimate',
+};
+
 function normalizeUrl(value: string) {
   return /^[a-z]+:\/\//i.test(value) ? value : `https://${value}`;
 }
@@ -52,7 +64,13 @@ export function PhishingPage() {
       setLogs(nextLogs);
       localStorage.setItem('phishing_scan_logs', JSON.stringify(nextLogs));
       window.dispatchEvent(new Event('cyberium:scan-history-updated'));
-      toast.success(scan.prediction === 'phishing' ? 'Phishing indicators detected.' : 'No phishing pattern detected.');
+      if (scan.prediction === 'phishing') {
+        toast.error('Phishing indicators detected.');
+      } else if (scan.prediction === 'suspicious') {
+        toast.warning('Suspicious URL indicators detected.');
+      } else {
+        toast.success('No phishing pattern detected.');
+      }
     } catch (scanError) {
       const message = scanError instanceof Error ? scanError.message : 'Unable to reach the phishing detector.';
       setError(message);
@@ -95,11 +113,11 @@ export function PhishingPage() {
         <section className="rounded-2xl border border-white/10 bg-[#0F1729]/70 p-6">
           <div className="flex flex-wrap items-start justify-between gap-5 border-b border-white/10 pb-5">
             <div className="flex min-w-0 items-start gap-3">
-              {result.prediction === 'phishing' ? <AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-red-300" /> : <CheckCircle2 className="mt-1 h-6 w-6 shrink-0 text-emerald-300" />}
+              {result.prediction === 'legitimate' ? <CheckCircle2 className="mt-1 h-6 w-6 shrink-0 text-emerald-300" /> : <AlertTriangle className={`mt-1 h-6 w-6 shrink-0 ${verdictStyles[result.prediction]}`} />}
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Latest result</p>
                 <p className="mt-1 flex items-center gap-2 break-all text-lg font-semibold text-slate-100">{result.url} <ExternalLink className="h-4 w-4 shrink-0 text-slate-600" /></p>
-                <p className="mt-2 text-sm text-slate-400">Prediction: <span className={result.prediction === 'phishing' ? 'text-red-300' : 'text-emerald-300'}>{result.prediction}</span></p>
+                <p className="mt-2 text-sm text-slate-400">Prediction: <span className={verdictStyles[result.prediction]}>{verdictLabels[result.prediction]}</span></p>
               </div>
             </div>
             <div className={`rounded-lg border px-4 py-3 text-center ${riskStyles[result.risk_level]}`}>
@@ -123,7 +141,7 @@ export function PhishingPage() {
 
       <section className="rounded-2xl border border-white/10 bg-[#0F1729]/70 p-6">
         <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Recent activity</p><h2 className="mt-1 text-lg font-semibold text-slate-100">Scan logs</h2></div>{logs.length > 0 && <button type="button" onClick={clearLogs} className="text-xs text-slate-500 transition hover:text-red-300">Clear logs</button>}</div>
-        {logs.length === 0 ? <p className="mt-5 rounded-lg border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">No URLs have been scanned yet.</p> : <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500"><tr><th className="px-3 py-3 font-medium">URL</th><th className="px-3 py-3 font-medium">Result</th><th className="px-3 py-3 font-medium">Risk</th><th className="px-3 py-3 font-medium">Scanned</th></tr></thead><tbody className="divide-y divide-white/5">{logs.map((log) => <tr key={log.id} className="text-slate-300"><td className="max-w-[360px] truncate px-3 py-3 font-mono text-xs text-slate-200" title={log.url}>{log.url}</td><td className={log.prediction === 'phishing' ? 'px-3 py-3 text-red-300' : 'px-3 py-3 text-emerald-300'}>{log.prediction}</td><td className="px-3 py-3">{formatRisk(log.risk_level)}</td><td className="whitespace-nowrap px-3 py-3 text-xs text-slate-500">{new Date(log.scannedAt).toLocaleString()}</td></tr>)}</tbody></table></div>}
+        {logs.length === 0 ? <p className="mt-5 rounded-lg border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">No URLs have been scanned yet.</p> : <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500"><tr><th className="px-3 py-3 font-medium">URL</th><th className="px-3 py-3 font-medium">Result</th><th className="px-3 py-3 font-medium">Risk</th><th className="px-3 py-3 font-medium">Scanned</th></tr></thead><tbody className="divide-y divide-white/5">{logs.map((log) => <tr key={log.id} className="text-slate-300"><td className="max-w-[360px] truncate px-3 py-3 font-mono text-xs text-slate-200" title={log.url}>{log.url}</td><td className={`px-3 py-3 ${verdictStyles[log.prediction]}`}>{verdictLabels[log.prediction]}</td><td className="px-3 py-3">{formatRisk(log.risk_level)}</td><td className="whitespace-nowrap px-3 py-3 text-xs text-slate-500">{new Date(log.scannedAt).toLocaleString()}</td></tr>)}</tbody></table></div>}
       </section>
     </div>
   );
