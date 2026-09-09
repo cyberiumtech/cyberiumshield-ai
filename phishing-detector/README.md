@@ -35,10 +35,10 @@ deduplication during training:
 
 - Legitimate: 54,807
 - Phishing: 54,804
-- Held-out accuracy: **99.24%**
+- Held-out accuracy: **99.26%**
 - Precision: **99.82%**
-- Recall: **98.66%**
-- F1: **99.23%**
+- Recall: **98.70%**
+- F1: **99.26%**
 - ROC-AUC: **99.97%**
 
 These are random held-out metrics from the supplied dataset plus the generated
