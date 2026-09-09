@@ -109,8 +109,11 @@ def fetch_upstream_catalog(etag='', last_modified=''):
 
     with response:
         length = response.headers.get('Content-Length')
-        if length and int(length) > MAX_RESPONSE_BYTES:
-            raise FeedError('CISA KEV response exceeded the maximum allowed size.')
+        try:
+            if length and int(length) > MAX_RESPONSE_BYTES:
+                raise FeedError('CISA KEV response exceeded the maximum allowed size.')
+        except ValueError as error:
+            raise FeedError('CISA returned an invalid Content-Length header.') from error
         body = response.read(MAX_RESPONSE_BYTES + 1)
         if len(body) > MAX_RESPONSE_BYTES:
             raise FeedError('CISA KEV response exceeded the maximum allowed size.')

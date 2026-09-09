@@ -100,14 +100,14 @@ export function normalizeKevCatalog(
     );
   }
 
-  const count = Number(payload.count);
+  const count = Number(payload.declaredCount ?? payload.count);
   return {
     title: readString(payload.title) || 'CISA Known Exploited Vulnerabilities Catalog',
     catalogVersion: readString(payload.catalogVersion),
     dateReleased: readString(payload.dateReleased),
     declaredCount: Number.isFinite(count) ? count : null,
     vulnerabilities,
-    fetchedAt,
+    fetchedAt: readString(payload.fetchedAt) || fetchedAt,
     sourceStatus:
       payload.sourceStatus === 'cache' || payload.sourceStatus === 'stale'
         ? payload.sourceStatus
@@ -142,9 +142,9 @@ export async function fetchKevCatalog(
     const response = await fetch(
       `${threatIntelligenceBaseUrl}/api/kev${forceRefresh ? '?refresh=1' : ''}`,
       {
-      signal: controller.signal,
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
       }
     );
 
@@ -157,7 +157,9 @@ export async function fetchKevCatalog(
     if (error instanceof ThreatIntelligenceError) throw error;
     if (signal?.aborted) throw error;
     if (controller.signal.aborted) {
-      throw new ThreatIntelligenceError('The threat intelligence request timed out after 20 seconds.');
+      throw new ThreatIntelligenceError(
+        'The threat intelligence request timed out after 20 seconds.'
+      );
     }
     throw new ThreatIntelligenceError(
       'The local threat intelligence service is unavailable on port 5005. Start it and retry.'

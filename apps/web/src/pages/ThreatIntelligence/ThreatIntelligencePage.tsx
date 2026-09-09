@@ -402,16 +402,16 @@ export function ThreatIntelligencePage() {
             dot: 'bg-emerald-300',
           }
         : query.data
-        ? {
-            label: 'Live CISA source',
-            className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
-            dot: 'bg-emerald-300',
-          }
-        : {
-            label: 'Source unavailable',
-            className: 'border-rose-400/25 bg-rose-400/10 text-rose-300',
-            dot: 'bg-rose-300',
-          };
+          ? {
+              label: 'Live CISA source',
+              className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
+              dot: 'bg-emerald-300',
+            }
+          : {
+              label: 'Source unavailable',
+              className: 'border-rose-400/25 bg-rose-400/10 text-rose-300',
+              dot: 'bg-rose-300',
+            };
 
   return (
     <div className="relative space-y-5">
