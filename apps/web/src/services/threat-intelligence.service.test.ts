@@ -6,6 +6,7 @@ import {
   getDueStatus,
   isKnownRansomwareUse,
   normalizeKevCatalog,
+  parseCatalogDate,
   ThreatIntelligenceError,
 } from './threat-intelligence.service';
 
@@ -63,6 +64,8 @@ describe('threat intelligence service', () => {
     expect(getDueStatus('2026-09-06', now)).toBe('overdue');
     expect(getDueStatus('2026-09-14', now)).toBe('due-soon');
     expect(getDueStatus('2026-10-01', now)).toBe('scheduled');
+    expect(getDueStatus('2026-02-31', now)).toBe('scheduled');
+    expect(parseCatalogDate('2026-02-31')).toBeNull();
     expect(isKnownRansomwareUse('Known')).toBe(true);
     expect(isKnownRansomwareUse('Unknown')).toBe(false);
   });

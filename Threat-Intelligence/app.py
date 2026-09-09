@@ -4,7 +4,7 @@ import os
 import re
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -44,6 +44,15 @@ def _text(value):
     return value.strip() if isinstance(value, str) else ''
 
 
+def _iso_date(value):
+    candidate = _text(value)
+    try:
+        date.fromisoformat(candidate)
+    except ValueError:
+        return ''
+    return candidate
+
+
 def normalize_catalog(payload):
     if not isinstance(payload, dict) or not isinstance(payload.get('vulnerabilities'), list):
         raise FeedError('CISA returned an unexpected catalog format.')
@@ -54,8 +63,8 @@ def normalize_catalog(payload):
         if not isinstance(raw, dict):
             continue
         cve = _text(raw.get('cveID')).upper()
-        date_added = _text(raw.get('dateAdded'))
-        if not CVE_PATTERN.fullmatch(cve) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', date_added):
+        date_added = _iso_date(raw.get('dateAdded'))
+        if not CVE_PATTERN.fullmatch(cve) or not date_added:
             continue
         if cve in seen:
             continue
@@ -68,7 +77,7 @@ def normalize_catalog(payload):
             'dateAdded': date_added,
             'shortDescription': _text(raw.get('shortDescription')),
             'requiredAction': _text(raw.get('requiredAction')),
-            'dueDate': _text(raw.get('dueDate')),
+            'dueDate': _iso_date(raw.get('dueDate')),
             'knownRansomwareCampaignUse': _text(raw.get('knownRansomwareCampaignUse')),
             'notes': _text(raw.get('notes')),
             'cwes': [item.strip() for item in raw.get('cwes', []) if isinstance(item, str) and item.strip()]

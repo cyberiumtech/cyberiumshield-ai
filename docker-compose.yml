@@ -9,6 +9,7 @@ services:
       - backend
       - frontend
       - python-ai
+      - threat-intelligence
 
   frontend:
     image: node:20-alpine
@@ -142,7 +143,7 @@ services:
       - THREAT_INTEL_HOST=0.0.0.0
       - THREAT_INTEL_PORT=5005
       - THREAT_INTEL_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
+    command: ["sh", "-c", "pip install -r requirements.txt && waitress-serve --listen=0.0.0.0:5005 app:app"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5005/api/health')"]
       interval: 10s

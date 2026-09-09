@@ -65,12 +65,14 @@ function readString(value: unknown) {
 function normalizeVulnerability(value: unknown): KevVulnerability | null {
   if (!isRecord(value)) return null;
 
+  const cveID = readString(value.cveID).toUpperCase();
+  const dateAdded = readString(value.dateAdded);
   const vulnerability: KevVulnerability = {
-    cveID: readString(value.cveID),
+    cveID,
     vendorProject: readString(value.vendorProject),
     product: readString(value.product),
     vulnerabilityName: readString(value.vulnerabilityName),
-    dateAdded: readString(value.dateAdded),
+    dateAdded,
     shortDescription: readString(value.shortDescription),
     requiredAction: readString(value.requiredAction),
     dueDate: readString(value.dueDate),
@@ -79,7 +81,7 @@ function normalizeVulnerability(value: unknown): KevVulnerability | null {
     cwes: Array.isArray(value.cwes) ? value.cwes.map(readString).filter(Boolean) : [],
   };
 
-  return vulnerability.cveID && vulnerability.dateAdded ? vulnerability : null;
+  return /^CVE-\d{4}-\d{4,}$/.test(cveID) && parseCatalogDate(dateAdded) ? vulnerability : null;
 }
 
 export function normalizeKevCatalog(
@@ -185,9 +187,16 @@ export function isKnownRansomwareUse(value: string) {
 }
 
 export function parseCatalogDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}/.test(value)) return null;
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+  return date;
 }
 
 export function getDueStatus(dueDate: string, now = new Date()): DueStatus {

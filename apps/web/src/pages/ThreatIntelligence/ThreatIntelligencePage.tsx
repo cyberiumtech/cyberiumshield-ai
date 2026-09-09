@@ -362,13 +362,23 @@ export function ThreatIntelligencePage() {
           return false;
         return (
           !needle ||
-          [item.cveID, item.vendorProject, item.product, item.vulnerabilityName].some(value =>
-            value.toLowerCase().includes(needle)
-          )
+          [
+            item.cveID,
+            item.vendorProject,
+            item.product,
+            item.vulnerabilityName,
+            item.shortDescription,
+            item.requiredAction,
+            ...item.cwes,
+          ].some(value => value.toLowerCase().includes(needle))
         );
       })
       .sort((a, b) => {
-        if (sortMode === 'deadline') return dateValue(a.dueDate) - dateValue(b.dueDate);
+        if (sortMode === 'deadline')
+          return (
+            (dateValue(a.dueDate) || Number.MAX_SAFE_INTEGER) -
+            (dateValue(b.dueDate) || Number.MAX_SAFE_INTEGER)
+          );
         if (sortMode === 'vendor')
           return a.vendorProject.localeCompare(b.vendorProject) || b.cveID.localeCompare(a.cveID);
         return dateValue(b.dateAdded) - dateValue(a.dateAdded) || b.cveID.localeCompare(a.cveID);

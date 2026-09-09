@@ -15,6 +15,10 @@ python app.py
 
 The service listens on `http://127.0.0.1:5005` by default.
 
+For a production-style local process, run
+`waitress-serve --listen=127.0.0.1:5005 app:app`. The Docker configuration uses Waitress rather
+than Flask's development server.
+
 - `GET /api/health` — local service and cache status
 - `GET /api/kev` — cached normalized CISA KEV catalog
 - `GET /api/kev?refresh=1` — force an upstream refresh
