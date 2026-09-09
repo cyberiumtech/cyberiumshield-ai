@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -72,6 +72,12 @@ function formatDate(value: string) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'The CISA KEV feed could not be loaded.';
+}
+
+function formatCacheAge(seconds: number) {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  return `${Math.floor(seconds / 3600)}h`;
 }
 
 function dueTone(status: DueStatus) {
@@ -277,6 +283,7 @@ function LoadingState() {
 }
 
 export function ThreatIntelligencePage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [ransomwareFilter, setRansomwareFilter] = useState<RansomwareFilter>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
@@ -288,6 +295,10 @@ export function ThreatIntelligencePage() {
     queryFn: ({ signal }) => fetchKevCatalog(signal),
     staleTime: 15 * 60 * 1000,
     retry: 1,
+  });
+  const refresh = useMutation({
+    mutationFn: () => fetchKevCatalog(undefined, true),
+    onSuccess: catalog => queryClient.setQueryData(['threat-intelligence', 'cisa-kev'], catalog),
   });
   const records = query.data?.vulnerabilities ?? [];
   const now = useMemo(() => new Date(), [query.dataUpdatedAt]);
@@ -368,8 +379,11 @@ export function ThreatIntelligencePage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleRecords = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const hasCachedRefreshError = Boolean(query.data && query.isRefetchError);
-  const sourceState = query.isFetching
+  const isRefreshing = query.isFetching || refresh.isPending;
+  const hasCachedRefreshError = Boolean(
+    query.data && (query.isRefetchError || refresh.isError || query.data.sourceStatus === 'stale')
+  );
+  const sourceState = isRefreshing
     ? {
         label: 'Refreshing source',
         className: 'border-cyan-400/25 bg-cyan-400/10 text-cyan-300',
@@ -381,9 +395,15 @@ export function ThreatIntelligencePage() {
           className: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
           dot: 'bg-amber-300',
         }
-      : query.data
+      : query.data?.sourceStatus === 'cache'
         ? {
-            label: 'Source verified',
+            label: 'Validated cache',
+            className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
+            dot: 'bg-emerald-300',
+          }
+        : query.data
+        ? {
+            label: 'Live CISA source',
             className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
             dot: 'bg-emerald-300',
           }
@@ -419,12 +439,12 @@ export function ThreatIntelligencePage() {
           <button
             type="button"
             className={button}
-            onClick={() => void query.refetch()}
-            disabled={query.isFetching}
+            onClick={() => refresh.mutate()}
+            disabled={isRefreshing}
             aria-label="Refresh CISA KEV data"
           >
-            <RefreshCw className={`h-4 w-4 ${query.isFetching ? 'animate-spin' : ''}`} />
-            {query.isFetching ? 'Refreshing' : 'Refresh feed'}
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing' : 'Refresh feed'}
           </button>
         </div>
       </header>
@@ -436,13 +456,23 @@ export function ThreatIntelligencePage() {
             Released{' '}
             {query.data.dateReleased ? formatDate(query.data.dateReleased) : 'not supplied'}
           </span>
-          <span>Fetched locally {timeFormatter.format(new Date(query.data.fetchedAt))}</span>
+          <span>Fetched by service {timeFormatter.format(new Date(query.data.fetchedAt))}</span>
+          {query.data.sourceStatus !== 'live' && (
+            <span>Cache age {formatCacheAge(query.data.cacheAgeSeconds)}</span>
+          )}
           {query.data.declaredCount !== null && query.data.declaredCount !== records.length && (
             <span className="text-amber-300">
               Source count {numberFormatter.format(query.data.declaredCount)} · parsed{' '}
               {numberFormatter.format(records.length)}
             </span>
           )}
+        </div>
+      )}
+
+      {query.data && (query.data.warning || refresh.isError) && (
+        <div className="relative flex items-start gap-2.5 border-l-2 border-amber-400 bg-amber-400/[.06] px-4 py-3 text-xs leading-5 text-amber-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{query.data.warning || `Refresh failed: ${errorMessage(refresh.error)}`}</p>
         </div>
       )}
 

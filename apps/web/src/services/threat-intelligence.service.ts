@@ -4,6 +4,10 @@ export const CISA_KEV_SOURCE_URL =
 export const CISA_KEV_INFORMATION_URL =
   'https://www.cisa.gov/known-exploited-vulnerabilities-catalog';
 
+const threatIntelligenceBaseUrl = (
+  import.meta.env.VITE_THREAT_INTELLIGENCE_API_URL || '/threat-intelligence-api'
+).replace(/\/$/, '');
+
 export interface KevVulnerability {
   cveID: string;
   vendorProject: string;
@@ -25,6 +29,17 @@ export interface KevCatalog {
   declaredCount: number | null;
   vulnerabilities: KevVulnerability[];
   fetchedAt: string;
+  sourceStatus: 'live' | 'cache' | 'stale';
+  cacheAgeSeconds: number;
+  warning?: string;
+}
+
+export interface ThreatIntelligenceHealth {
+  status: string;
+  source: string;
+  cached: boolean;
+  cache_age_seconds: number | null;
+  time: string;
 }
 
 export type DueStatus = 'overdue' | 'due-soon' | 'scheduled';
@@ -93,28 +108,48 @@ export function normalizeKevCatalog(
     declaredCount: Number.isFinite(count) ? count : null,
     vulnerabilities,
     fetchedAt,
+    sourceStatus:
+      payload.sourceStatus === 'cache' || payload.sourceStatus === 'stale'
+        ? payload.sourceStatus
+        : 'live',
+    cacheAgeSeconds:
+      typeof payload.cacheAgeSeconds === 'number' && payload.cacheAgeSeconds >= 0
+        ? payload.cacheAgeSeconds
+        : 0,
+    warning: readString(payload.warning) || undefined,
   };
 }
 
-export async function fetchKevCatalog(signal?: AbortSignal): Promise<KevCatalog> {
+async function readError(response: Response) {
+  try {
+    const payload = (await response.json()) as { error?: string };
+    return payload.error || `Threat intelligence service returned HTTP ${response.status}.`;
+  } catch {
+    return `Threat intelligence service returned HTTP ${response.status}.`;
+  }
+}
+
+export async function fetchKevCatalog(
+  signal?: AbortSignal,
+  forceRefresh = false
+): Promise<KevCatalog> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort('timeout'), 15_000);
+  const timeout = globalThis.setTimeout(() => controller.abort('timeout'), 20_000);
   const abortFromCaller = () => controller.abort(signal?.reason);
   signal?.addEventListener('abort', abortFromCaller, { once: true });
 
   try {
-    const response = await fetch(CISA_KEV_SOURCE_URL, {
+    const response = await fetch(
+      `${threatIntelligenceBaseUrl}/api/kev${forceRefresh ? '?refresh=1' : ''}`,
+      {
       signal: controller.signal,
       cache: 'no-store',
-      credentials: 'omit',
       headers: { Accept: 'application/json' },
-    });
+      }
+    );
 
     if (!response.ok) {
-      throw new ThreatIntelligenceError(
-        `CISA KEV returned HTTP ${response.status}. Please retry shortly.`,
-        response.status
-      );
+      throw new ThreatIntelligenceError(await readError(response), response.status);
     }
 
     return normalizeKevCatalog(await response.json());
@@ -122,15 +157,25 @@ export async function fetchKevCatalog(signal?: AbortSignal): Promise<KevCatalog>
     if (error instanceof ThreatIntelligenceError) throw error;
     if (signal?.aborted) throw error;
     if (controller.signal.aborted) {
-      throw new ThreatIntelligenceError('The CISA KEV request timed out after 15 seconds.');
+      throw new ThreatIntelligenceError('The threat intelligence request timed out after 20 seconds.');
     }
     throw new ThreatIntelligenceError(
-      'The CISA KEV feed could not be reached from this browser. This may be a network or cross-origin access issue.'
+      'The local threat intelligence service is unavailable on port 5005. Start it and retry.'
     );
   } finally {
-    window.clearTimeout(timeout);
+    globalThis.clearTimeout(timeout);
     signal?.removeEventListener('abort', abortFromCaller);
   }
+}
+
+export async function fetchThreatIntelligenceHealth(signal?: AbortSignal) {
+  const response = await fetch(`${threatIntelligenceBaseUrl}/api/health`, {
+    signal,
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) throw new ThreatIntelligenceError(await readError(response), response.status);
+  return response.json() as Promise<ThreatIntelligenceHealth>;
 }
 
 export function isKnownRansomwareUse(value: string) {
