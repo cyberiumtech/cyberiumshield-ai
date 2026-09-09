@@ -37,6 +37,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/vulnerability-api/, ''),
       },
+      '/threat-intelligence-api': {
+        target: process.env.VITE_THREAT_INTELLIGENCE_PROXY_TARGET || 'http://localhost:5005',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/threat-intelligence-api/, ''),
+      },
     },
   },
   resolve: {
