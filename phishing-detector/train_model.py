@@ -13,6 +13,7 @@ This avoids the old 200-row synthetic-only model and also avoids the
 "perfect 100%" metric trap caused by a tiny toy dataset.
 """
 import json, os, joblib, numpy as np, pandas as pd
+import sklearn
 from scipy.sparse import hstack, csr_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -93,6 +94,7 @@ def main():
     metadata = {
         "model_name": "Character TF-IDF + Logistic Regression + URL structural features",
         "version": "2.0",
+        "scikit_learn_version": sklearn.__version__,
         "feature_names": FEATURE_NAMES,
         "metrics": metrics,
         "train_size": len(X_train),
