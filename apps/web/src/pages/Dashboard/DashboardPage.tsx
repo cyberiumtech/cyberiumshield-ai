@@ -12,7 +12,7 @@ import { useSecurityDashboard, type SourceKey, type SourceState } from '../../ho
 import { formatDataRate } from '../../services/network-monitor.service';
 
 /* ─────────────────────────────────────────────────────────────
-   FONT STACK — swap these two constants to change the page fonts
+   FONT STACK
    ───────────────────────────────────────────────────────────── */
 const FONT_SANS = "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
 const FONT_MONO = "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace";
@@ -21,13 +21,13 @@ const FONT_MONO = "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regu
    CONSTANTS
    ───────────────────────────────────────────────────────────── */
 const mapPoints = [
-  { name: 'London',    coordinates: [-0.13, 51.5] as [number, number],     tone: '#22d3ee' },
-  { name: 'São Paulo', coordinates: [-46.63, -23.55] as [number, number],  tone: '#a78bfa' },
-  { name: 'Virginia',  coordinates: [-77.44, 37.54] as [number, number],   tone: '#22d3ee' },
-  { name: 'Singapore', coordinates: [103.82, 1.35] as [number, number],    tone: '#f59e0b' },
-  { name: 'Tokyo',     coordinates: [139.69, 35.68] as [number, number],   tone: '#a78bfa' },
-  { name: 'Mumbai',    coordinates: [72.88, 19.08] as [number, number],    tone: '#fb7185' },
-  { name: 'Sydney',    coordinates: [151.21, -33.87] as [number, number],  tone: '#22d3ee' },
+  { name: 'London',    coordinates: [-0.13, 51.5] as [number, number],    tone: '#22d3ee' },
+  { name: 'São Paulo', coordinates: [-46.63, -23.55] as [number, number], tone: '#a78bfa' },
+  { name: 'Virginia',  coordinates: [-77.44, 37.54] as [number, number],  tone: '#22d3ee' },
+  { name: 'Singapore', coordinates: [103.82, 1.35] as [number, number],   tone: '#f59e0b' },
+  { name: 'Tokyo',     coordinates: [139.69, 35.68] as [number, number],  tone: '#a78bfa' },
+  { name: 'Mumbai',    coordinates: [72.88, 19.08] as [number, number],   tone: '#fb7185' },
+  { name: 'Sydney',    coordinates: [151.21, -33.87] as [number, number], tone: '#22d3ee' },
 ];
 
 const sourceNames: Record<SourceKey, string> = {
@@ -38,6 +38,9 @@ const sourceNames: Record<SourceKey, string> = {
   vulnerability: 'Vulnerability API',
   intel: 'CISA KEV feed',
 };
+
+/* Shared grid template so feed header + rows align perfectly */
+const FEED_GRID = 'grid grid-cols-[minmax(0,1fr)_120px_92px_14px] items-center gap-4';
 
 /* ─────────────────────────────────────────────────────────────
    UTILITIES
@@ -95,10 +98,10 @@ function PanelHeader({
   }[kickerTone];
 
   return (
-    <div className="flex flex-col gap-3 border-b border-white/[0.08] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-b border-white/[0.08] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <p className={`font-mono text-[10px] font-medium uppercase tracking-[0.18em] ${tone}`}>{kicker}</p>
-        <h2 className="mt-1 text-base font-semibold text-slate-100">{title}</h2>
+        <h2 className="mt-1 text-[15px] font-semibold text-slate-100">{title}</h2>
         {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
       </div>
       {right}
@@ -120,7 +123,7 @@ function SourceDot({ source, compact = false }: { source: SourceState; compact?:
 }
 
 /* ─────────────────────────────────────────────────────────────
-   GLOBE — always rotating, no pause button
+   GLOBE — always rotating
    ───────────────────────────────────────────────────────────── */
 function GlobalThreatGlobe() {
   const [rotation, setRotation] = useState<[number, number, number]>([18, -12, 0]);
@@ -136,7 +139,7 @@ function GlobalThreatGlobe() {
 
   useEffect(() => {
     let lastTimestamp: number | null = null;
-    const degreesPerMillisecond = 360 / 60_000; // full rotation every 60s
+    const degreesPerMillisecond = 360 / 60_000;
 
     const animate = (timestamp: number) => {
       animationFrameRef.current = null;
@@ -188,7 +191,6 @@ function GlobalThreatGlobe() {
 
   return (
     <div className="relative h-[380px] overflow-hidden sm:h-[440px] lg:h-[520px]">
-      {/* Subtle depth vignette — no glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,transparent_42%,#07101e_82%)]" />
 
       <ComposableMap
@@ -246,7 +248,7 @@ function GlobalThreatGlobe() {
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#07101e_0%,transparent_20%,transparent_80%,#07101e_100%)]" />
 
-      {/* Legend chip — flat, no blur */}
+      {/* Legend — flat chip */}
       <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-sm">
         <div className="flex items-center gap-2 border-l-2 border-cyan-500/70 bg-[#07101e] px-3 py-2">
           <Globe2 className="h-3.5 w-3.5 text-cyan-400" />
@@ -275,33 +277,33 @@ type ModuleProps = {
 };
 
 const accentStyles = {
-  cyan:    'text-cyan-400 border-cyan-500/30 bg-cyan-500/[0.06]',
-  violet:  'text-violet-400 border-violet-500/30 bg-violet-500/[0.06]',
-  amber:   'text-amber-400 border-amber-500/30 bg-amber-500/[0.06]',
-  rose:    'text-rose-400 border-rose-500/30 bg-rose-500/[0.06]',
-  emerald: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/[0.06]',
+  cyan:    'text-cyan-400 border-cyan-500/25 bg-cyan-500/[0.05]',
+  violet:  'text-violet-400 border-violet-500/25 bg-violet-500/[0.05]',
+  amber:   'text-amber-400 border-amber-500/25 bg-amber-500/[0.05]',
+  rose:    'text-rose-400 border-rose-500/25 bg-rose-500/[0.05]',
+  emerald: 'text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.05]',
 };
 
 function ModuleTile({ title, eyebrow, value, detail, route, icon: Icon, source, accent, note }: ModuleProps) {
   return (
     <Link
       to={route}
-      className="group relative flex min-h-[190px] flex-col border-t border-white/[0.08] bg-[#0b1424] px-5 py-5 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:border-l sm:border-t-0"
+      className="group relative flex min-h-[180px] flex-col border-t border-white/[0.08] bg-[#0b1424] px-5 py-4 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:border-l sm:border-t-0"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">{eyebrow}</p>
-          <h3 className="mt-1.5 text-sm font-semibold text-slate-100">{title}</h3>
+          <h3 className="mt-1.5 truncate text-sm font-semibold text-slate-100">{title}</h3>
         </div>
-        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded border ${accentStyles[accent]}`}>
-          <Icon className="h-4 w-4" />
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded border ${accentStyles[accent]}`}>
+          <Icon className="h-3.5 w-3.5" />
         </span>
       </div>
 
-      <div className="mt-5 font-mono text-2xl font-semibold tracking-tight text-white">{value}</div>
-      <p className="mt-1 truncate text-xs text-slate-500" title={detail}>{detail}</p>
+      <div className="mt-4 font-mono text-2xl font-semibold tracking-tight text-white">{value}</div>
+      <p className="mt-1 truncate text-[11px] text-slate-500" title={detail}>{detail}</p>
 
-      <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+      <div className="mt-auto flex items-end justify-between gap-3 pt-3">
         <span className="flex min-w-0 items-center gap-2 text-[11px] text-slate-500">
           <SourceDot source={source} compact />
           <span className="truncate">{note}</span>
@@ -483,7 +485,6 @@ export function DashboardPage() {
       style={{ fontFamily: FONT_SANS }}
       className="relative mx-auto w-full min-w-0 max-w-[1640px] pb-10 text-slate-200"
     >
-      {/* Ultra-subtle grid backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(rgba(148,163,184,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,.035)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
       {/* ═══════════════ HEADER ═══════════════ */}
@@ -534,7 +535,6 @@ export function DashboardPage() {
 
       {/* ═══════════════ GLOBE + POSTURE ═══════════════ */}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(310px,.68fr)]">
-
         <Panel className="relative min-w-0 overflow-hidden bg-[#07101e]">
           <GlobalThreatGlobe />
         </Panel>
@@ -543,7 +543,7 @@ export function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">Derived posture</p>
-              <h2 className="mt-1 text-base font-semibold text-slate-100">Operational risk</h2>
+              <h2 className="mt-1 text-[15px] font-semibold text-slate-100">Operational risk</h2>
             </div>
             <Siren className={`h-5 w-5 ${posture.score !== null && posture.score >= 40 ? 'text-rose-400' : 'text-cyan-400'}`} />
           </div>
@@ -552,7 +552,7 @@ export function DashboardPage() {
             <span className="font-mono text-6xl font-light leading-none tracking-tight text-white">
               {posture.score ?? '—'}
             </span>
-            <span className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] leading-relaxed text-slate-500">
+            <span className="mb-1 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-slate-500">
               / 100<br />risk pressure
             </span>
           </div>
@@ -627,6 +627,7 @@ export function DashboardPage() {
       {/* ═══════════════ ACTIVITY + SIDEBAR ═══════════════ */}
       <div className="mt-5 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
 
+        {/* Live attention feed — table structure, no gaps */}
         <Panel className="overflow-hidden">
           <PanelHeader
             kicker="Prioritized queue"
@@ -634,36 +635,46 @@ export function DashboardPage() {
             title="Live attention feed"
             right={<Activity className="h-4 w-4 text-slate-500" />}
           />
+
           {activities.length ? (
-            <div className="divide-y divide-white/[0.06]">
-              {activities.map(item => {
-                const tone =
-                  item.severity === 'critical' ? 'bg-rose-500'
-                  : item.severity === 'warning' ? 'bg-amber-500'
-                  : item.severity === 'ok' ? 'bg-emerald-500'
-                  : 'bg-cyan-500';
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.route}
-                    className="group grid min-w-0 gap-3 px-5 py-3.5 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:grid-cols-[8px_minmax(0,1fr)_140px_16px] sm:items-center"
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${tone}`} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-200">{item.title}</p>
-                      <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <p className="font-mono text-[11px] text-slate-400">{item.source}</p>
-                      <p className="mt-0.5 font-mono text-[10px] text-slate-500" title={formatDate(item.time, true)}>
+            <>
+              {/* Column header */}
+              <div className={`${FEED_GRID} border-b border-white/[0.08] bg-white/[0.015] px-5 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500`}>
+                <span>Event</span>
+                <span>Source</span>
+                <span>When</span>
+                <span aria-hidden="true" />
+              </div>
+
+              {/* Rows */}
+              <div className="divide-y divide-white/[0.05]">
+                {activities.map(item => {
+                  const barTone =
+                    item.severity === 'critical' ? 'border-l-rose-500'
+                    : item.severity === 'warning' ? 'border-l-amber-500'
+                    : item.severity === 'ok' ? 'border-l-emerald-500'
+                    : 'border-l-cyan-500';
+
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.route}
+                      className={`group ${FEED_GRID} border-l-2 ${barTone} py-3 pl-3 pr-5 transition hover:bg-white/[0.025] focus:outline-none focus-visible:bg-white/[0.03]`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-200">{item.title}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
+                      </div>
+                      <span className="truncate font-mono text-[11px] text-slate-400">{item.source}</span>
+                      <span className="font-mono text-[11px] text-slate-500" title={formatDate(item.time, true)}>
                         {relativeTime(item.time)}
-                      </p>
-                    </div>
-                    <ArrowRight className="hidden h-3.5 w-3.5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400 sm:block" />
-                  </Link>
-                );
-              })}
-            </div>
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="grid min-h-72 place-items-center px-6 text-center">
               <div>
@@ -681,7 +692,7 @@ export function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-400">Network pulse</p>
-                <h2 className="mt-1 text-base font-semibold text-slate-100">Traffic now</h2>
+                <h2 className="mt-1 text-[15px] font-semibold text-slate-100">Traffic now</h2>
               </div>
               {data.network?.monitoring
                 ? <Wifi className="h-4 w-4 text-emerald-400" />
