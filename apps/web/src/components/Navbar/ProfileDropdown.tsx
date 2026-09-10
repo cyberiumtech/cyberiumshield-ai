@@ -115,9 +115,6 @@ export function ProfileDropdown() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-slate-100 truncate">{user.name}</p>
                     <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-                    <span className="inline-block mt-0.5 rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-mono font-medium text-cyan-400">
-                      {user.role}
-                    </span>
                   </div>
                 </div>
 
