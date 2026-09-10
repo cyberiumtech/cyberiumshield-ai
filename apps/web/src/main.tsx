@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Toaster } from 'sonner';
 import App from './app/App';
@@ -11,6 +11,12 @@ import logoUrl from './assets/images/Cybershield-AI.png';
 import { applyFavicon, getSettings } from './services/settings.service';
 
 applyFavicon(getSettings().branding, logoUrl);
+
+function AppToaster() {
+  const { actualTheme } = useTheme();
+
+  return <Toaster theme={actualTheme} position="bottom-right" richColors />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,7 +35,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <LanguageProvider>
             <App />
-            <Toaster theme="dark" position="bottom-right" richColors />
+            <AppToaster />
           </LanguageProvider>
         </ThemeProvider>
       </BrowserRouter>

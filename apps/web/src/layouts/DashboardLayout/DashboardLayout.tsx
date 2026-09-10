@@ -7,7 +7,7 @@ export function DashboardLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen min-w-0 overflow-x-clip bg-[#0B1120] text-slate-200">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-canvas text-fg-2">
       <Navbar />
       <div className="flex min-w-0 w-full">
         <aside className="hidden lg:block shrink-0">
