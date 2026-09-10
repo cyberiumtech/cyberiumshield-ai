@@ -118,6 +118,48 @@ function dueTone(status: DueStatus) {
   };
 }
 
+function formatTimestamp(value: string) {
+  if (!value) return 'Timestamp unavailable';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : timeFormatter.format(date);
+}
+
+function readableLabel(value: string) {
+  return value
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/^\w/, character => character.toUpperCase());
+}
+
+function readableValue(value: string | number | boolean | null) {
+  if (value === null) return 'Not supplied';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(3);
+  return value || 'Not supplied';
+}
+
+function verdictTone(verdict: IndicatorResult['verdict']) {
+  if (verdict === 'critical' || verdict === 'high') {
+    return {
+      ring: verdict === 'critical' ? '#fb7185' : '#f43f5e',
+      className: 'border-rose-400/30 bg-rose-400/10 text-rose-200',
+    };
+  }
+  if (verdict === 'medium') {
+    return { ring: '#fbbf24', className: 'border-amber-400/30 bg-amber-400/10 text-amber-200' };
+  }
+  return { ring: '#34d399', className: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' };
+}
+
+function safeExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 function DetailPanel({ item, onClose }: { item: KevVulnerability; onClose: () => void }) {
   const ransomware = isKnownRansomwareUse(item.knownRansomwareCampaignUse);
   const due = dueTone(getDueStatus(item.dueDate));
@@ -300,14 +342,321 @@ function LoadingState() {
   );
 }
 
+function ServiceVisibility({
+  health,
+  feeds,
+  isLoading,
+  isError,
+}: {
+  health?: ThreatIntelligenceHealth;
+  feeds?: ThreatFeedStatus;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  const items = [
+    {
+      label: 'NVD enrichment',
+      value: feeds?.nvd.configured || health?.providers.NVD ? 'Available' : 'Unavailable',
+      note: 'CVE description and CVSS',
+      available: Boolean(feeds?.nvd.configured || health?.providers.NVD),
+      icon: Globe2,
+    },
+    {
+      label: 'ThreatFox',
+      value: feeds?.threatFox.configured || health?.providers.ThreatFox ? 'Configured' : 'Not configured',
+      note: 'IOC match enrichment',
+      available: Boolean(feeds?.threatFox.configured || health?.providers.ThreatFox),
+      icon: Radar,
+    },
+    {
+      label: 'CISA KEV',
+      value: feeds ? `${readableLabel(feeds.cisaKEV.status)} · ${numberFormatter.format(feeds.cisaKEV.count)}` : 'Checking',
+      note: feeds?.cisaKEV.fetchedAt ? `Fetched ${formatTimestamp(feeds.cisaKEV.fetchedAt)}` : 'Live feed and cache',
+      available: Boolean(feeds?.cisaKEV.lastKnownGood || feeds?.cisaKEV.status === 'live'),
+      icon: ShieldCheck,
+    },
+    {
+      label: 'URL risk model',
+      value: health?.modelLoaded ? 'Loaded' : 'Not loaded',
+      note: 'Local URL probability',
+      available: Boolean(health?.modelLoaded),
+      icon: BrainCircuit,
+    },
+  ];
+
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`} aria-labelledby="service-visibility-title">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3 sm:px-5">
+        <div>
+          <h2 id="service-visibility-title" className="text-sm font-semibold text-slate-100">
+            Intelligence service visibility
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">Provider availability can change the evidence returned.</p>
+        </div>
+        <Server className={`h-4 w-4 ${isError ? 'text-rose-300' : 'text-cyan-300'}`} />
+      </header>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-px bg-slate-800 lg:grid-cols-4" aria-label="Loading provider status">
+          {[1, 2, 3, 4].map(item => <div key={item} className="h-24 animate-pulse bg-[#0F1729]" />)}
+        </div>
+      ) : isError && !health && !feeds ? (
+        <p className="px-5 py-5 text-sm text-rose-200">Provider status is unavailable while the local service is offline.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-px bg-slate-800 lg:grid-cols-4">
+          {items.map(({ label, value, note, available, icon: Icon }) => (
+            <article key={label} className="min-w-0 bg-[#0F1729] px-4 py-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-500">{label}</p>
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${available ? 'text-emerald-300' : 'text-amber-300'}`} />
+              </div>
+              <p className={`mt-2 text-xs font-semibold ${available ? 'text-slate-200' : 'text-amber-200'}`}>{value}</p>
+              <p className="mt-1 truncate text-[10px] text-slate-500" title={note}>{note}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ResultWorkspace({ result }: { result: IndicatorResult }) {
+  const tone = verdictTone(result.verdict);
+  const { cisaKEV, nvd, threatFox, dns, urlFeatures, mlProbability } = result.details;
+  const matches = threatFox?.matches ?? [];
+
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`} aria-labelledby="investigation-result-title">
+      <header className="grid gap-5 border-b border-slate-800 px-4 py-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:px-6">
+        <div
+          className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full"
+          style={{ background: `conic-gradient(${tone.ring} ${result.riskScore}%, #1e293b ${result.riskScore}% 100%)` }}
+          aria-label={`Risk score ${result.riskScore} out of 100`}
+        >
+          <div className="flex h-[92px] w-[92px] flex-col items-center justify-center rounded-full bg-[#0F1729]">
+            <span className="font-mono text-3xl font-bold text-slate-100">{result.riskScore}</span>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">of 100</span>
+          </div>
+        </div>
+        <div className="min-w-0 self-center">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${tone.className}`}>
+              {result.verdict} risk
+            </span>
+            <span className="border border-slate-700 bg-slate-900/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+              {result.indicatorType}
+            </span>
+          </div>
+          <h2 id="investigation-result-title" className="mt-3 break-all font-mono text-base font-bold leading-6 text-slate-100" title={result.indicator}>
+            {result.indicator}
+          </h2>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">Checked {formatTimestamp(result.checkedAt)}</p>
+        </div>
+      </header>
+
+      {result.providerErrors.length > 0 && (
+        <aside className="flex items-start gap-2.5 border-b border-amber-400/20 bg-amber-400/[.06] px-4 py-3 text-xs leading-5 text-amber-100 sm:px-6" aria-label="Partial provider warnings">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+          <div>
+            <p className="font-semibold">Partial data returned</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-amber-100/80">
+              {result.providerErrors.map(error => <li key={error}>{error}</li>)}
+            </ul>
+          </div>
+        </aside>
+      )}
+
+      <div className="grid gap-px bg-slate-800 xl:grid-cols-[minmax(0,.85fr)_minmax(0,1.15fr)]">
+        <div className="space-y-6 bg-[#0F1729] px-4 py-5 sm:px-6">
+          <section aria-labelledby="reasons-title">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4 text-cyan-300" />
+              <h3 id="reasons-title" className="text-sm font-semibold text-slate-100">Assessment reasons</h3>
+            </div>
+            {result.reasons.length ? (
+              <ol className="mt-3 space-y-3">
+                {result.reasons.map((reason, index) => (
+                  <li key={`${reason}-${index}`} className="flex gap-3 text-sm leading-6 text-slate-300">
+                    <span className="mt-0.5 font-mono text-[10px] text-cyan-300">{String(index + 1).padStart(2, '0')}</span>
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="mt-3 text-sm leading-6 text-slate-500">No score-changing signals were returned for this indicator.</p>}
+          </section>
+          <section aria-labelledby="evidence-title">
+            <h3 id="evidence-title" className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Evidence facts</h3>
+            {Object.keys(result.evidence).length ? (
+              <dl className="mt-3 grid gap-px overflow-hidden border border-slate-800 bg-slate-800 sm:grid-cols-2">
+                {Object.entries(result.evidence).map(([label, value]) => (
+                  <div key={label} className="min-w-0 bg-[#0B1120] px-3 py-3">
+                    <dt className="text-[9px] uppercase tracking-wider text-slate-500">{readableLabel(label)}</dt>
+                    <dd className="mt-1 break-words font-mono text-xs text-slate-200">{readableValue(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : <p className="mt-2 text-sm text-slate-500">No provider evidence facts were available.</p>}
+          </section>
+        </div>
+
+        <div className="space-y-4 bg-[#0B1120] px-4 py-5 sm:px-6">
+          <h3 className="text-sm font-semibold text-slate-100">Provider detail</h3>
+          {cisaKEV && (
+            <section className="border-l-2 border-rose-400 bg-rose-400/[.055] px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-300">CISA Known Exploited Vulnerability</p>
+              <p className="mt-2 text-sm font-semibold text-slate-100">{cisaKEV.vulnerabilityName}</p>
+              <p className="mt-2 text-xs leading-5 text-slate-300">{cisaKEV.shortDescription}</p>
+              <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-amber-300">Required action</p>
+              <p className="mt-1 text-xs leading-5 text-slate-200">{cisaKEV.requiredAction || 'No required action supplied.'}</p>
+            </section>
+          )}
+          {nvd && (
+            <section className="border border-slate-800 bg-[#0F1729] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-300">NVD</p>
+                <p className="font-mono text-xs text-slate-300">CVSS {nvd.cvssScore ?? 'N/A'} · {nvd.severity || 'unrated'}</p>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-300">{nvd.description || 'NVD did not return a description.'}</p>
+              {nvd.vector && <p className="mt-3 break-all border-l border-slate-700 pl-3 font-mono text-[10px] leading-5 text-slate-400">{nvd.vector}</p>}
+              {nvd.references.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+                  {nvd.references.slice(0, 4).map((reference, index) => {
+                    const href = safeExternalUrl(reference);
+                    return href ? <a key={href} href={href} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Reference {index + 1}<ExternalLink className="h-3 w-3" /></a> : null;
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+          {threatFox && (
+            <section className="border border-slate-800 bg-[#0F1729] px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-300">ThreatFox</p>
+                <span className="font-mono text-xs text-slate-300">{matches.length} match{matches.length === 1 ? '' : 'es'}</span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{threatFox.configured ? `Provider status: ${threatFox.status || 'queried'}` : 'ThreatFox is not configured on this service.'}</p>
+              {matches.slice(0, 3).map((match, index) => (
+                <dl key={index} className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-800 pt-3 text-[10px]">
+                  {Object.entries(match).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).slice(0, 6).map(([key, value]) => (
+                    <div key={key} className="min-w-0"><dt className="uppercase text-slate-600">{readableLabel(key)}</dt><dd className="truncate font-mono text-slate-300" title={String(value)}>{String(value)}</dd></div>
+                  ))}
+                </dl>
+              ))}
+            </section>
+          )}
+          {dns && (
+            <section className="border border-slate-800 bg-[#0F1729] px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-300">DNS resolution · {dns.resolves ? 'resolves' : 'no answer'}</p>
+              {dns.addresses.length > 0 ? <ul className="mt-2 space-y-1 font-mono text-xs text-slate-300">{dns.addresses.map(address => <li key={address} className="break-all">{address}</li>)}</ul> : <p className="mt-2 text-xs text-slate-500">No addresses were returned by the service resolver.</p>}
+            </section>
+          )}
+          {urlFeatures && (
+            <section className="border border-slate-800 bg-[#0F1729] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-300">URL feature analysis</p>
+                <span className="font-mono text-xs text-slate-300">{typeof mlProbability === 'number' ? `${(mlProbability * 100).toFixed(1)}% model probability` : 'No probability'}</span>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
+                {Object.entries(urlFeatures).map(([key, value]) => <div key={key}><dt className="text-[9px] uppercase text-slate-600">{readableLabel(key)}</dt><dd className="mt-0.5 font-mono text-xs text-slate-300">{readableValue(value)}</dd></div>)}
+              </dl>
+            </section>
+          )}
+          {!cisaKEV && !nvd && !threatFox && !dns && !urlFeatures && (
+            <p className="border border-dashed border-slate-700 px-4 py-6 text-sm leading-6 text-slate-500">No provider-specific detail was returned. The score may still reflect deterministic indicator checks.</p>
+          )}
+        </div>
+      </div>
+      <footer className="flex flex-col gap-2 border-t border-slate-800 bg-[#0F1729] px-4 py-3 text-xs leading-5 text-slate-500 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <p className="max-w-3xl">This evidence-weighted score supports analyst triage; it is not a guarantee that an indicator is malicious or safe.</p>
+        <span className={`shrink-0 font-mono text-[10px] uppercase tracking-wider ${result.model.loaded ? 'text-emerald-300' : 'text-amber-300'}`}>Model {result.model.loaded ? 'loaded' : 'not loaded'} · {result.model.used ? 'used' : 'not used'}</span>
+      </footer>
+    </section>
+  );
+}
+
+function InvestigationHistory({
+  records,
+  isLoading,
+  error,
+  isRefreshing,
+  onRefresh,
+  onSelect,
+}: {
+  records: IndicatorResult[];
+  isLoading: boolean;
+  error: unknown;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  onSelect: (result: IndicatorResult) => void;
+}) {
+  return (
+    <section className={`${panel} overflow-hidden rounded-[14px]`} aria-labelledby="investigation-history-title">
+      <header className="flex items-start justify-between gap-4 border-b border-slate-800 px-4 py-4 sm:px-5">
+        <div>
+          <div className="flex items-center gap-2"><History className="h-4 w-4 text-cyan-300" /><h2 id="investigation-history-title" className="text-sm font-semibold text-slate-100">Recent investigations</h2></div>
+          <p className="mt-1 text-xs text-slate-500">Select a stored result to inspect it without querying providers again.</p>
+        </div>
+        <button type="button" className={`${button} min-h-9 shrink-0 px-2.5`} onClick={onRefresh} disabled={isRefreshing} aria-label="Refresh investigation history"><RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Refresh</span></button>
+      </header>
+      {isLoading ? (
+        <div className="space-y-px bg-slate-800" aria-label="Loading recent investigations">{[1, 2, 3].map(item => <div key={item} className="h-14 animate-pulse bg-[#0F1729]" />)}</div>
+      ) : error ? (
+        <div className="px-5 py-8 text-center"><FileWarning className="mx-auto h-5 w-5 text-rose-300" /><p className="mt-2 text-sm font-semibold text-slate-200">History could not be loaded</p><p className="mt-1 text-xs text-slate-500">{errorMessage(error)}</p></div>
+      ) : records.length === 0 ? (
+        <div className="px-5 py-9 text-center"><History className="mx-auto h-6 w-6 text-slate-600" /><p className="mt-3 text-sm font-semibold text-slate-300">No stored investigations yet</p><p className="mt-1 text-xs text-slate-500">Completed checks will appear here, newest first.</p></div>
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[680px] border-collapse text-left">
+              <thead className="bg-[#0B1120] font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500"><tr><th className="px-4 py-3 font-medium">Type / indicator</th><th className="px-4 py-3 font-medium">Score</th><th className="px-4 py-3 font-medium">Verdict</th><th className="px-4 py-3 font-medium">Checked</th></tr></thead>
+              <tbody className="divide-y divide-slate-800">{records.map((record, index) => { const tone = verdictTone(record.verdict); return <tr key={record.id ?? `${record.indicator}-${record.checkedAt}-${index}`} className="hover:bg-cyan-300/[.025]"><td className="max-w-md px-4 py-3"><button type="button" onClick={() => onSelect(record)} className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="block text-[9px] font-bold uppercase tracking-wider text-cyan-300">{record.indicatorType}</span><span className="mt-1 block truncate font-mono text-xs text-slate-200" title={record.indicator}>{record.indicator}</span></button></td><td className="px-4 py-3 font-mono text-sm font-bold text-slate-100">{record.riskScore}</td><td className="px-4 py-3"><span className={`border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${tone.className}`}>{record.verdict}</span></td><td className="px-4 py-3 font-mono text-[10px] text-slate-500">{formatTimestamp(record.checkedAt)}</td></tr>; })}</tbody>
+            </table>
+          </div>
+          <div className="divide-y divide-slate-800 md:hidden">{records.map((record, index) => { const tone = verdictTone(record.verdict); return <button key={record.id ?? `${record.indicator}-${record.checkedAt}-${index}`} type="button" onClick={() => onSelect(record)} className="block w-full px-4 py-4 text-left hover:bg-cyan-300/[.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300"><span className="flex items-center justify-between gap-3"><span className="text-[9px] font-bold uppercase tracking-wider text-cyan-300">{record.indicatorType}</span><span className={`border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${tone.className}`}>{record.riskScore} · {record.verdict}</span></span><span className="mt-2 block truncate font-mono text-xs text-slate-200" title={record.indicator}>{record.indicator}</span><span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-slate-600">{formatTimestamp(record.checkedAt)}</span></button>; })}</div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function ThreatIntelligencePage() {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('investigations');
+  const [indicator, setIndicator] = useState('');
+  const [inputError, setInputError] = useState('');
+  const [activeResult, setActiveResult] = useState<IndicatorResult | null>(null);
+  const lookupAbortRef = useRef<AbortController | null>(null);
   const [search, setSearch] = useState('');
   const [ransomwareFilter, setRansomwareFilter] = useState<RansomwareFilter>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<KevVulnerability | null>(null);
+  const healthQuery = useQuery({
+    queryKey: ['threat-intelligence', 'health'],
+    queryFn: ({ signal }) => fetchThreatIntelligenceHealth(signal),
+    retry: 1,
+    refetchInterval: 30_000,
+  });
+  const feedsQuery = useQuery({
+    queryKey: ['threat-intelligence', 'feeds'],
+    queryFn: ({ signal }) => fetchThreatFeedStatus(signal),
+    retry: 1,
+    refetchInterval: 60_000,
+  });
+  const historyQuery = useQuery({
+    queryKey: ['threat-intelligence', 'history'],
+    queryFn: ({ signal }) => fetchThreatHistory(25, signal),
+    retry: 1,
+  });
+  const lookup = useMutation({
+    mutationFn: (value: string) => checkThreatIndicator(value, lookupAbortRef.current?.signal),
+    onSuccess: result => {
+      setActiveResult(result);
+      setInputError('');
+      void queryClient.invalidateQueries({ queryKey: ['threat-intelligence', 'history'] });
+      void queryClient.invalidateQueries({ queryKey: ['threat-intelligence', 'feeds'] });
+    },
+  });
   const query = useQuery({
     queryKey: ['threat-intelligence', 'cisa-kev'],
     queryFn: ({ signal }) => fetchKevCatalog(signal),
@@ -441,41 +790,121 @@ export function ThreatIntelligencePage() {
               dot: 'bg-rose-300',
             };
 
+  const serviceState = healthQuery.isLoading
+    ? { label: 'Checking service', className: 'border-slate-700 bg-slate-800/70 text-slate-300', dot: 'bg-slate-400 animate-pulse' }
+    : healthQuery.data?.status === 'ok' && !feedsQuery.isError
+      ? { label: 'Service live', className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200', dot: 'bg-emerald-300' }
+      : healthQuery.data
+        ? { label: 'Service degraded', className: 'border-amber-400/25 bg-amber-400/10 text-amber-200', dot: 'bg-amber-300' }
+        : { label: 'Service offline', className: 'border-rose-400/25 bg-rose-400/10 text-rose-200', dot: 'bg-rose-300' };
+
+  function submitIndicator(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (lookup.isPending) return;
+    if (!indicator.trim()) {
+      setInputError('Enter a CVE, IP, domain, URL, MD5, SHA-1 or SHA-256 indicator.');
+      return;
+    }
+    setInputError('');
+    lookup.reset();
+    lookupAbortRef.current = new AbortController();
+    lookup.mutate(indicator);
+  }
+
+  function cancelLookup() {
+    lookupAbortRef.current?.abort();
+  }
+
+  const lookupError = lookup.error instanceof Error
+    ? lookup.error.name === 'AbortError'
+      ? 'Investigation cancelled.'
+      : lookup.error.message
+    : lookup.isError
+      ? 'The indicator could not be investigated.'
+      : '';
+
   return (
     <div className="relative space-y-5">
       <div className="pointer-events-none absolute inset-x-0 -top-6 h-64 opacity-50 [background-image:linear-gradient(rgba(34,211,238,.025)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,.025)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <header className="relative flex flex-col gap-4 border-b border-slate-800 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
-            Threat intelligence / CISA KEV
+            Intelligence operations / Evidence workbench
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl">
-            Known exploitation, prioritized.
+            Threat Intelligence
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Triage vulnerabilities CISA confirms are exploited in the wild, then review the required
-            federal remediation action and due date.
+            Investigate indicators against live providers, local analysis, persisted evidence, and
+            the CISA Known Exploited Vulnerabilities catalog.
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div
-            className={`inline-flex min-h-10 items-center gap-2 border px-3 text-xs font-semibold ${sourceState.className}`}
-            aria-live="polite"
-          >
-            <span className={`h-2 w-2 rounded-full ${sourceState.dot}`} /> {sourceState.label}
-          </div>
-          <button
-            type="button"
-            className={button}
-            onClick={() => refresh.mutate()}
-            disabled={isRefreshing}
-            aria-label="Refresh CISA KEV data"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing' : 'Refresh feed'}
-          </button>
+        <div className={`inline-flex min-h-10 items-center gap-2 self-start border px-3 text-xs font-semibold lg:self-auto ${serviceState.className}`} aria-live="polite">
+          <span className={`h-2 w-2 rounded-full ${serviceState.dot}`} /> {serviceState.label}
         </div>
       </header>
+
+      <nav className="relative flex w-full border-b border-slate-800" aria-label="Threat intelligence workspace">
+        {([
+          ['investigations', 'IOC investigations', Search],
+          ['catalog', 'CISA KEV catalog', ShieldAlert],
+        ] as const).map(([value, label, Icon]) => (
+          <button key={value} type="button" onClick={() => setActiveTab(value)} className={`relative inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-3 text-xs font-semibold transition sm:flex-none sm:justify-start ${activeTab === value ? 'text-cyan-200' : 'text-slate-500 hover:text-slate-300'} focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300`} aria-current={activeTab === value ? 'page' : undefined}>
+            <Icon className="h-4 w-4" /> {label}
+            {activeTab === value && <span className="absolute inset-x-0 -bottom-px h-px bg-cyan-300" />}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === 'investigations' && (
+        <div className="relative space-y-5">
+          <section className={`${panel} overflow-hidden rounded-[14px]`} aria-labelledby="indicator-composer-title">
+            <div className="grid gap-px bg-slate-800 lg:grid-cols-[minmax(0,1fr)_240px]">
+              <div className="bg-[#0F1729] px-4 py-5 sm:px-6">
+                <div className="flex items-center gap-2"><Activity className="h-4 w-4 text-cyan-300" /><h2 id="indicator-composer-title" className="text-base font-semibold text-slate-100">Investigate an indicator</h2></div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">CVE, IPv4/IPv6, domain, URL, MD5, SHA-1 or SHA-256. Results are persisted locally.</p>
+                <form className="mt-4" onSubmit={submitIndicator} noValidate>
+                  <label htmlFor="threat-indicator" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Indicator value</label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="relative min-w-0 flex-1">
+                      <Network className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-500" />
+                      <input id="threat-indicator" value={indicator} onChange={event => { setIndicator(event.target.value); if (inputError) setInputError(''); }} placeholder="CVE-2024-3094 or suspicious.example" className={`${control} h-12 w-full pl-10 font-mono`} disabled={lookup.isPending} aria-invalid={Boolean(inputError || lookupError)} aria-describedby="indicator-help indicator-error" autoComplete="off" spellCheck={false} />
+                    </div>
+                    <button type="submit" className={`${button} h-12 border-cyan-400/35 bg-cyan-400/[.08] px-5 text-cyan-100`} disabled={lookup.isPending || !indicator.trim()}>
+                      {lookup.isPending ? <><RefreshCw className="h-4 w-4 animate-spin" /> Checking providers</> : <><Search className="h-4 w-4" /> Run investigation</>}
+                    </button>
+                    {lookup.isPending && <button type="button" className={`${button} h-12 px-4`} onClick={cancelLookup}><Ban className="h-4 w-4" /> Cancel</button>}
+                  </div>
+                  <div id="indicator-help" className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
+                    <span className="mr-1 font-mono uppercase tracking-wider">Examples</span>
+                    {['CVE-2024-3094', '8.8.8.8', 'example.com', 'https://example.com/login'].map(example => <button key={example} type="button" onClick={() => { setIndicator(example); setInputError(''); lookup.reset(); }} disabled={lookup.isPending} className="border border-slate-700 bg-[#0B1120] px-2 py-1 font-mono text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:opacity-50">{example}</button>)}
+                  </div>
+                  <div id="indicator-error" className="mt-3 min-h-5 text-xs" aria-live="assertive">
+                    {(inputError || lookupError) && <p className="flex items-start gap-2 text-rose-300"><CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />{inputError || lookupError}</p>}
+                    {lookup.isPending && <p className="text-cyan-300">Querying applicable providers. Slow upstream services may take up to 20 seconds.</p>}
+                  </div>
+                </form>
+              </div>
+              <aside className="flex flex-col justify-between bg-[#0B1120] px-4 py-5">
+                <div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">Analysis path</p><ol className="mt-3 space-y-3 text-xs text-slate-400"><li className="flex gap-2"><span className="font-mono text-cyan-300">01</span>Classify indicator</li><li className="flex gap-2"><span className="font-mono text-cyan-300">02</span>Collect provider evidence</li><li className="flex gap-2"><span className="font-mono text-cyan-300">03</span>Score deterministic signals</li></ol></div>
+                <p className="mt-5 border-t border-slate-800 pt-3 text-[10px] leading-4 text-slate-600">Provider failures are reported as partial-data warnings and do not erase successful evidence.</p>
+              </aside>
+            </div>
+          </section>
+
+          <div aria-live="polite">{activeResult ? <ResultWorkspace result={activeResult} /> : <section className="border border-dashed border-slate-700 bg-[#0F1729]/50 px-5 py-8 text-center"><Search className="mx-auto h-6 w-6 text-slate-600" /><h2 className="mt-3 text-sm font-semibold text-slate-300">Evidence workspace ready</h2><p className="mx-auto mt-1 max-w-lg text-xs leading-5 text-slate-500">Submit an indicator or select a recent investigation to inspect score drivers and provider-specific context.</p></section>}</div>
+
+          <ServiceVisibility health={healthQuery.data} feeds={feedsQuery.data} isLoading={healthQuery.isLoading || feedsQuery.isLoading} isError={healthQuery.isError || feedsQuery.isError} />
+          <InvestigationHistory records={historyQuery.data ?? []} isLoading={historyQuery.isLoading} error={historyQuery.error} isRefreshing={historyQuery.isFetching} onRefresh={() => void historyQuery.refetch()} onSelect={result => { setActiveResult(result); window.requestAnimationFrame(() => document.getElementById('investigation-result-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} />
+        </div>
+      )}
+
+      {activeTab === 'catalog' && (
+        <div className="relative space-y-5">
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div><p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">CISA KEV evidence</p><h2 className="mt-1 text-xl font-bold text-slate-100">Known exploitation, prioritized.</h2><p className="mt-1 text-sm text-slate-500">Browse confirmed exploitation records, remediation actions, and due dates.</p></div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center"><div className={`inline-flex min-h-10 items-center gap-2 border px-3 text-xs font-semibold ${sourceState.className}`} aria-live="polite"><span className={`h-2 w-2 rounded-full ${sourceState.dot}`} /> {sourceState.label}</div><button type="button" className={button} onClick={() => refresh.mutate()} disabled={isRefreshing} aria-label="Refresh CISA KEV data"><RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />{isRefreshing ? 'Refreshing' : 'Refresh feed'}</button></div>
+          </header>
 
       {query.data && (
         <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-500">

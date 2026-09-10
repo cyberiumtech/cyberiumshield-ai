@@ -44,6 +44,8 @@ def recent(limit=50):
             stored = dict(row)
             try:
                 result = json.loads(stored['result_json'])
+                if not isinstance(result, dict):
+                    raise TypeError('stored result is not an object')
             except (KeyError, TypeError, json.JSONDecodeError):
                 result = {
                     'indicator': stored.get('indicator', ''),
