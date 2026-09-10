@@ -325,6 +325,59 @@ body {
   border-color: rgb(var(--color-line-2));
 }
 
+/* Light-safe operational foregrounds. Filled controls keep their explicit
+   white/slate-950 labels; these rules only tune colored text and icons. */
+.light .text-cyan-300,
+.light .text-cyan-400,
+.light .text-cyan-500,
+.light [class~='hover:text-cyan-300']:hover,
+.light [class~='hover:text-cyan-400']:hover,
+.light .group:hover [class~='group-hover:text-cyan-400'],
+.light .group:hover [class~='group-hover:text-cyan-500'] {
+  color: rgb(var(--color-accent-cyan));
+}
+
+.light .text-emerald-300,
+.light .text-emerald-400,
+.light .text-emerald-500,
+.light .text-green-400 {
+  color: rgb(var(--color-accent-emerald));
+}
+
+.light .text-amber-300,
+.light .text-amber-400,
+.light .text-amber-500,
+.light .text-yellow-300,
+.light .text-yellow-400,
+.light .text-orange-300,
+.light .text-orange-400,
+.light [class~='hover:text-amber-300']:hover {
+  color: rgb(var(--color-accent-amber));
+}
+
+.light .text-rose-300,
+.light .text-rose-400,
+.light [class~='hover:text-rose-300']:hover,
+.light [class~='hover:text-rose-400']:hover {
+  color: rgb(var(--color-accent-rose));
+}
+
+.light .text-red-300,
+.light .text-red-400 {
+  color: rgb(var(--color-accent-red));
+}
+
+.light .text-violet-300,
+.light .text-violet-400,
+.light [class~='hover:text-violet-300']:hover {
+  color: rgb(var(--color-accent-violet));
+}
+
+.light .text-blue-300,
+.light .text-blue-400 {
+  color: rgb(var(--color-accent-blue));
+}
+
 /* Backdrop filter support */
 @supports (backdrop-filter: blur(10px)) {
   .backdrop-blur-sm {
