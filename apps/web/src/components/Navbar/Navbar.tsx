@@ -124,8 +124,8 @@ export function Navbar() {
             <NotificationDropdown />
           </div>
 
-          {/* Prominent Profile Section */}
-          <div className="relative z-30 flex items-center border-l border-slate-800/80 pl-2.5 sm:pl-4 min-h-[44px]">
+          {/* Managed-Width Profile Section */}
+          <div className="relative z-30 flex shrink-0 items-center border-l border-slate-800/80 pl-2.5 sm:pl-3">
             <ProfileDropdown />
           </div>
         </div>
