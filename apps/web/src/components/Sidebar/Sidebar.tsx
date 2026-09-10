@@ -2,49 +2,109 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminRole } from '../AdminRoute/AdminRoute';
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  Activity,
+  ShieldAlert,
+  Radar,
+  Bug,
+  Fish,
+  MailWarning,
+  FileTerminal,
+  Siren,
+  FileBarChart,
+  LineChart,
+  Bot,
+  Settings
+} from 'lucide-react';
 
-const items: Array<{ label: string; path: string; adminOnly?: boolean }> = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Security Center', path: '/security-center' },
-  { label: 'Network Monitoring', path: '/network' },
-  { label: 'Vulnerability Management', path: '/vulnerability' },
-  { label: 'Threat Intelligence', path: '/threat-intelligence' },
-  { label: 'Malware Detection', path: '/malware' },
-  { label: 'Phishing Detection', path: '/phishing' },
-  { label: 'Email Spam Detector', path: '/email-spam' },
-  { label: 'Logs', path: '/logs' },
-  { label: 'Incidents', path: '/incidents' },
-  { label: 'Reports', path: '/reports' },
-  { label: 'Analytics', path: '/analytics' },
-  { label: 'AI Assistant', path: '/ai-assistant' },
-  { label: 'Administration', path: '/admin', adminOnly: true },
+// Add the icon property to the interface
+interface SidebarItem {
+  label: string;
+  path: string;
+  adminOnly?: boolean;
+  icon: React.ElementType;
+}
+
+const items: SidebarItem[] = [
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Security Center', path: '/security-center', icon: ShieldCheck },
+  { label: 'Network Monitoring', path: '/network', icon: Activity },
+  { label: 'Vulnerability Management', path: '/vulnerability', icon: ShieldAlert },
+  { label: 'Threat Intelligence', path: '/threat-intelligence', icon: Radar },
+  { label: 'Malware Detection', path: '/malware', icon: Bug },
+  { label: 'Phishing Detection', path: '/phishing', icon: Fish },
+  { label: 'Email Spam Detector', path: '/email-spam', icon: MailWarning },
+  { label: 'Logs', path: '/logs', icon: FileTerminal },
+  { label: 'Incidents', path: '/incidents', icon: Siren },
+  { label: 'Reports', path: '/reports', icon: FileBarChart },
+  { label: 'Analytics', path: '/analytics', icon: LineChart },
+  { label: 'AI Assistant', path: '/ai-assistant', icon: Bot },
+  { label: 'Administration', path: '/admin', adminOnly: true, icon: Settings },
 ];
 
 export function Sidebar({ activePath, mobile = false }: { activePath: string; mobile?: boolean }) {
   const { user } = useAuth();
+  
+  // Filter visible items based on admin role
   const visibleItems = items.filter(item => !item.adminOnly || isAdminRole(user?.role));
+
   return (
     <nav
-      className={`${mobile ? 'h-auto px-0 py-0' : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-4'}`}
+      className={`${
+        mobile 
+          ? 'h-auto px-2 py-2' 
+          : 'h-[calc(100vh-72px)] sticky top-[72px] overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent'
+      }`}
     >
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {visibleItems.map(it => {
-          // Use `startsWith` for parent paths to remain active on child routes,
-          // but use an exact match for the main dashboard link.
-          const active =
-            it.path === '/dashboard' ? activePath === it.path : activePath.startsWith(it.path);
+          const Icon = it.icon;
+          const active = it.path === '/dashboard' 
+            ? activePath === it.path 
+            : activePath.startsWith(it.path);
+
           return (
             <Link
               key={it.path}
               to={it.path}
-              className={
-                'block rounded-xl px-3 py-2 text-sm border transition ' +
-                (active
-                  ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200'
-                  : 'border-transparent text-slate-300 hover:bg-white/5 hover:border-white/10')
-              }
+              className={`
+                group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium 
+                transition-all duration-300 ease-out overflow-hidden
+                ${active 
+                  ? 'bg-cyan-500/15 text-cyan-300' 
+                  : 'text-slate-400 hover:text-cyan-100 hover:bg-slate-800/50'
+                }
+              `}
             >
-              {it.label}
+              {/* Active state subtle background glow effect */}
+              {active && (
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-50" />
+              )}
+              
+              {/* Active Indicator Line */}
+              <div 
+                className={`
+                  absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full bg-cyan-400 
+                  transition-all duration-300
+                  ${active ? 'h-3/5 opacity-100' : 'h-0 opacity-0 group-hover:h-2 group-hover:opacity-50'}
+                `} 
+              />
+
+              {/* Icon with smooth scaling and color transition */}
+              <Icon 
+                strokeWidth={active ? 2.5 : 2} 
+                className={`
+                  w-5 h-5 flex-shrink-0 transition-transform duration-300
+                  ${active ? 'text-cyan-400 scale-100' : 'text-slate-500 group-hover:scale-110 group-hover:text-cyan-300'}
+                `} 
+              />
+              
+              {/* Label */}
+              <span className="relative z-10 truncate tracking-wide">
+                {it.label}
+              </span>
             </Link>
           );
         })}
