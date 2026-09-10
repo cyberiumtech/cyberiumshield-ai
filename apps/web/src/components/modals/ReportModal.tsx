@@ -355,7 +355,8 @@ export function ReportModal({
                         border
                         border-[var(--border-color)]
                         bg-[var(--bg-secondary)]
-                        shadow-2xl"
+                        shadow-2xl
+                        "
           >
             <header className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
               <div>
