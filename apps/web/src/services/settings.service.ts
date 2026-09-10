@@ -119,7 +119,7 @@ function normalize(raw: unknown, organizationName = ''): AppSettings {
     email: {
       zeptoApiKey: text(email.zeptoApiKey), zeptoFromAddress: text(email.zeptoFromAddress),
       zeptoFromName: text(email.zeptoFromName), smtpEnabled: bool(email.smtpEnabled),
-      smtpHost: text(email.smtpHost), smtpPort: Number.isInteger(port) ? port : 587,
+      smtpHost: text(email.smtpHost), smtpPort: Number.isInteger(port) && port >= 1 && port <= 65535 ? port : 587,
       smtpUsername: text(email.smtpUsername), smtpPassword: text(email.smtpPassword),
       smtpEncryption: email.smtpEncryption === 'none' || email.smtpEncryption === 'ssl' ? email.smtpEncryption : 'tls',
       smtpFromName: text(email.smtpFromName), smtpFromAddress: text(email.smtpFromAddress),

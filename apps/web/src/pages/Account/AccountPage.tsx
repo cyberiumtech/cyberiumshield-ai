@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme, Theme } from '../../contexts/ThemeContext';
 import type { User } from '../../services/auth.service';
+import { isAdminRole } from '../../components/AdminRoute/AdminRoute';
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 
@@ -180,6 +181,11 @@ export function AccountPage() {
   };
 
   const role = formatRole(user.role || 'administrator');
+  const quickActions = [
+    [Grid2X2, 'Dashboard', '/dashboard'],
+    [CreditCard, 'Subscription', '/subscription'],
+    ...(isAdminRole(user.role) ? [[Settings, 'Settings', '/settings']] : []),
+  ] as const;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 text-zinc-100">
@@ -227,7 +233,7 @@ export function AccountPage() {
 
         <aside className="space-y-6">
           <Card><CardHeading title="Account details" /><dl className="divide-y divide-zinc-800 px-5">{[['Status', <span className="inline-flex items-center gap-1.5 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Active</span>], ['Role', role], ['Joined', new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })], ['Last updated', relativeUpdated(user.updated_at)]].map(([label, value]) => <div key={String(label)} className="flex items-center justify-between gap-4 py-3 text-sm"><dt className="text-zinc-500">{label}</dt><dd className="text-right text-zinc-300">{value}</dd></div>)}</dl></Card>
-          <Card><CardHeading title="Quick actions" /><div className="p-2">{[[Grid2X2, 'Dashboard', '/dashboard'], [CreditCard, 'Subscription', '/subscription'], [Settings, 'Settings', '/settings']].map(([Icon, label, path]) => <Link key={String(path)} to={String(path)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-zinc-400 transition hover:bg-white/[0.04] hover:text-white"><span className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900"><Icon className="h-4 w-4" /></span>{String(label)}<span className="ml-auto text-zinc-700">→</span></Link>)}</div></Card>
+          <Card><CardHeading title="Quick actions" /><div className="p-2">{quickActions.map(([Icon, label, path]) => <Link key={path} to={path} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-zinc-400 transition hover:bg-white/[0.04] hover:text-white"><span className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900"><Icon className="h-4 w-4" /></span>{label}<span className="ml-auto text-zinc-700">→</span></Link>)}</div></Card>
         </aside>
       </div>
     </div>

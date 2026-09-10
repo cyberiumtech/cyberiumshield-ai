@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  Bell, Building2, Check, ChevronRight, Eye, EyeOff, Image, Link2, Mail,
+  Bell, Building2, ChevronRight, Eye, EyeOff, Image, Link2, Mail,
   RefreshCcw, Save, ServerCog, ShieldAlert, TestTube2, Trash2, Upload, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
