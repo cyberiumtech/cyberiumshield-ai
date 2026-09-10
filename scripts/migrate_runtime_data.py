@@ -120,11 +120,65 @@ def import_models(db):
     return imported
 
 
+def seed_demo_rows(db):
+    """Give every new domain a clearly labelled baseline row when it is empty."""
+    seeded = 0
+    now = datetime.utcnow()
+    with db.cursor() as cursor:
+        def empty(table):
+            cursor.execute(f'SELECT COUNT(*) AS count FROM `{table}`')
+            return cursor.fetchone()['count'] == 0
+
+        if empty('security_events'):
+            payload = {'demo': True, 'message': 'Central security storage initialized'}
+            cursor.execute("""INSERT INTO security_events(event_type,source,severity,title,payload,occurred_at,created_at)
+                VALUES('SYSTEM_INITIALIZED','security-center','info','Central security storage initialized',%s,%s,%s)""",
+                (json.dumps(payload), now, now)); seeded += 1
+        if empty('network_monitoring_records'):
+            cursor.execute("""INSERT INTO network_monitoring_records(protocol,local_address,remote_address,connection_status,process_name,payload,observed_at)
+                VALUES('TCP','127.0.0.1:5173','127.0.0.1:8000','BASELINE','cybershield-demo',%s,%s)""",
+                (json.dumps({'demo': True}), now)); seeded += 1
+        if empty('vulnerability_assets'):
+            cursor.execute("""INSERT INTO vulnerability_assets(name,address,owner,environment,notes,created_at)
+                VALUES('Demo application','127.0.0.1','Security Team','Development','Seed record; replace with a real asset.',%s)""", (now,))
+            asset_id = cursor.lastrowid
+            cursor.execute("""INSERT INTO vulnerability_findings(asset_id,cve,title,description,severity,cvss,kev,status,source,payload,created_at,updated_at)
+                VALUES(%s,'','Baseline security review','Demo finding created during database initialization.','Info',0,0,'Open','Seed',%s,%s,%s)""",
+                (asset_id, json.dumps({'demo': True}), now, now)); seeded += 2
+        if empty('threat_intelligence_observations'):
+            result = {'indicator': 'example.com', 'indicatorType': 'domain', 'riskScore': 0,
+                'verdict': 'inconclusive', 'checkedAt': now.isoformat() + 'Z', 'demo': True}
+            cursor.execute("""INSERT INTO threat_intelligence_observations(indicator,indicator_type,risk_score,verdict,result,created_at)
+                VALUES('example.com','domain',0,'inconclusive',%s,%s)""", (json.dumps(result), now)); seeded += 1
+        detector_seeds = [
+            ('malware_scans', 'filename,sha256', ('demo-safe.txt', None), 'Legitimate', {'filename':'demo-safe.txt','classification':'Legitimate','threat_score':0,'confidence':100,'demo':True}),
+            ('phishing_scans', 'url', ('https://example.com',), 'legitimate', {'url':'https://example.com','prediction':'legitimate','phishing_probability':0,'confidence':1,'risk_level':'minimal','signals':[],'model':'seed','demo':True}),
+            ('email_spam_scans', 'sender,subject', ('security@example.com','Security test message'), 'legitimate', {'sender':'security@example.com','subject':'Security test message','verdict':'legitimate','score':0,'confidence':100,'signals':[],'demo':True}),
+        ]
+        for table, columns, values, verdict, result in detector_seeds:
+            if not empty(table): continue
+            placeholders = ','.join(['%s'] * len(values))
+            cursor.execute(f'''INSERT INTO `{table}`({columns},verdict,score,confidence,model_name,model_version,result,scanned_at)
+                VALUES({placeholders},%s,0,100,'seed','1',%s,%s)''', (*values, verdict, json.dumps(result), now))
+            seeded += 1
+        if empty('incident_field_notes'):
+            incident_id = 'INC-DEMO-0001'
+            cursor.execute("""INSERT INTO incident_field_notes(id,title,description,author,severity,status,category,tags,affected_systems,is_demo,created_at,updated_at)
+                VALUES(%s,'Example credential-phishing response','A sanitized example showing how teams can share containment notes.','CyberShield Demo','high','resolved','Phishing',%s,%s,1,%s,%s)""",
+                (incident_id, json.dumps(['phishing','identity']), json.dumps(['mail-gateway']), now, now))
+            cursor.execute("""INSERT INTO incident_solutions(id,incident_id,author,body,helpful_count,is_demo,created_at)
+                VALUES('SOL-DEMO-0001',%s,'CyberShield Demo','Revoke active sessions, reset credentials, and block the observed domain.',1,1,%s)""", (incident_id, now))
+            cursor.execute('INSERT INTO incident_analytics_snapshots(metrics,generated_at) VALUES(%s,%s)',
+                (json.dumps({'total':1,'active':0,'resolved':1,'resolutionRate':100,'demo':True}), now)); seeded += 3
+    return seeded
+
+
 def main():
     db = mysql_connection()
     try:
         counts = {'threat_observations': import_threat_intelligence(db), 'vulnerability_rows': import_vulnerabilities(db),
             'security_events': import_security_logs(db), 'model_artifacts': import_models(db)}
+        counts['seed_rows'] = seed_demo_rows(db)
         db.commit()
         print(json.dumps(counts, indent=2))
     except Exception:

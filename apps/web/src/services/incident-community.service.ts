@@ -401,6 +401,10 @@ export function deriveIncidentAnalytics(incidents: CommunityIncident[]): Inciden
   };
 }
 
+export async function saveIncidentAnalyticsSnapshot(analytics: IncidentAnalytics): Promise<void> {
+  await api.post('/v1/storage/incident-analytics', analytics);
+}
+
 export function subscribeToIncidents(listener: () => void) {
   if (typeof window === 'undefined') return () => undefined;
   window.addEventListener(STORE_EVENT, listener);

@@ -30,6 +30,7 @@ import {
   deriveIncidentAnalytics,
   getIncidents,
   loadIncidents,
+  saveIncidentAnalyticsSnapshot,
   subscribeToIncidents,
   type IncidentSeverity,
   type IncidentStatus,
@@ -137,6 +138,9 @@ export function AnalyticsPage() {
   }, []);
 
   const analytics = useMemo(() => deriveIncidentAnalytics(incidents), [incidents]);
+  useEffect(() => {
+    if (incidents.length) void saveIncidentAnalyticsSnapshot(analytics);
+  }, [analytics, incidents.length]);
 
   /* ─── Empty state ───────────────────────────────────────── */
   if (!incidents.length) {
