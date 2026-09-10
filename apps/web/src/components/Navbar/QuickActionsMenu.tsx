@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Scan, AlertCircle, FileText, Bot, UserPlus } from 'lucide-react';
+import { Plus, Scan, AlertCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScanModal } from '../modals/ScanModal';
-import { IncidentModal } from '../modals/IncidentModal';
-import { ReportModal } from '../modals/ReportModal';
 import { AddUserModal } from '../modals/AddUserModal';
 
 interface QuickAction {
@@ -18,8 +16,6 @@ interface QuickAction {
 export function QuickActionsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [scanModalOpen, setScanModalOpen] = useState(false);
-  const [incidentModalOpen, setIncidentModalOpen] = useState(false);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -36,21 +32,7 @@ export function QuickActionsMenu() {
       label: 'New Incident',
       icon: <AlertCircle className="h-4 w-4" />,
       color: 'text-red-400',
-      onClick: () => setIncidentModalOpen(true),
-    },
-    {
-      id: 'report',
-      label: 'Generate Report',
-      icon: <FileText className="h-4 w-4" />,
-      color: 'text-green-400',
-      onClick: () => setReportModalOpen(true),
-    },
-    {
-      id: 'ai',
-      label: 'Ask AI',
-      icon: <Bot className="h-4 w-4" />,
-      color: 'text-purple-400',
-      onClick: () => navigate('/ai-assistant'),
+      onClick: () => navigate('/incidents?publish=1'),
     },
     {
       id: 'user',
@@ -112,8 +94,6 @@ export function QuickActionsMenu() {
 
       {/* Modals */}
       <ScanModal isOpen={scanModalOpen} onClose={() => setScanModalOpen(false)} />
-      <IncidentModal isOpen={incidentModalOpen} onClose={() => setIncidentModalOpen(false)} />
-      <ReportModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
       <AddUserModal isOpen={addUserModalOpen} onClose={() => setAddUserModalOpen(false)} />
     </>
   );

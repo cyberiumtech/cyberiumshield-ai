@@ -19,7 +19,7 @@ export interface Notification {
 
 export interface SearchResult {
   id: string;
-  type: 'threat' | 'incident' | 'device' | 'user' | 'log' | 'report' | 'command';
+  type: 'threat' | 'incident' | 'device' | 'user' | 'command';
   title: string;
   subtitle?: string;
   link: string;

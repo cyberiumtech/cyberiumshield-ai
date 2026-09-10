@@ -11,11 +11,8 @@ import {
   Bug,
   Fish,
   MailWarning,
-  FileTerminal,
   Siren,
-  FileBarChart,
   LineChart,
-  Bot,
   Settings
 } from 'lucide-react';
 
@@ -36,11 +33,8 @@ const items: SidebarItem[] = [
   { label: 'Malware Detection', path: '/malware', icon: Bug },
   { label: 'Phishing Detection', path: '/phishing', icon: Fish },
   { label: 'Email Spam Detector', path: '/email-spam', icon: MailWarning },
-  { label: 'Logs', path: '/logs', icon: FileTerminal },
   { label: 'Incidents', path: '/incidents', icon: Siren },
-  { label: 'Reports', path: '/reports', icon: FileBarChart },
   { label: 'Analytics', path: '/analytics', icon: LineChart },
-  { label: 'AI Assistant', path: '/ai-assistant', icon: Bot },
   { label: 'Administration', path: '/admin', adminOnly: true, icon: Settings },
 ];
 

@@ -11,7 +11,7 @@ export function GlobalSearch() {
   const [recentSearches] = useState<string[]>([
     'Critical threats last 24h',
     'Incident INC-2024-0789',
-    'Server-01 logs',
+    'Server-01 activity',
   ]);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +73,7 @@ export function GlobalSearch() {
     setQuery('');
   };
 
-  const getResultIcon = (type: SearchResult['type']) => {
+  const getResultIcon = (type: string) => {
     const iconClasses = 'h-4 w-4';
     switch (type) {
       case 'threat':
@@ -144,7 +144,7 @@ export function GlobalSearch() {
                     type="text"
                     value={query}
                     onChange={e => handleSearch(e.target.value)}
-                    placeholder="Search threats, incidents, devices, users, logs..."
+                    placeholder="Search threats, incidents, devices, users..."
                     className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 outline-none"
                     autoFocus
                   />

@@ -25,8 +25,8 @@ import { MalwarePage } from '../pages/Malware/MalwarePage';
 import { PhishingPage } from '../pages/Phishing/PhishingPage';
 import { EmailSpamPage } from '../pages/EmailSpam/EmailSpamPage';
 import { NetworkPage } from '../pages/Network/NetworkPage';
-import { ReportsPage } from '../pages/Reports/ReportsPage';
-import { AIAssistantPage } from '../pages/AIAssistant/AIAssistantPage';
+import { IncidentsPage } from '../pages/Incidents/IncidentsPage';
+import { AnalyticsPage } from '../pages/Analytics/AnalyticsPage';
 import { AdminPage } from '../pages/Admin/AdminPage';
 import { UnauthorizedPage } from '../pages/Unauthorized/UnauthorizedPage';
 import { NotFoundPage } from '../pages/NotFound/NotFoundPage';
@@ -98,11 +98,8 @@ export default function App() {
           <Route path="/malware" element={<MalwarePage />} />
           <Route path="/phishing" element={<PhishingPage />} />
           <Route path="/email-spam" element={<EmailSpamPage />} />
-          <Route path="/logs" element={<PlaceholderRoute pageName="Logs" />} />
-          <Route path="/incidents" element={<PlaceholderRoute pageName="Incidents" />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/analytics" element={<PlaceholderRoute pageName="Analytics" />} />
-          <Route path="/ai-assistant" element={<AIAssistantPage />} />
+          <Route path="/incidents" element={<IncidentsPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
           <Route
             path="/admin"
             element={
