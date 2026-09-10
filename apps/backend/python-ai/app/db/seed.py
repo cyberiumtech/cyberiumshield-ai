@@ -1,7 +1,7 @@
 """Idempotent development seed data for the CyberShield database."""
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -168,7 +168,8 @@ def seed_operational_data(session):
     if admin is None or analyst is None:
         raise RuntimeError("Admin and analyst users are required before operational seeding")
 
-    now = datetime.utcnow()
+    # Models currently use naive UTC DateTime columns, so normalize before insert.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     if session.query(ScanHistory).count() == 0:
         session.add_all([
