@@ -74,13 +74,6 @@ export interface IncidentAnalytics {
   responseGaps: CommunityIncident[];
 }
 
-interface IncidentStore {
-  version: 1;
-  incidents: CommunityIncident[];
-}
-
-const STORE_VERSION = 1 as const;
-export const INCIDENT_STORAGE_KEY = 'cyberiumshield.incident-community.v1';
 const STORE_EVENT = 'cyberiumshield:incident-community-change';
 
 const SEEDED_INCIDENTS: CommunityIncident[] = [
@@ -223,73 +216,6 @@ const cloneSeeds = () => SEEDED_INCIDENTS.map(incident => ({
   affectedSystems: [...incident.affectedSystems],
   solutions: incident.solutions.map(solution => ({ ...solution })),
 }));
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function cleanText(value: unknown, fallback = '') {
-  return typeof value === 'string' ? value.trim() : fallback;
-}
-
-function validDate(value: unknown, fallback: string) {
-  return typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? value : fallback;
-}
-
-function normalizeSolution(value: unknown, index: number, fallbackDate: string): IncidentSolution | null {
-  if (!isRecord(value)) return null;
-  const body = cleanText(value.body);
-  const author = cleanText(value.author);
-  if (!body || !author) return null;
-  return {
-    id: cleanText(value.id, `SOL-RECOVERED-${index + 1}`),
-    author,
-    body,
-    createdAt: validDate(value.createdAt, fallbackDate),
-    helpfulCount: typeof value.helpfulCount === 'number' && value.helpfulCount >= 0
-      ? Math.floor(value.helpfulCount)
-      : 0,
-    helpfulByBrowser: value.helpfulByBrowser === true,
-    demo: value.demo === true,
-  };
-}
-
-function normalizeIncident(value: unknown, index: number): CommunityIncident | null {
-  if (!isRecord(value)) return null;
-  const title = cleanText(value.title);
-  const description = cleanText(value.description);
-  const author = cleanText(value.author);
-  if (!title || !description || !author) return null;
-  const createdAt = validDate(value.createdAt, '2026-01-01T00:00:00.000Z');
-  const severity: IncidentSeverity = ['critical', 'high', 'medium', 'low'].includes(String(value.severity))
-    ? value.severity as IncidentSeverity
-    : 'medium';
-  const status: IncidentStatus = ['investigating', 'monitoring', 'resolved'].includes(String(value.status))
-    ? value.status as IncidentStatus
-    : 'investigating';
-  const category = INCIDENT_CATEGORIES.includes(value.category as IncidentCategory)
-    ? value.category as IncidentCategory
-    : 'Other';
-  return {
-    id: cleanText(value.id, `INC-RECOVERED-${index + 1}`),
-    title,
-    description,
-    author,
-    severity,
-    status,
-    category,
-    tags: Array.isArray(value.tags) ? value.tags.map(item => cleanText(item)).filter(Boolean).slice(0, 12) : [],
-    affectedSystems: Array.isArray(value.affectedSystems)
-      ? value.affectedSystems.map(item => cleanText(item)).filter(Boolean).slice(0, 20)
-      : [],
-    createdAt,
-    updatedAt: validDate(value.updatedAt, createdAt),
-    solutions: Array.isArray(value.solutions)
-      ? value.solutions.map((solution, solutionIndex) => normalizeSolution(solution, solutionIndex, createdAt)).filter((solution): solution is IncidentSolution => Boolean(solution))
-      : [],
-    demo: value.demo === true,
-  };
-}
 
 let incidentCache: CommunityIncident[] = [];
 let loading: Promise<CommunityIncident[]> | null = null;

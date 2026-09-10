@@ -1,19 +1,33 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  Activity,
+  AtSign,
   Check,
   CheckCircle2,
   ChevronRight,
   CircleAlert,
   Clock,
   Copy,
+  Crosshair,
+  Eye,
+  FileWarning,
+  Fingerprint,
   History,
+  KeyRound,
+  Layers,
+  Link2,
   Loader2,
   MailSearch,
+  Paperclip,
   RotateCcw,
+  Shield,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trash2,
+  UserCheck,
+  Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,24 +37,14 @@ import type { EmailSpamAnalysis } from '../../services/api';
 /* ------------------------------------------------------------------ */
 /* Typography — single source of truth                                 */
 /* ------------------------------------------------------------------ */
-
-/**
- * Brand font for the whole page.
- * Loaded via <link> in index.html. Change this ONE string to swap fonts.
- * Example alternatives: '"Inter", sans-serif', '"Space Grotesk", sans-serif',
- * '"DM Sans", sans-serif', '"Manrope", sans-serif'.
- */
 export const FONT_SANS =
   '"Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-
-/** Monospace font for the raw email textarea and code-like fields. */
 export const FONT_MONO =
   '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
-
 type Verdict = EmailSpamAnalysis['verdict'];
 type ScanLog = EmailSpamAnalysis & { id: string };
 
@@ -49,7 +53,7 @@ interface VerdictMeta {
   text: string;
   border: string;
   soft: string;
-  ring: string;
+  stroke: string;
   bar: string;
   Icon: LucideIcon;
 }
@@ -57,40 +61,46 @@ interface VerdictMeta {
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
-
 const STORAGE_KEY = 'email_spam_scan_logs';
 const MAX_LOGS = 25;
 const MAX_CONTENT_LENGTH = 100_000;
 const MAX_FIELD_LENGTH = 320;
-
 const VERDICT_KEYS = ['spam', 'suspicious', 'legitimate'] as const;
+
+const SCAN_PHASES = [
+  'Parsing message headers',
+  'Checking sender alignment (SPF / DKIM / DMARC)',
+  'Extracting embedded links',
+  'Scanning lexical spam indicators',
+  'Scoring message and generating verdict',
+];
 
 const VERDICT_META: Record<Verdict, VerdictMeta> = {
   spam: {
     label: 'Likely spam',
-    text: 'text-rose-300',
-    border: 'border-rose-400/30',
-    soft: 'bg-rose-500/10',
-    ring: 'ring-rose-400/25',
-    bar: 'bg-rose-400',
+    text: 'text-rose-400',
+    border: 'border-rose-500/40',
+    soft: 'bg-rose-500/[0.08]',
+    stroke: '#f43f5e',
+    bar: 'bg-rose-500',
     Icon: AlertTriangle,
   },
   suspicious: {
     label: 'Suspicious',
-    text: 'text-amber-300',
-    border: 'border-amber-400/30',
-    soft: 'bg-amber-500/10',
-    ring: 'ring-amber-400/25',
-    bar: 'bg-amber-400',
+    text: 'text-amber-400',
+    border: 'border-amber-500/40',
+    soft: 'bg-amber-500/[0.08]',
+    stroke: '#f59e0b',
+    bar: 'bg-amber-500',
     Icon: CircleAlert,
   },
   legitimate: {
     label: 'Likely legitimate',
-    text: 'text-emerald-300',
-    border: 'border-emerald-400/30',
-    soft: 'bg-emerald-500/10',
-    ring: 'ring-emerald-400/25',
-    bar: 'bg-emerald-400',
+    text: 'text-emerald-400',
+    border: 'border-emerald-500/40',
+    soft: 'bg-emerald-500/[0.08]',
+    stroke: '#10b981',
+    bar: 'bg-emerald-500',
     Icon: CheckCircle2,
   },
 };
@@ -137,9 +147,23 @@ Maya`,
 };
 
 /* ------------------------------------------------------------------ */
+/* Shared style strings                                                */
+/* ------------------------------------------------------------------ */
+const BTN =
+  'inline-flex h-9 items-center justify-center gap-2 border border-white/[0.08] bg-[#0b1424] px-3.5 text-xs font-medium text-slate-300 transition hover:border-white/[0.16] hover:bg-white/[0.03] hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
+
+const BTN_PRIMARY =
+  'inline-flex h-10 items-center justify-center gap-2 border border-cyan-500/40 bg-cyan-500/[0.08] px-5 text-xs font-medium text-cyan-400 transition hover:border-cyan-400 hover:bg-cyan-500/[0.14] hover:text-cyan-300 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
+
+const FIELD =
+  'w-full border border-white/[0.08] bg-[#07101e] px-3 text-xs text-slate-200 outline-none transition placeholder:text-slate-600 hover:border-white/[0.12] focus:border-white/[0.16] disabled:cursor-not-allowed disabled:opacity-60';
+
+const INPUT = `${FIELD} h-9`;
+const TEXTAREA = `${FIELD} py-2.5 leading-6 resize-y`;
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
 const relativeFormatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
 const isVerdict = (value: unknown): value is Verdict =>
@@ -204,10 +228,8 @@ function formatRelative(value: unknown): string {
   const date = new Date(value as string);
   const time = date.getTime();
   if (!Number.isFinite(time)) return '—';
-
   const diffSeconds = Math.round((time - Date.now()) / 1000);
   const abs = Math.abs(diffSeconds);
-
   if (abs < 45) return 'Just now';
   if (abs < 3_600) return relativeFormatter.format(Math.round(diffSeconds / 60), 'minute');
   if (abs < 86_400) return relativeFormatter.format(Math.round(diffSeconds / 3_600), 'hour');
@@ -220,13 +242,351 @@ function formatFull(value: unknown): string {
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : 'Unknown time';
 }
 
-const INPUT_CLASS =
-  'w-full rounded-xl border border-white/10 bg-black/25 px-3.5 py-2.5 text-sm font-normal text-slate-100 outline-none transition placeholder:text-slate-600 hover:border-white/20 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-60';
+/* ------------------------------------------------------------------ */
+/* Primitives                                                          */
+/* ------------------------------------------------------------------ */
+function Panel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <section className={`border border-white/[0.08] bg-[#0b1424] ${className}`}>{children}</section>
+  );
+}
+
+function PanelHeader({
+  kicker,
+  kickerTone = 'slate',
+  title,
+  hint,
+  right,
+}: {
+  kicker: string;
+  kickerTone?: 'slate' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet';
+  title: string;
+  hint?: string;
+  right?: React.ReactNode;
+}) {
+  const tone = {
+    slate: 'text-slate-500',
+    cyan: 'text-cyan-400',
+    emerald: 'text-emerald-400',
+    amber: 'text-amber-400',
+    rose: 'text-rose-400',
+    violet: 'text-violet-400',
+  }[kickerTone];
+
+  return (
+    <div className="flex flex-col gap-3 border-b border-white/[0.08] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className={`font-mono text-[10px] font-medium uppercase tracking-[0.18em] ${tone}`}>
+          {kicker}
+        </p>
+        <h2 className="mt-1 text-[15px] font-semibold text-slate-100">{title}</h2>
+        {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Risk Gauge — flat SVG ring                                          */
+/* ------------------------------------------------------------------ */
+function RiskGauge({ score, tone }: { score: number; tone: string }) {
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (score / 100) * circumference;
+
+  return (
+    <div className="relative grid h-28 w-28 shrink-0 place-items-center">
+      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r={radius} className="fill-none stroke-white/[0.06]" strokeWidth="6" />
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="none"
+          stroke={tone}
+          strokeWidth="6"
+          strokeLinecap="butt"
+          strokeDasharray={`${dash} ${circumference}`}
+          className="transition-[stroke-dasharray] duration-700"
+        />
+      </svg>
+      <div className="relative flex flex-col items-center">
+        <span className="font-mono text-2xl font-semibold leading-none text-slate-100">{score}</span>
+        <span className="mt-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">
+          risk / 100
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Scan animation — staged progress                                    */
+/* ------------------------------------------------------------------ */
+function ScanAnimation({ subject, sender }: { subject: string; sender: string }) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPhase(current => (current + 1) % SCAN_PHASES.length);
+    }, 900);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const label = subject.trim() || sender.trim() || 'Untitled message';
+
+  return (
+    <Panel className="overflow-hidden">
+      <div className="px-5 py-8 sm:px-8 sm:py-10">
+        <div className="flex flex-col items-center">
+          <div className="relative grid h-24 w-24 place-items-center">
+            <span className="absolute inset-0 animate-ping rounded-full border border-cyan-500/30" />
+            <span
+              className="absolute inset-2 rounded-full border border-cyan-500/20"
+              style={{ animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '0.5s' }}
+            />
+            <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                className="fill-none stroke-cyan-500/40"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray="70 220"
+                style={{ animation: 'spin 1.5s linear infinite', transformOrigin: '50% 50%' }}
+              />
+            </svg>
+            <div className="relative grid h-16 w-16 place-items-center border border-cyan-500/40 bg-cyan-500/[0.06]">
+              <MailSearch className="h-6 w-6 text-cyan-400" />
+            </div>
+          </div>
+
+          <p className="mt-6 font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-cyan-400">
+            Analysing message
+          </p>
+          <h2
+            className="mt-2 max-w-lg truncate text-center text-sm font-semibold text-slate-100"
+            title={label}
+          >
+            {label}
+          </h2>
+          {sender.trim() && (
+            <p className="mt-1 max-w-lg truncate font-mono text-[11px] text-slate-500" title={sender}>
+              {sender}
+            </p>
+          )}
+        </div>
+
+        <ol className="mx-auto mt-8 max-w-lg space-y-1.5">
+          {SCAN_PHASES.map((item, index) => {
+            const isDone = index < phase;
+            const isActive = index === phase;
+            return (
+              <li
+                key={item}
+                className={`flex items-center gap-3 px-3 py-2 transition ${
+                  isActive ? 'bg-cyan-500/[0.06]' : ''
+                }`}
+              >
+                <span
+                  className={`grid h-5 w-5 shrink-0 place-items-center border ${
+                    isDone
+                      ? 'border-emerald-500/40 bg-emerald-500/[0.08] text-emerald-400'
+                      : isActive
+                        ? 'border-cyan-500/40 bg-cyan-500/[0.08] text-cyan-400'
+                        : 'border-white/[0.08] bg-[#07101e] text-slate-600'
+                  }`}
+                >
+                  {isDone ? (
+                    <Check className="h-3 w-3" />
+                  ) : isActive ? (
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
+                  ) : (
+                    <span className="h-1 w-1 rounded-full bg-slate-700" />
+                  )}
+                </span>
+                <span
+                  className={`font-mono text-[11px] uppercase tracking-wider ${
+                    isDone ? 'text-slate-500' : isActive ? 'text-cyan-300' : 'text-slate-600'
+                  }`}
+                >
+                  {item}
+                </span>
+                {isDone && (
+                  <span className="ml-auto font-mono text-[10px] text-emerald-500">done</span>
+                )}
+                {isActive && (
+                  <span className="ml-auto font-mono text-[10px] text-cyan-400">running</span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="mx-auto mt-6 max-w-lg">
+          <div className="h-1 w-full overflow-hidden bg-white/[0.06]">
+            <div
+              className="h-full bg-cyan-500 transition-all duration-500"
+              style={{ width: `${((phase + 1) / SCAN_PHASES.length) * 100}%` }}
+            />
+          </div>
+          <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-wider text-slate-500">
+            The message is processed locally — nothing is stored by the detector
+          </p>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Email threat surface — educational panel                            */
+/* ------------------------------------------------------------------ */
+function EmailThreatSurface({ verdict }: { verdict: Verdict }) {
+  const categories = [
+    {
+      icon: KeyRound,
+      label: 'Credential phishing',
+      detail: 'Fake login pages or reply chains harvest passwords and MFA codes.',
+      vectors: [
+        'Microsoft 365, Google Workspace, and SSO portals',
+        'Banking and payment platforms',
+        'Corporate VPN and remote access portals',
+        'Password reset and account-verification flows',
+      ],
+    },
+    {
+      icon: Paperclip,
+      label: 'Malicious attachments',
+      detail: 'Attachments can execute code or deliver second-stage payloads when opened.',
+      vectors: [
+        'Macro-enabled Office documents (.docm, .xlsm)',
+        'Archive containers (.zip, .iso, .img) with bundled executables',
+        'HTML smuggling and LNK shortcut files',
+        'Fake invoice PDFs with embedded links',
+      ],
+    },
+    {
+      icon: Link2,
+      label: 'Link redirects and tracking',
+      detail: 'Embedded links route through attacker-controlled infrastructure to reach the payload.',
+      vectors: [
+        'Open redirects on trusted domains',
+        'URL shorteners masking the final destination',
+        'Unique per-recipient tracking links (spear-phishing)',
+        'QR codes in the message body leading off-device',
+      ],
+    },
+    {
+      icon: UserCheck,
+      label: 'Business email compromise (BEC)',
+      detail: 'Impersonation of executives or vendors drives fraudulent payments or data release.',
+      vectors: [
+        'Invoice fraud with updated bank details',
+        'CEO / CFO urgent payment requests',
+        'Payroll diversion and tax-form requests',
+        'Vendor account takeover and reply-chain hijacking',
+      ],
+    },
+    {
+      icon: FileWarning,
+      label: 'Malware and ransomware delivery',
+      detail: 'Some campaigns lead to infostealers, RATs, or ransomware deployment.',
+      vectors: [
+        'Infostealers harvesting credentials and cookies',
+        'Remote access trojans (RATs) for lateral movement',
+        'Ransomware loaders (QakBot, IcedID, Emotet-style)',
+        'Loader chains with defence evasion and persistence',
+      ],
+    },
+    {
+      icon: Zap,
+      label: 'Social engineering',
+      detail: 'Pressure, urgency, and authority cues push the recipient past their normal caution.',
+      vectors: [
+        'Urgency language ("act now", "final notice")',
+        'Threats of account suspension or legal action',
+        'Authority impersonation (IT, HR, executive)',
+        'Gift card, crypto, or wire-transfer pretexts',
+      ],
+    },
+  ];
+
+  const relevance =
+    verdict === 'spam'
+      ? 'High — treat every vector below as plausibly active for this message.'
+      : verdict === 'suspicious'
+        ? 'Moderate — some vectors may apply; verify the sender and links before acting.'
+        : 'Low — no strong spam indicators, but stay alert to unusual requests.';
+
+  return (
+    <Panel className="overflow-hidden">
+      <PanelHeader
+        kicker="Threat surface analysis"
+        kickerTone="rose"
+        title="Where email-borne attacks typically land"
+        hint={relevance}
+        right={<Crosshair className="h-4 w-4 text-slate-500" />}
+      />
+
+      <div className="divide-y divide-white/[0.05]">
+        {categories.map(entry => {
+          const Icon = entry.icon;
+          return (
+            <article key={entry.label} className="px-5 py-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+                <div className="flex min-w-0 items-start gap-3 lg:w-[280px] lg:shrink-0">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center border border-rose-500/40 bg-rose-500/[0.06] text-rose-400">
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-semibold text-slate-100">{entry.label}</h3>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                      {entry.detail}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-[9px] font-medium uppercase tracking-[0.18em] text-slate-500">
+                    Common exposure vectors
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {entry.vectors.map(vector => (
+                      <li
+                        key={vector}
+                        className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-400"
+                      >
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-rose-500" />
+                        <span>{vector}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="flex items-start gap-2.5 border-t border-white/[0.08] bg-white/[0.015] px-5 py-3 text-[11px] leading-relaxed text-slate-500">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+        <p>
+          This section describes <strong className="font-medium text-slate-300">potential</strong>{' '}
+          threat categories for email-borne attacks in general. The verdict above is based on the
+          specific signals extracted from this message — do not treat this panel as confirmation
+          that any vector is active.
+        </p>
+      </div>
+    </Panel>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
-
 export function EmailSpamPage() {
   const [sender, setSender] = useState('');
   const [subject, setSubject] = useState('');
@@ -244,7 +604,6 @@ export function EmailSpamPage() {
   const copyTimer = useRef<number | null>(null);
 
   /* ----------------------------- effects ---------------------------- */
-
   useEffect(() => {
     const sync = () => setLogs(readLogs());
     window.addEventListener('storage', sync);
@@ -259,11 +618,14 @@ export function EmailSpamPage() {
   );
 
   /* ---------------------------- derived ----------------------------- */
-
   const verdictMeta = result ? VERDICT_META[result.verdict] : null;
 
   const detectedSignals = useMemo(
     () => result?.signals.filter(signal => signal.detected) ?? [],
+    [result]
+  );
+  const clearSignals = useMemo(
+    () => result?.signals.filter(signal => !signal.detected) ?? [],
     [result]
   );
 
@@ -283,7 +645,6 @@ export function EmailSpamPage() {
   );
 
   /* ---------------------------- actions ----------------------------- */
-
   const persistLogs = useCallback((next: ScanLog[]) => {
     setLogs(next);
     try {
@@ -327,6 +688,7 @@ export function EmailSpamPage() {
 
     setIsScanning(true);
     setError(null);
+    setResult(null);
 
     try {
       const raw = await scanEmailSpam({
@@ -419,80 +781,72 @@ export function EmailSpamPage() {
   const isOverLimit = characterCount > MAX_CONTENT_LENGTH;
 
   /* ------------------------------ view ------------------------------ */
-
   return (
     <div
-      className="mx-auto max-w-6xl space-y-6 antialiased"
       style={{ fontFamily: FONT_SANS }}
+      className="relative mx-auto w-full min-w-0 max-w-[1400px] space-y-5 pb-10 text-slate-200"
     >
-      {/* ------------------------------ header ------------------------------ */}
-      <header className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#121D35] via-[#0F1729] to-[#0B1220] p-6 sm:p-7">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-28 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"
-        />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(rgba(148,163,184,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,.035)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
-        <div className="relative flex flex-wrap items-start justify-between gap-6">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
-              <MailSearch className="h-3.5 w-3.5" aria-hidden />
+      {/* ═══════════════ HEADER ═══════════════ */}
+      <header className="flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-5 xl:flex-row xl:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center border border-white/[0.08] bg-[#0b1424]">
+            <MailSearch className="h-5 w-5 text-cyan-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
               Message intelligence
-            </span>
-            <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-50 sm:text-3xl">
+            </p>
+            <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Email Spam Detector
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Inspect message language, embedded links, sender alignment, authentication headers
+            <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-slate-500 sm:block">
+              Inspect message language, embedded links, sender alignment, authentication headers,
               and attachment names — scored by the locally hosted detection model.
             </p>
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => loadSample(SAFE_SAMPLE)}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.07] hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/30"
-            >
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-              Safe sample
-            </button>
-            <button
-              type="button"
-              onClick={() => loadSample(SPAM_SAMPLE)}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3.5 py-2 text-xs font-semibold text-amber-300 transition hover:border-amber-400/40 hover:bg-amber-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/30"
-            >
-              <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
-              Spam sample
-            </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-2 hidden border-l border-white/[0.08] pl-4 sm:block">
+            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+              Messages analysed
+            </p>
+            <p className="mt-0.5 font-mono text-sm font-semibold text-slate-100">{logs.length}</p>
           </div>
+          <button type="button" className={BTN} onClick={() => loadSample(SAFE_SAMPLE)}>
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Safe sample
+          </button>
+          <button
+            type="button"
+            className={`${BTN} border-amber-500/40 bg-amber-500/[0.06] text-amber-400 hover:border-amber-400 hover:bg-amber-500/[0.12] hover:text-amber-300`}
+            onClick={() => loadSample(SPAM_SAMPLE)}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Spam sample
+          </button>
         </div>
       </header>
 
-      {/* --------------------------- form + result --------------------------- */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
-        {/* form */}
-        <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1729]/70 backdrop-blur">
-          <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4 sm:px-6">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
-              <MailSearch className="h-[18px] w-[18px]" aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-sm font-bold text-slate-100">Analyze an email</h2>
-              <p className="truncate text-xs text-slate-500">
-                Raw headers are supported — paste them straight into the message field.
-              </p>
-            </div>
-          </div>
+      {/* ═══════════════ MAIN GRID ═══════════════ */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+        {/* ─── FORM ─── */}
+        <Panel className="overflow-hidden">
+          <PanelHeader
+            kicker="Analyzer input"
+            kickerTone="cyan"
+            title="Analyze an email"
+            hint="Raw headers are supported — paste them straight into the message field."
+            right={<MailSearch className="h-4 w-4 text-slate-500" />}
+          />
 
-          <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6" noValidate>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-slate-400">
-                  Sender <span className="font-normal text-slate-600">(optional)</span>
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 p-5" noValidate>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                  Sender <span className="font-sans normal-case tracking-normal text-slate-600">(optional)</span>
                 </span>
                 <input
                   type="text"
@@ -504,13 +858,13 @@ export function EmailSpamPage() {
                   onChange={event => setSender(event.target.value)}
                   disabled={isScanning}
                   placeholder="Name <sender@example.com>"
-                  className={INPUT_CLASS}
+                  className={`${INPUT} font-mono`}
                 />
               </label>
 
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-slate-400">
-                  Subject <span className="font-normal text-slate-600">(optional)</span>
+              <label className="block">
+                <span className="mb-1.5 block font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                  Subject <span className="font-sans normal-case tracking-normal text-slate-600">(optional)</span>
                 </span>
                 <input
                   type="text"
@@ -521,23 +875,21 @@ export function EmailSpamPage() {
                   onChange={event => setSubject(event.target.value)}
                   disabled={isScanning}
                   placeholder="Email subject"
-                  className={INPUT_CLASS}
+                  className={INPUT}
                 />
               </label>
             </div>
 
-            <label className="block space-y-1.5">
-              <span className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-400">
-                <span>
-                  Message or raw email <span className="font-normal text-slate-600">(required)</span>
+            <label className="block">
+              <span className="mb-1.5 flex items-center justify-between gap-3">
+                <span className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                  Message or raw email{' '}
+                  <span className="font-sans normal-case tracking-normal text-slate-600">(required)</span>
                 </span>
                 <span
-                  className={
-                    isOverLimit
-                      ? 'font-mono text-[11px] font-normal text-rose-300'
-                      : 'font-mono text-[11px] font-normal text-slate-600'
-                  }
-                  style={{ fontFamily: FONT_MONO }}
+                  className={`font-mono text-[10px] tabular-nums ${
+                    isOverLimit ? 'text-rose-400' : 'text-slate-600'
+                  }`}
                 >
                   {characterCount.toLocaleString()} / {MAX_CONTENT_LENGTH.toLocaleString()}
                 </span>
@@ -548,13 +900,11 @@ export function EmailSpamPage() {
                 onChange={event => setContent(event.target.value)}
                 onKeyDown={handleFieldKeyDown}
                 disabled={isScanning}
-                rows={12}
+                rows={13}
                 spellCheck={false}
                 aria-invalid={isOverLimit}
-                placeholder={
-                  'Paste the email body here, or include raw headers such as From, Reply-To, Subject and Authentication-Results…'
-                }
-                className={`${INPUT_CLASS} resize-y leading-6 placeholder:font-sans`}
+                placeholder="Paste the email body here, or include raw headers such as From, Reply-To, Subject and Authentication-Results…"
+                className={`${TEXTAREA} font-mono text-[11px]`}
                 style={{ fontFamily: FONT_MONO }}
               />
             </label>
@@ -562,298 +912,259 @@ export function EmailSpamPage() {
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-xl border border-rose-400/25 bg-rose-500/[0.08] px-3.5 py-3 text-sm text-rose-200"
+                className="flex items-start gap-2.5 border-l-2 border-rose-500 bg-rose-500/[0.04] px-3.5 py-3"
               >
-                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                <span className="leading-5">{error}</span>
+                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400" />
+                <span className="text-xs leading-relaxed text-rose-300">{error}</span>
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
-              <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" aria-hidden />
-                Processed locally — nothing is stored by the detector
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
+              <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                Processed locally
               </p>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={reset}
-                  disabled={isScanning}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RotateCcw className="h-4 w-4" aria-hidden />
+                <button type="button" onClick={reset} disabled={isScanning} className={BTN}>
+                  <RotateCcw className="h-3.5 w-3.5" />
                   Reset
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isScanning}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/15 transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1729] disabled:cursor-wait disabled:opacity-60 disabled:shadow-none"
-                >
+                <button type="submit" disabled={isScanning} className={BTN_PRIMARY}>
                   {isScanning ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4" aria-hidden />
+                    <Sparkles className="h-3.5 w-3.5" />
                   )}
                   {isScanning ? 'Analyzing…' : 'Analyze email'}
                 </button>
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-600">
+            <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">
               Tip: press{' '}
-              <kbd
-                className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-400"
-                style={{ fontFamily: FONT_MONO }}
-              >
+              <kbd className="border border-white/[0.08] bg-[#07101e] px-1.5 py-0.5 text-[10px] text-slate-400">
                 Ctrl
               </kbd>{' '}
               +{' '}
-              <kbd
-                className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-400"
-                style={{ fontFamily: FONT_MONO }}
-              >
+              <kbd className="border border-white/[0.08] bg-[#07101e] px-1.5 py-0.5 text-[10px] text-slate-400">
                 Enter
               </kbd>{' '}
-              to run the analysis.
+              to run the analysis
             </p>
           </form>
-        </section>
+        </Panel>
 
-        {/* result */}
-        <aside
-          aria-live="polite"
-          aria-busy={isScanning}
-          className={`flex flex-col overflow-hidden rounded-2xl border bg-[#0F1729]/70 backdrop-blur transition-colors ${
-            verdictMeta ? verdictMeta.border : 'border-white/[0.08]'
-          }`}
-        >
-          {isScanning ? (
-            <div className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 animate-pulse rounded-xl bg-white/[0.06]" />
-                  <div className="space-y-2">
-                    <div className="h-2.5 w-20 animate-pulse rounded bg-white/[0.06]" />
-                    <div className="h-3.5 w-28 animate-pulse rounded bg-white/[0.06]" />
-                  </div>
+        {/* ─── RESULT ─── */}
+        {isScanning ? (
+          <ScanAnimation subject={subject} sender={sender} />
+        ) : result && verdictMeta ? (
+          <Panel className={`overflow-hidden ${verdictMeta.border}`}>
+            {/* Verdict hero */}
+            <div className="grid gap-5 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+              <RiskGauge score={result.score} tone={verdictMeta.stroke} />
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${verdictMeta.border} ${verdictMeta.soft} ${verdictMeta.text}`}
+                  >
+                    <verdictMeta.Icon className="h-3 w-3" />
+                    {verdictMeta.label}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                    {result.confidence}% confidence
+                  </span>
                 </div>
-                <div className="h-10 w-16 animate-pulse rounded bg-white/[0.06]" />
+                <h2 className="mt-2 truncate text-sm font-semibold text-slate-100" title={result.subject || undefined}>
+                  {result.subject?.trim() || 'No subject'}
+                </h2>
+                <p className="mt-1 truncate font-mono text-[11px] text-slate-500" title={result.sender || undefined}>
+                  {result.sender?.trim() || 'Unknown sender'}
+                </p>
               </div>
-              <div className="h-2 animate-pulse rounded-full bg-white/[0.06]" />
-              <div className="grid grid-cols-3 gap-2">
-                {[0, 1, 2].map(index => (
-                  <div key={index} className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
-                ))}
-              </div>
-              <div className="space-y-2 pt-2">
-                <div className="h-3 w-full animate-pulse rounded bg-white/[0.05]" />
-                <div className="h-3 w-4/5 animate-pulse rounded bg-white/[0.05]" />
-                <div className="h-3 w-3/5 animate-pulse rounded bg-white/[0.05]" />
-              </div>
-              <p className="pt-1 text-center text-xs text-slate-500">
-                Running heuristics over the message…
-              </p>
             </div>
-          ) : !result || !verdictMeta ? (
-            <div className="flex min-h-[22rem] flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-              <div className="grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-white/[0.03] text-slate-500">
-                <MailSearch className="h-7 w-7" aria-hidden />
+
+            {/* Quick facts */}
+            <div className="grid grid-cols-3 divide-x divide-y divide-white/[0.08] border-t border-white/[0.08] sm:divide-y-0">
+              {[
+                { label: 'Confidence', value: `${result.confidence}%`, icon: Activity },
+                { label: 'Links', value: String(result.linkCount), icon: Link2 },
+                { label: 'Flags', value: String(detectedSignals.length), icon: ShieldAlert },
+              ].map(item => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="min-w-0 px-4 py-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="h-3 w-3 text-slate-600" />
+                      <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                        {item.label}
+                      </p>
+                    </div>
+                    <p className="mt-1.5 font-mono text-sm font-semibold text-slate-100">
+                      {item.value}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Recommended actions */}
+            <div className="border-t border-white/[0.08] px-5 py-4">
+              <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                What to do
+              </p>
+              <ul className="mt-2.5 space-y-2">
+                {RECOMMENDED_ACTIONS[result.verdict].map(action => (
+                  <li key={action} className="flex gap-2 text-xs leading-relaxed text-slate-300">
+                    <ChevronRight className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${verdictMeta.text}`} />
+                    <span>{action}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] bg-white/[0.015] px-5 py-2.5">
+              <span className="flex min-w-0 items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span className="truncate" title={formatFull(result.scannedAt)}>
+                  Analyzed {formatRelative(result.scannedAt)}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={copySummary}
+                className={`${BTN} h-7 px-2.5 text-[10px]`}
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </Panel>
+        ) : (
+          <Panel className="border-dashed bg-[#0b1424]/50">
+            <div className="flex min-h-[22rem] flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="grid h-14 w-14 place-items-center border border-white/[0.08] bg-[#07101e] text-slate-600">
+                <MailSearch className="h-6 w-6" />
               </div>
-              <h2 className="mt-5 text-sm font-bold text-slate-200">
-                Your result will appear here
-              </h2>
-              <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">
+              <h2 className="mt-4 text-sm font-medium text-slate-300">Your result will appear here</h2>
+              <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
                 The detector returns an explainable risk score, the signals it matched, and
                 practical next steps.
               </p>
             </div>
-          ) : (
-            <div className="flex flex-1 flex-col p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className={`flex items-center gap-3 ${verdictMeta.text}`}>
-                  <span
-                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ${verdictMeta.soft} ${verdictMeta.ring}`}
-                  >
-                    <verdictMeta.Icon className="h-5 w-5" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Assessment
-                    </p>
-                    <p className="text-lg font-extrabold leading-tight">{verdictMeta.label}</p>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p
-                    className={`text-4xl font-extrabold tabular-nums leading-none ${verdictMeta.text}`}
-                  >
-                    {result.score}
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">risk score / 100</p>
-                </div>
-              </div>
-
-              <div
-                className="mt-5 h-2 overflow-hidden rounded-full bg-black/30"
-                role="progressbar"
-                aria-valuenow={result.score}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Risk score"
-              >
-                <div
-                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${verdictMeta.bar}`}
-                  style={{ width: `${Math.min(100, Math.max(3, result.score))}%` }}
-                />
-              </div>
-
-              <div className="mt-5 grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Confidence', value: `${result.confidence}%` },
-                  { label: 'Links', value: String(result.linkCount) },
-                  { label: 'Flags', value: String(detectedSignals.length) },
-                ].map(metric => (
-                  <div
-                    key={metric.label}
-                    className="rounded-xl border border-white/[0.06] bg-black/20 px-3 py-3 text-center"
-                  >
-                    <p className="text-lg font-bold tabular-nums text-slate-100">
-                      {metric.value}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-slate-500">{metric.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                  What to do
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {RECOMMENDED_ACTIONS[result.verdict].map(action => (
-                    <li key={action} className="flex gap-2 text-sm leading-5 text-slate-300">
-                      <ChevronRight
-                        className={`mt-0.5 h-4 w-4 shrink-0 ${verdictMeta.text}`}
-                        aria-hidden
-                      />
-                      <span>{action}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-auto space-y-3 pt-6">
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-black/20 px-3.5 py-2.5">
-                  <span className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
-                    <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span className="truncate" title={formatFull(result.scannedAt)}>
-                      Analyzed {formatRelative(result.scannedAt)}
-                    </span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={copySummary}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.08] hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30"
-                  >
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5" aria-hidden />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" aria-hidden />
-                    )}
-                    {copied ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-
-                <p className="border-t border-white/[0.06] pt-4 text-[11px] leading-5 text-slate-500">
-                  Automated analysis can be wrong. Treat this as decision support, especially for
-                  sophisticated or targeted messages.
-                </p>
-              </div>
-            </div>
-          )}
-        </aside>
+          </Panel>
+        )}
       </div>
 
-      {/* --------------------------- signal breakdown --------------------------- */}
-      {result && (
-        <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1729]/70 backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4 sm:px-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Explainable detection
-              </p>
-              <h2 className="mt-1 text-sm font-bold text-slate-100">Signal breakdown</h2>
-            </div>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${verdictMeta?.soft ?? ''} ${verdictMeta?.text ?? ''}`}
-            >
-              {detectedSignals.length} of {result.signals.length} signals detected
-            </span>
-          </div>
+      {/* ═══════════════ SIGNAL BREAKDOWN ═══════════════ */}
+      {result && !isScanning && (
+        <Panel className="overflow-hidden">
+          <PanelHeader
+            kicker="Explainable detection"
+            kickerTone="violet"
+            title="Signal breakdown"
+            hint="Each signal is a lexical, structural, or authentication property of the message."
+            right={
+              <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-wider">
+                <span className="flex items-center gap-1.5 text-amber-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  {detectedSignals.length} detected
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                  {clearSignals.length} clear
+                </span>
+              </div>
+            }
+          />
 
           {result.signals.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-slate-500">
-              No individual signals were returned for this message.
-            </p>
-          ) : (
-            <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2">
-              {result.signals.map(signal => (
-                <div
-                  key={signal.id}
-                  className={`flex items-start justify-between gap-4 rounded-xl border p-4 transition-colors ${
-                    signal.detected
-                      ? 'border-amber-400/20 bg-amber-400/[0.05]'
-                      : 'border-white/[0.06] bg-white/[0.02]'
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <p
-                      className={`text-sm font-semibold ${
-                        signal.detected ? 'text-amber-200' : 'text-slate-400'
-                      }`}
-                    >
-                      {signal.label}
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">{signal.detail}</p>
-                  </div>
-
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      signal.detected
-                        ? 'bg-amber-400/10 text-amber-300'
-                        : 'bg-white/[0.05] text-slate-500'
-                    }`}
-                  >
-                    {signal.detected ? 'Detected' : 'Clear'}
-                  </span>
-                </div>
-              ))}
+            <div className="px-6 py-12 text-center">
+              <Layers className="mx-auto h-5 w-5 text-slate-600" />
+              <p className="mt-2 text-xs text-slate-500">No individual signals were returned for this message.</p>
             </div>
+          ) : (
+            <>
+              {detectedSignals.length > 0 && (
+                <div className="border-b border-white/[0.08]">
+                  <div className="bg-amber-500/[0.03] px-5 py-2">
+                    <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-amber-400">
+                      Detected signals
+                    </p>
+                  </div>
+                  <ul className="divide-y divide-white/[0.05]">
+                    {detectedSignals.map(signal => (
+                      <li key={signal.id} className="grid gap-2 px-5 py-3 sm:grid-cols-[1fr_auto] sm:items-start">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-amber-300">{signal.label}</p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                            {signal.detail}
+                          </p>
+                        </div>
+                        <span className="shrink-0 border border-amber-500/40 bg-amber-500/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-amber-400 sm:justify-self-end">
+                          Detected
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {clearSignals.length > 0 && (
+                <div>
+                  <div className="bg-white/[0.015] px-5 py-2">
+                    <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                      Clear signals
+                    </p>
+                  </div>
+                  <ul className="grid gap-px bg-white/[0.06] sm:grid-cols-2">
+                    {clearSignals.map(signal => (
+                      <li
+                        key={signal.id}
+                        className="flex items-center justify-between gap-3 bg-[#0b1424] px-5 py-2.5"
+                      >
+                        <span className="truncate text-[11px] text-slate-400" title={signal.label}>
+                          {signal.label}
+                        </span>
+                        <span className="shrink-0 border border-slate-700 bg-slate-800/60 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                          Clear
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
-        </section>
+
+          <div className="flex items-center justify-between border-t border-white/[0.08] bg-white/[0.015] px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">
+            <span>{result.signals.length} signals evaluated</span>
+            <span>Local analysis · no external queries</span>
+          </div>
+        </Panel>
       )}
 
-      {/* ------------------------------- history ------------------------------- */}
-      <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1729]/70 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-slate-400">
-              <History className="h-[18px] w-[18px]" aria-hidden />
-            </span>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Recent activity
-              </p>
-              <h2 className="mt-0.5 text-sm font-bold text-slate-100">Email scan history</h2>
-            </div>
+      {/* ═══════════════ THREAT SURFACE ═══════════════ */}
+      {result && !isScanning && <EmailThreatSurface verdict={result.verdict} />}
+
+      {/* ═══════════════ HISTORY ═══════════════ */}
+      <Panel className="overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-white/[0.08] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
+              Recent activity
+            </p>
+            <h2 className="mt-1 text-[15px] font-semibold text-slate-100">Email scan history</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Your last {MAX_LOGS} analyses on this device. Stored locally in the browser.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap gap-1 rounded-xl border border-white/[0.06] bg-black/20 p-1">
+            <div className="flex flex-wrap border border-white/[0.08] bg-[#07101e]">
               {(['all', 'spam', 'suspicious', 'legitimate'] as const).map(key => {
                 const active = historyFilter === key;
                 const label = key === 'all' ? 'All' : VERDICT_META[key].label;
@@ -863,14 +1174,14 @@ export function EmailSpamPage() {
                     type="button"
                     onClick={() => setHistoryFilter(key)}
                     aria-pressed={active}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30 ${
+                    className={`border-r border-white/[0.08] px-2.5 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider transition last:border-r-0 focus:outline-none focus-visible:bg-white/[0.03] ${
                       active
-                        ? 'bg-white/[0.09] text-slate-100'
-                        : 'text-slate-500 hover:text-slate-300'
+                        ? 'bg-white/[0.06] text-slate-100'
+                        : 'text-slate-500 hover:bg-white/[0.02] hover:text-slate-300'
                     }`}
                   >
                     {label}
-                    <span className="ml-1 tabular-nums font-normal text-slate-600">
+                    <span className="ml-1.5 font-mono text-[9px] text-slate-600">
                       {historyCounts[key]}
                     </span>
                   </button>
@@ -882,9 +1193,9 @@ export function EmailSpamPage() {
               <button
                 type="button"
                 onClick={clearHistory}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
+                className={`${BTN} h-7 px-2.5 text-[10px] hover:border-rose-500/40 hover:bg-rose-500/[0.06] hover:text-rose-400`}
               >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                <Trash2 className="h-3 w-3" />
                 Clear
               </button>
             )}
@@ -892,92 +1203,149 @@ export function EmailSpamPage() {
         </div>
 
         {filteredLogs.length === 0 ? (
-          <p className="m-5 rounded-xl border border-dashed border-white/[0.08] px-6 py-10 text-center text-sm text-slate-500 sm:m-6">
-            {logs.length === 0
-              ? 'No emails have been analyzed yet.'
-              : 'No scans match the selected filter.'}
-          </p>
+          <div className="px-6 py-14 text-center">
+            <History className="mx-auto h-5 w-5 text-slate-600" />
+            <p className="mt-2 text-xs text-slate-500">
+              {logs.length === 0
+                ? 'No emails have been analyzed yet.'
+                : 'No scans match the selected filter.'}
+            </p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <caption className="sr-only">Previously analyzed emails</caption>
-              <thead>
-                <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-slate-500">
-                  <th scope="col" className="px-5 py-3 font-semibold sm:px-6">
-                    Subject
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    Sender
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    Verdict
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-semibold">
-                    Score
-                  </th>
-                  <th scope="col" className="px-5 py-3 font-semibold sm:px-6">
-                    Analyzed
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.05]">
-                {filteredLogs.map(log => {
-                  const meta = VERDICT_META[log.verdict];
-                  return (
-                    <tr key={log.id} className="transition-colors hover:bg-white/[0.02]">
-                      <td
-                        className="max-w-[16rem] truncate px-5 py-3 font-medium text-slate-200 sm:px-6"
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              <table className="w-full table-fixed border-collapse text-left">
+                <colgroup>
+                  <col />
+                  <col className="w-[220px]" />
+                  <col className="w-[160px]" />
+                  <col className="w-[140px]" />
+                  <col className="w-[140px]" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-white/[0.08] bg-white/[0.015] font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+                    <th className="px-5 py-2.5 font-medium">Subject</th>
+                    <th className="px-4 py-2.5 font-medium">Sender</th>
+                    <th className="px-4 py-2.5 font-medium">Verdict</th>
+                    <th className="px-4 py-2.5 font-medium">Score</th>
+                    <th className="px-5 py-2.5 font-medium">Analyzed</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {filteredLogs.map(log => {
+                    const meta = VERDICT_META[log.verdict];
+                    return (
+                      <tr key={log.id} className="transition hover:bg-white/[0.025]">
+                        <td className="px-5 py-3">
+                          <p
+                            className="truncate text-[12px] font-medium text-slate-200"
+                            title={log.subject || 'No subject'}
+                          >
+                            {log.subject?.trim() || (
+                              <span className="italic text-slate-500">No subject</span>
+                            )}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p
+                            className="truncate font-mono text-[11px] text-slate-400"
+                            title={log.sender || 'Unknown sender'}
+                          >
+                            {log.sender?.trim() || (
+                              <span className="italic text-slate-600">Unknown</span>
+                            )}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${meta.border} ${meta.soft} ${meta.text}`}
+                          >
+                            <meta.Icon className="h-3 w-3" />
+                            {meta.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-12 font-mono text-[11px] tabular-nums text-slate-300">
+                              {log.score}/100
+                            </span>
+                            <span className="hidden h-1 w-16 overflow-hidden bg-white/[0.06] sm:block">
+                              <span
+                                className={`block h-full ${meta.bar}`}
+                                style={{ width: `${Math.max(4, log.score)}%` }}
+                              />
+                            </span>
+                          </div>
+                        </td>
+                        <td
+                          className="px-5 py-3 font-mono text-[10px] text-slate-500"
+                          title={formatFull(log.scannedAt)}
+                        >
+                          {formatRelative(log.scannedAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="divide-y divide-white/[0.06] md:hidden">
+              {filteredLogs.map(log => {
+                const meta = VERDICT_META[log.verdict];
+                return (
+                  <div key={log.id} className="px-5 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <p
+                        className="min-w-0 truncate text-xs font-medium text-slate-200"
                         title={log.subject || 'No subject'}
                       >
                         {log.subject?.trim() || (
                           <span className="italic text-slate-500">No subject</span>
                         )}
-                      </td>
-
-                      <td
-                        className="max-w-[14rem] truncate px-3 py-3 text-slate-400"
-                        title={log.sender || 'Unknown sender'}
+                      </p>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${meta.border} ${meta.soft} ${meta.text}`}
                       >
-                        {log.sender?.trim() || (
-                          <span className="italic text-slate-600">Unknown sender</span>
-                        )}
-                      </td>
+                        <meta.Icon className="h-3 w-3" />
+                        {log.score}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate font-mono text-[10px] text-slate-500">
+                      {log.sender?.trim() || 'Unknown sender'}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-wider text-slate-600">
+                      <span className={meta.text}>{meta.label}</span>
+                      <span>{formatRelative(log.scannedAt)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-                      <td className="whitespace-nowrap px-3 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.soft} ${meta.text}`}
-                        >
-                          <meta.Icon className="h-3 w-3" aria-hidden />
-                          {meta.label}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="w-12 tabular-nums text-slate-300">{log.score}/100</span>
-                          <span className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-black/30 sm:block">
-                            <span
-                              className={`block h-full rounded-full ${meta.bar}`}
-                              style={{ width: `${Math.max(4, log.score)}%` }}
-                            />
-                          </span>
-                        </div>
-                      </td>
-
-                      <td
-                        className="whitespace-nowrap px-5 py-3 text-xs text-slate-500 sm:px-6"
-                        title={formatFull(log.scannedAt)}
-                      >
-                        {formatRelative(log.scannedAt)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+            <div className="flex items-center justify-between border-t border-white/[0.08] bg-white/[0.015] px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">
+              <span>
+                {filteredLogs.length} record{filteredLogs.length === 1 ? '' : 's'}
+              </span>
+              <span>Newest first</span>
+            </div>
+          </>
         )}
-      </section>
+      </Panel>
+
+      {/* ═══════════════ FOOTER NOTE ═══════════════ */}
+      <aside className="flex items-start gap-2.5 border-t border-white/[0.08] pt-4 text-[11px] leading-relaxed text-slate-500">
+        <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+        <p>
+          Automated analysis can be wrong. A "Likely legitimate" verdict means no strong spam
+          indicators were detected — it is not a guarantee the message is safe. Treat this as
+          decision support, especially for sophisticated or targeted messages.
+        </p>
+      </aside>
     </div>
   );
 }
+
+export default EmailSpamPage;
