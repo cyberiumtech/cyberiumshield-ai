@@ -32,13 +32,11 @@ export function Navbar() {
     []
   );
 
-  /* Close search drawer on route change */
   useEffect(() => {
     setIsSearchOpen(false);
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  /* Close search drawer on Escape, and lock body scroll while open */
   useEffect(() => {
     if (!isSearchOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -53,7 +51,6 @@ export function Navbar() {
     };
   }, [isSearchOpen]);
 
-  /* Breadcrumbs */
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
     return paths.map((path, index) => ({
@@ -109,7 +106,7 @@ export function Navbar() {
             {breadcrumbs.length > 0 && (
               <nav
                 aria-label="Breadcrumb"
-                className="hidden min-w-0 items-center gap-1 border-l border-white/[0.06] pl-4 text-[12px] md:flex lg:pl-5"
+                className="hidden min-w-0 items-center gap-1 border-l border-white/[0.06] pl-4 text-[12px] lg:flex lg:pl-5"
               >
                 <Link
                   to="/dashboard"
@@ -140,20 +137,20 @@ export function Navbar() {
             )}
           </div>
 
-          {/* ═══════════════ RIGHT: Search trigger + Bell + Profile ═══════════════ */}
-          <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            {/* Compact search trigger */}
+          {/* ═══════════════ RIGHT: Search + Bell + Profile ═══════════════ */}
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {/* Wide search trigger */}
             <button
               type="button"
               onClick={() => setIsSearchOpen(true)}
               aria-label="Open search"
-              className="group flex h-9 items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.02] pl-2.5 pr-2 text-slate-400 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-slate-200"
+              className="group flex h-9 items-center gap-2.5 rounded-md border border-white/[0.08] bg-white/[0.02] pl-3 pr-2 text-slate-400 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-slate-200 sm:w-[240px] md:w-[320px] lg:w-[400px] xl:w-[480px]"
             >
-              <Search className="h-3.5 w-3.5" />
-              <span className="hidden text-[12px] text-slate-500 group-hover:text-slate-300 md:inline">
-                Search
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden flex-1 truncate text-left text-[12px] text-slate-500 group-hover:text-slate-300 sm:inline">
+                Search threats, incidents, devices…
               </span>
-              <kbd className="hidden items-center gap-0.5 rounded border border-white/[0.08] bg-white/[0.02] px-1.5 py-0.5 text-[10px] font-medium text-slate-500 md:flex">
+              <kbd className="hidden shrink-0 items-center gap-0.5 rounded border border-white/[0.08] bg-white/[0.02] px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:flex">
                 <span className="text-[11px] leading-none">⌘</span>
                 <span className="leading-none">K</span>
               </kbd>
@@ -191,7 +188,6 @@ export function Navbar() {
       <AnimatePresence>
         {isSearchOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -202,7 +198,6 @@ export function Navbar() {
               aria-hidden="true"
             />
 
-            {/* Sliding panel — from right on desktop, from top-right on mobile */}
             <motion.aside
               role="dialog"
               aria-modal="true"
@@ -211,10 +206,9 @@ export function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed right-0 top-0 z-50 flex h-[100dvh] w-full flex-col border-l border-white/[0.06] bg-[#0b0e14] sm:w-[420px]"
+              className="fixed right-0 top-0 z-50 flex h-[100dvh] w-full flex-col border-l border-white/[0.06] bg-[#0b0e14] sm:w-[440px] lg:w-[520px]"
               style={{ fontFamily: FONT_SANS }}
             >
-              {/* Header */}
               <div className="flex h-[68px] shrink-0 items-center justify-between gap-3 border-b border-white/[0.06] px-4">
                 <div className="flex items-center gap-2">
                   <Search className="h-4 w-4 text-cyan-400" />
@@ -230,16 +224,16 @@ export function Navbar() {
                 </button>
               </div>
 
-              {/* Search input area */}
               <div className="flex-1 overflow-y-auto p-4">
                 <GlobalSearch autoFocus />
               </div>
 
-              {/* Footer hint */}
               <div className="shrink-0 border-t border-white/[0.06] px-4 py-3">
                 <div className="flex items-center justify-between text-[11px] text-slate-500">
                   <span>Press Esc to close</span>
-                  <span className="font-mono text-slate-600">Search across incidents, devices, threats</span>
+                  <span className="hidden font-mono text-slate-600 sm:inline">
+                    Search across incidents, devices, threats
+                  </span>
                 </div>
               </div>
             </motion.aside>
