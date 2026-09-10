@@ -4,12 +4,16 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pymysql
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def mysql_connection():
@@ -36,7 +40,7 @@ def import_threat_intelligence(db):
             if cursor.fetchone(): continue
             cursor.execute('''INSERT INTO threat_intelligence_observations(indicator,indicator_type,risk_score,verdict,result,created_at)
                 VALUES(%s,%s,%s,%s,%s,%s)''', (row['indicator'], row['indicator_type'], row['score'], row['verdict'],
-                row['result_json'], parse_date(row['created_at']) or datetime.utcnow()))
+                row['result_json'], parse_date(row['created_at']) or utc_now()))
             imported += 1
     source.close(); return imported
 
@@ -52,7 +56,7 @@ def import_vulnerabilities(db):
             found = cursor.fetchone()
             if found: asset_map[row['id']] = found['id']; continue
             cursor.execute('''INSERT INTO vulnerability_assets(name,address,owner,environment,notes,created_at)
-                VALUES(%s,%s,%s,%s,%s,%s)''', (row['name'],row['address'],row['owner'],row['environment'],row['notes'],parse_date(row['created_at']) or datetime.utcnow()))
+                VALUES(%s,%s,%s,%s,%s,%s)''', (row['name'],row['address'],row['owner'],row['environment'],row['notes'],parse_date(row['created_at']) or utc_now()))
             asset_map[row['id']] = cursor.lastrowid; total += 1
         for row in source.execute('SELECT * FROM scans ORDER BY id'):
             cursor.execute('SELECT id FROM vulnerability_scans WHERE asset_id <=> %s AND started_at <=> %s LIMIT 1',
@@ -68,7 +72,7 @@ def import_vulnerabilities(db):
                 (asset_map.get(row['asset_id']), scan_map.get(row['scan_id']), row['port'], parse_date(row['detected_at'])))
             if cursor.fetchone(): continue
             cursor.execute('''INSERT INTO vulnerability_scan_findings(asset_id,scan_id,port,protocol,service,banner,risk_score,risk_level,detected_at)
-                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)''', (asset_map.get(row['asset_id']),scan_map.get(row['scan_id']),row['port'],row['protocol'],row['service'],row['banner'],row['risk_score'],row['risk_level'],parse_date(row['detected_at']) or datetime.utcnow()))
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)''', (asset_map.get(row['asset_id']),scan_map.get(row['scan_id']),row['port'],row['protocol'],row['service'],row['banner'],row['risk_score'],row['risk_level'],parse_date(row['detected_at']) or utc_now()))
             total += 1
         for row in source.execute('SELECT * FROM vulnerabilities ORDER BY id'):
             cursor.execute('SELECT id FROM vulnerability_findings WHERE cve=%s AND title=%s AND asset_id <=> %s LIMIT 1', (row['cve'],row['title'],asset_map.get(row['asset_id'])))
@@ -86,7 +90,7 @@ def import_security_logs(db):
             try: rows = json.loads(path.read_text(encoding='utf-8'))
             except (OSError, json.JSONDecodeError): continue
             for row in rows if isinstance(rows, list) else []:
-                occurred = parse_date(row.get('timestamp')) or datetime.utcnow()
+                occurred = parse_date(row.get('timestamp')) or utc_now()
                 title = f"{row.get('event_type', 'EVENT')}: {row.get('file_name', 'unknown')}"
                 cursor.execute('SELECT id FROM security_events WHERE title=%s AND occurred_at=%s LIMIT 1', (title, occurred))
                 if cursor.fetchone(): continue
@@ -115,7 +119,7 @@ def import_models(db):
             if cursor.fetchone(): continue
             cursor.execute('''INSERT INTO model_artifacts(domain,name,version,framework,checksum_sha256,content_type,size_bytes,artifact,metadata_json,is_active,created_at)
                 VALUES(%s,%s,'1','joblib',%s,'application/octet-stream',%s,%s,%s,1,%s)''',
-                (domain,path.name,checksum,len(content),content,json.dumps({'original_path': str(path.relative_to(ROOT))}),datetime.utcnow()))
+                (domain,path.name,checksum,len(content),content,json.dumps({'original_path': str(path.relative_to(ROOT))}),utc_now()))
             imported += 1
     return imported
 
@@ -123,7 +127,7 @@ def import_models(db):
 def seed_demo_rows(db):
     """Give every new domain a clearly labelled baseline row when it is empty."""
     seeded = 0
-    now = datetime.utcnow()
+    now = utc_now()
     with db.cursor() as cursor:
         def empty(table):
             cursor.execute(f'SELECT COUNT(*) AS count FROM `{table}`')
