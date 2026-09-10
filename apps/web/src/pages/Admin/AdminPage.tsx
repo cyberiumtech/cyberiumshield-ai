@@ -19,7 +19,6 @@ import {
   FileClock,
   FilterX,
   Fingerprint,
-  KeyRound,
   LockKeyhole,
   MoreHorizontal,
   Pencil,
@@ -233,12 +232,18 @@ export function AdminPage() {
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   const actor = useMemo(
-    () => ({
-      id: authUser?.id ?? '1',
-      name: authUser?.name ?? 'Demo Administrator',
-      email: authUser?.email ?? 'admin@cybershield.ai',
-    }),
-    [authUser]
+    () => {
+      const localOperator = state.users.find(
+        user => user.email.toLowerCase() === authUser?.email?.toLowerCase()
+      );
+
+      return {
+        id: localOperator?.id ?? authUser?.id ?? '1',
+        name: authUser?.name ?? localOperator?.name ?? 'Demo Administrator',
+        email: authUser?.email ?? localOperator?.email ?? 'admin@cybershield.ai',
+      };
+    },
+    [authUser, state.users]
   );
 
   const tenantName = authUser?.organization_name?.trim() || 'CyberShield AI demo';
@@ -970,7 +975,7 @@ function UsersSection({
       return;
     }
 
-    const csv = [
+    const rows = [
       ['Name', 'Email', 'Role', 'Status', 'Last active', 'Created'],
 
       ...filtered.map(user => [
@@ -981,34 +986,13 @@ function UsersSection({
         user.lastActive ?? '',
         user.createdAt,
       ]),
-    ]
-      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    ];
 
-    const blob = new Blob([csv], {
-      type: 'text/csv;charset=utf-8',
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const anchor = document.createElement('a');
-
-    anchor.href = url;
-    anchor.download = `cybershield-users-${new Date().toISOString().slice(0, 10)}.csv`;
-
-    document.body.appendChild(anchor);
-
-    anchor.click();
-    anchor.remove();
-
-    URL.revokeObjectURL(url);
-
-    try {
-      adminRepository.recordExport(actor, filtered.length);
-      mutate(() => undefined, `${filtered.length} filtered users exported.`);
-    } catch {
-      toast.success(`${filtered.length} filtered users exported.`);
-    }
+    downloadCsv(`cybershield-users-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    mutate(
+      () => adminRepository.recordExport(actor, filtered.length),
+      `${filtered.length} filtered users exported.`
+    );
   };
 
   const clear = () => {
@@ -1861,14 +1845,46 @@ function RoleEditor({
 
 function AuditSection({
   entries,
+  actor,
+  refresh,
 }: {
   entries: ReturnType<typeof adminRepository.getState>['audit'];
+  actor: { id: string; name: string; email: string };
+  refresh: () => void;
 }) {
   const [search, setSearch] = useState('');
 
   const [type, setType] = useState<'all' | 'user' | 'role' | 'export'>('all');
 
   const filtered = filterAdminAudit(entries, search, type);
+
+  const exportCsv = () => {
+    if (!filtered.length) {
+      toast.error('There are no audit events to export.');
+      return;
+    }
+
+    const rows: Array<Array<string | number | null>> = [
+      ['Timestamp', 'Action', 'Actor', 'Target', 'Metadata'],
+      ...filtered.map(entry => [
+        entry.timestamp,
+        entry.action,
+        entry.actor,
+        entry.target,
+        entry.metadata,
+      ]),
+    ];
+
+    downloadCsv(`cybershield-audit-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+
+    try {
+      adminRepository.recordAuditExport(actor, filtered.length);
+      refresh();
+      toast.success(`${filtered.length} audit events exported.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Audit export could not be recorded.');
+    }
+  };
 
   return (
     <section className={`${panel} overflow-hidden rounded-[14px]`}>
@@ -1909,6 +1925,16 @@ function AuditSection({
 
             <option value="export">Exports</option>
           </select>
+
+          <button
+            type="button"
+            className={secondaryButton}
+            onClick={exportCsv}
+            disabled={!filtered.length}
+          >
+            <Download className="h-4 w-4" />
+            Export ledger
+          </button>
         </div>
       </div>
 
@@ -1959,7 +1985,7 @@ function AuditRow({
 
   const Icon = entry.action.startsWith('role')
     ? ShieldCheck
-    : entry.action === 'users.exported'
+    : entry.action.endsWith('.exported')
       ? Download
       : isDelete
         ? Trash2
