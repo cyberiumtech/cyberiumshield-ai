@@ -87,6 +87,18 @@ def upgrade() -> None:
     for column in ('asset_id', 'scan_id', 'cve', 'severity', 'status', 'created_at'):
         op.create_index(f'ix_vulnerability_findings_{column}', 'vulnerability_findings', [column])
 
+    op.create_table('vulnerability_scan_findings',
+        sa.Column('id', sa.Integer(), primary_key=True), sa.Column('asset_id', sa.Integer()),
+        sa.Column('scan_id', sa.Integer()), sa.Column('port', sa.Integer()),
+        sa.Column('protocol', sa.String(20)), sa.Column('service', sa.String(255)),
+        sa.Column('banner', sa.Text()), sa.Column('risk_score', sa.Float(), nullable=False, server_default='0'),
+        sa.Column('risk_level', sa.String(20), nullable=False, server_default='Info'),
+        sa.Column('detected_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.ForeignKeyConstraint(['asset_id'], ['vulnerability_assets.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['scan_id'], ['vulnerability_scans.id'], ondelete='CASCADE'))
+    for column in ('asset_id', 'scan_id', 'risk_level', 'detected_at'):
+        op.create_index(f'ix_vulnerability_scan_findings_{column}', 'vulnerability_scan_findings', [column])
+
     op.create_table('threat_intelligence_observations',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('indicator', sa.String(2048), nullable=False),
@@ -161,6 +173,6 @@ def downgrade() -> None:
     for table in (
         'model_artifacts', 'incident_analytics_snapshots', 'incident_solutions', 'incident_field_notes',
         'email_spam_scans', 'phishing_scans', 'malware_scans', 'threat_intelligence_observations',
-        'vulnerability_findings', 'vulnerability_scans', 'vulnerability_assets',
+        'vulnerability_scan_findings', 'vulnerability_findings', 'vulnerability_scans', 'vulnerability_assets',
         'network_monitoring_records', 'security_events'):
         op.drop_table(table)

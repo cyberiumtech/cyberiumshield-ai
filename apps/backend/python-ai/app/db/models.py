@@ -265,6 +265,21 @@ class VulnerabilityFinding(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
+class VulnerabilityScanFinding(Base):
+    __tablename__ = 'vulnerability_scan_findings'
+
+    id = Column(Integer, primary_key=True)
+    asset_id = Column(Integer, ForeignKey('vulnerability_assets.id', ondelete='CASCADE'), nullable=True, index=True)
+    scan_id = Column(Integer, ForeignKey('vulnerability_scans.id', ondelete='CASCADE'), nullable=True, index=True)
+    port = Column(Integer, nullable=True)
+    protocol = Column(String(20), nullable=True)
+    service = Column(String(255), nullable=True)
+    banner = Column(Text, nullable=True)
+    risk_score = Column(Float, nullable=False, default=0)
+    risk_level = Column(String(20), nullable=False, default='Info', index=True)
+    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 class ThreatIntelligenceObservation(Base):
     __tablename__ = 'threat_intelligence_observations'
 
