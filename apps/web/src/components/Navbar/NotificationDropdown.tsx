@@ -1,41 +1,83 @@
-import React, { useState } from 'react';
-import { Bell, AlertTriangle, Shield, Activity, CheckCheck } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, AlertTriangle, Shield, Activity, CheckCheck, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Notification } from './types';
+import { useAuth } from '../../hooks/useAuth';
+import { getSystemNotifications } from '../../services/notification.service';
+
+const READ_STORAGE_PREFIX = 'cybershield:notifications:read:';
+const REFRESH_INTERVAL_MS = 30_000;
+
+function getReadIds(storageKey: string) {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]');
+    return new Set<string>(Array.isArray(value) ? value.filter(id => typeof id === 'string') : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function saveReadIds(storageKey: string, ids: Set<string>) {
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify([...ids].slice(-500)));
+  } catch {
+    // Notifications still work when browser storage is unavailable.
+  }
+}
 
 export function NotificationDropdown() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'critical',
-      title: 'Critical Alert',
-      message: 'Suspicious activity detected on server-01',
-      timestamp: new Date(Date.now() - 5 * 60000),
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'threat',
-      title: 'New Threat Detected',
-      message: 'Malware signature identified in network traffic',
-      timestamp: new Date(Date.now() - 15 * 60000),
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'incident',
-      title: 'Incident Created',
-      message: 'INC-2024-0789 has been assigned to you',
-      timestamp: new Date(Date.now() - 60 * 60000),
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const readStorageKey = `${READ_STORAGE_PREFIX}${user?.id ?? 'anonymous'}`;
+
+  const loadNotifications = useCallback(async (showLoading = false) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const nextNotifications = await getSystemNotifications();
+      const readIds = getReadIds(readStorageKey);
+      setNotifications(nextNotifications.map(notification => ({
+        ...notification,
+        read: readIds.has(notification.id),
+      })));
+      setError(null);
+    } catch {
+      setError('Unable to load system notifications.');
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, [readStorageKey]);
+
+  useEffect(() => {
+    void loadNotifications(true);
+    const interval = window.setInterval(() => void loadNotifications(), REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [loadNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    setNotifications(current => {
+      const readIds = getReadIds(readStorageKey);
+      current.forEach(notification => readIds.add(notification.id));
+      saveReadIds(readStorageKey, readIds);
+      return current.map(notification => ({ ...notification, read: true }));
+    });
+  };
+
+  const openNotification = (notification: Notification) => {
+    const readIds = getReadIds(readStorageKey);
+    readIds.add(notification.id);
+    saveReadIds(readStorageKey, readIds);
+    setNotifications(current => current.map(item => (
+      item.id === notification.id ? { ...item, read: true } : item
+    )));
+    setIsOpen(false);
+    if (notification.link) navigate(notification.link);
   };
 
   const getIcon = (type: Notification['type']) => {
@@ -52,7 +94,8 @@ export function NotificationDropdown() {
   };
 
   const formatTimestamp = (date: Date) => {
-    const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+    if (date.getTime() === 0) return 'Time unavailable';
+    const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
@@ -65,9 +108,13 @@ export function NotificationDropdown() {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) void loadNotifications();
+          setIsOpen(open => !open);
+        }}
         className="relative flex items-center justify-center h-10 w-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
-        aria-label="Notifications"
+        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+        aria-expanded={isOpen}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -111,15 +158,46 @@ export function NotificationDropdown() {
               </div>
 
               <div className="max-h-96 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {error && notifications.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 border-b border-amber-500/10 bg-amber-500/5 px-4 py-2 text-xs text-amber-300">
+                    <span>{error}</span>
+                    <button
+                      type="button"
+                      onClick={() => void loadNotifications(true)}
+                      className="shrink-0 font-medium hover:text-amber-200"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                {isLoading && notifications.length === 0 ? (
+                  <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-slate-400">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Loading notifications
+                  </div>
+                ) : error && notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-sm text-slate-400">{error}</p>
+                    <button
+                      type="button"
+                      onClick={() => void loadNotifications(true)}
+                      className="mt-2 text-xs font-medium text-cyan-400 transition-colors hover:text-cyan-300"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : notifications.length === 0 ? (
                   <div className="px-4 py-8 text-center text-slate-400 text-sm">
-                    No notifications
+                    No system notifications
                   </div>
                 ) : (
                   notifications.map((notification) => (
-                    <div
+                    <button
+                      type="button"
                       key={notification.id}
-                      className={`px-4 py-3 border-b border-white/5 transition-colors cursor-pointer ${
+                      onClick={() => openNotification(notification)}
+                      className={`w-full px-4 py-3 text-left border-b border-white/5 transition-colors ${
                         !notification.read
                           ? 'bg-cyan-400/5 hover:bg-cyan-400/10'
                           : 'hover:bg-white/5'
@@ -144,13 +222,20 @@ export function NotificationDropdown() {
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>
 
               <div className="px-4 py-3 border-t border-white/10 bg-white/5">
-                <button className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium w-full text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate('/security-center');
+                  }}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium w-full text-center"
+                >
                   View all notifications
                 </button>
               </div>

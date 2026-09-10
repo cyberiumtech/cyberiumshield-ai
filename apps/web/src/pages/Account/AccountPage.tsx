@@ -11,8 +11,6 @@ import {
   Settings,
   Sun,
   Upload,
-  UserRound,
-  X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,25 +22,27 @@ import type { User } from '../../services/auth.service';
 import { isAdminRole } from '../../components/AdminRoute/AdminRoute';
 
 /* ─────────────────────────────────────────────────────────────
-   FONTS + STYLES
+   FONTS + PANEL STYLES
    ───────────────────────────────────────────────────────────── */
 const FONT_SANS = "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
 
-const PANEL = 'border border-white/[0.08] bg-[#0b1424]';
+/* Panels now have visible rounded borders + lifted surface */
+const PANEL = 'rounded-xl border border-line-2 bg-panel';
 
+/* Buttons / fields / labels */
 const BTN =
-  'inline-flex h-8 items-center justify-center gap-1.5 rounded px-2.5 text-[12px] font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
+  'inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-[12px] font-medium text-fg-3 transition hover:bg-tint-2 hover:text-fg focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
 
 const BTN_PRIMARY =
-  'inline-flex h-8 items-center justify-center gap-1.5 rounded bg-cyan-500 px-3 text-[12px] font-medium text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
+  'inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-cyan-500 px-3.5 text-[12px] font-medium text-slate-950 transition hover:bg-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
 
 const BTN_OUTLINE =
-  'inline-flex h-8 items-center justify-center gap-1.5 rounded border border-white/[0.1] bg-transparent px-3 text-[12px] font-medium text-slate-200 transition hover:border-white/[0.2] hover:bg-white/[0.04] focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
+  'inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-2 bg-transparent px-3.5 text-[12px] font-medium text-fg-2 transition hover:border-line-3 hover:bg-tint-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-40';
 
 const FIELD =
-  'w-full h-8 rounded border border-white/[0.08] bg-[#07101e] px-2.5 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 hover:border-white/[0.15] focus:border-cyan-500/60 disabled:cursor-not-allowed disabled:opacity-60';
+  'w-full h-10 rounded-lg border border-line-2 bg-field px-3 text-[13px] text-fg outline-none transition placeholder:text-fg-4 hover:border-line-3 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-60';
 
-const LABEL = 'block mb-1.5 text-[11px] font-medium text-slate-400';
+const LABEL = 'block mb-2 text-[12px] font-medium text-fg-2';
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 
@@ -54,23 +54,20 @@ function getInitials(name: string) {
     name
       .split(' ')
       .filter(Boolean)
-      .map(part => part[0])
+      .map(p => p[0])
       .join('')
       .slice(0, 2)
       .toUpperCase() || 'U'
   );
 }
-
 function formatRole(role: string) {
-  return role.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+  return role.replaceAll('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(
     new Date(value)
   );
 }
-
 function formatFullDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -78,14 +75,13 @@ function formatFullDate(value: string) {
     year: 'numeric',
   }).format(new Date(value));
 }
-
 function relativeUpdated(value: string) {
   const days = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
   return days === 0 ? 'Today' : `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MAIN PAGE
+   MAIN
    ───────────────────────────────────────────────────────────── */
 export function AccountPage() {
   const { user, isLoading } = useAuth();
@@ -137,14 +133,13 @@ export function AccountPage() {
     return (
       <div
         style={{ fontFamily: FONT_SANS }}
-        className="mx-auto max-w-[1200px] px-6 py-8 text-[12px] text-slate-500"
+        className="mx-auto max-w-[1200px] px-6 py-8 text-[12px] text-fg-4"
       >
         Loading account…
       </div>
     );
   }
 
-  /* ── Handlers ── */
   const handleAvatar = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -220,75 +215,76 @@ export function AccountPage() {
     ...(isAdminRole(user.role) ? [[Settings, 'Settings', '/settings'] as const] : []),
   ];
 
-  /* ── Render ── */
   return (
     <div
       style={{ fontFamily: FONT_SANS }}
-      className="mx-auto w-full max-w-[1200px] px-6 pb-16 pt-6 text-slate-200"
+      className="mx-auto w-full max-w-[1200px] px-6 pb-16 pt-6 text-fg-2"
     >
-      {/* ═══════════════ HEADER ═══════════════ */}
-      <header className="mb-8 flex flex-wrap items-center gap-4 border-b border-white/[0.06] pb-6">
+      {/* ═══ Profile header (no panel — sits on page background) ═══ */}
+      <header className="mb-6 flex flex-wrap items-center gap-4">
         <Avatar src={avatar} name={name} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[20px] font-semibold tracking-tight text-white">{name}</h1>
-            <span className="rounded-sm border border-cyan-500/30 bg-cyan-500/[0.08] px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-cyan-400">
+            <h1 className="text-[22px] font-semibold tracking-tight text-fg">{name}</h1>
+            <span className="rounded-md border border-cyan-500/30 bg-cyan-500/[0.08] px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-cyan-400">
               {role}
             </span>
           </div>
-          <p className="mt-1 truncate font-mono text-[11px] text-slate-500">{email}</p>
-          <p className="mt-1 text-[11px] text-slate-600">
+          <p className="mt-1 truncate font-mono text-[12px] text-fg-4">{email}</p>
+          <p className="mt-1 text-[11px] text-fg-5">
             Member since {formatDate(user.created_at)}
           </p>
         </div>
       </header>
 
-      {/* ═══════════════ 2-COLUMN GRID ═══════════════ */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
-        {/* ── MAIN COLUMN ── */}
-        <div className="min-w-0 space-y-6">
-          {/* ═══ PROFILE INFORMATION ═══ */}
+      {/* ═══ Grid ═══ */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+        {/* ─── MAIN COLUMN ─── */}
+        <div className="min-w-0 space-y-5">
+          {/* ═══════ PROFILE INFORMATION ═══════ */}
           <section className={PANEL}>
-            <header className="flex items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-3.5">
-              <div className="min-w-0">
-                <h2 className="text-[14px] font-semibold text-white">Profile information</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  Manage your public account details.
-                </p>
-              </div>
+            <header className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
+              <h2 className="text-[15px] font-semibold text-fg">Profile information</h2>
               {!editing && (
-                <button type="button" onClick={() => setEditing(true)} className={BTN_OUTLINE}>
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="text-[12px] font-medium text-cyan-400 transition hover:text-cyan-300"
+                >
                   Edit
                 </button>
               )}
             </header>
 
-            <form onSubmit={handleSave} className="space-y-5 p-5">
-              {/* Avatar row */}
-              <div className="flex flex-wrap items-center gap-4">
-                <Avatar src={avatar} name={name} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium text-slate-200">Profile photo</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    JPG, PNG, or WebP · up to 2 MB
-                  </p>
+            <form onSubmit={handleSave} className="space-y-5 p-6">
+              {/* Avatar block — inset field with border, matching reference */}
+              <div className="rounded-lg border border-line-2 bg-field p-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <Avatar src={avatar} name={name} />
+                  <div className="min-w-0 flex-1">
+                    {editing ? (
+                      <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-line-2 bg-panel px-3 text-[12px] font-medium text-fg-2 transition hover:border-line-3 hover:bg-tint-2">
+                        <Upload className="h-3.5 w-3.5" />
+                        Choose file
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleAvatar}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : (
+                      <p className="text-[12px] font-medium text-fg-2">Profile photo</p>
+                    )}
+                    <p className="mt-1.5 text-[11px] text-fg-4">
+                      JPG, PNG, or WebP · up to 2 MB
+                    </p>
+                  </div>
                 </div>
-                {editing && (
-                  <label className={`${BTN_OUTLINE} cursor-pointer`}>
-                    <Upload className="h-3.5 w-3.5" />
-                    Change photo
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleAvatar}
-                      className="hidden"
-                    />
-                  </label>
-                )}
               </div>
 
-              {/* Fields */}
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* Fields — stacked single column, matching reference */}
+              <div className="space-y-4">
                 <label className="block">
                   <span className={LABEL}>Full name</span>
                   <input
@@ -309,7 +305,7 @@ export function AccountPage() {
                     className={FIELD}
                   />
                 </label>
-                <label className="block md:col-span-2">
+                <label className="block">
                   <span className={LABEL}>Organization name</span>
                   <input
                     type="text"
@@ -322,7 +318,7 @@ export function AccountPage() {
               </div>
 
               {editing && (
-                <div className="flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+                <div className="flex justify-end gap-2 border-t border-line pt-4">
                   <button type="button" onClick={handleCancel} className={BTN}>
                     Cancel
                   </button>
@@ -334,12 +330,12 @@ export function AccountPage() {
             </form>
           </section>
 
-          {/* ═══ CHANGE PASSWORD ═══ */}
+          {/* ═══════ PASSWORD ═══════ */}
           <section className={PANEL}>
-            <header className="flex items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-3.5">
+            <header className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
               <div className="min-w-0">
-                <h2 className="text-[14px] font-semibold text-white">Password</h2>
-                <p className="mt-0.5 text-[11px] text-slate-500">
+                <h2 className="text-[15px] font-semibold text-fg">Change password</h2>
+                <p className="mt-0.5 text-[12px] text-fg-4">
                   Use a strong, unique password for your account.
                 </p>
               </div>
@@ -347,7 +343,7 @@ export function AccountPage() {
                 <button
                   type="button"
                   onClick={() => setPasswordOpen(true)}
-                  className={BTN_OUTLINE}
+                  className="text-[12px] font-medium text-cyan-400 transition hover:text-cyan-300"
                 >
                   Change
                 </button>
@@ -355,51 +351,44 @@ export function AccountPage() {
             </header>
 
             {passwordOpen ? (
-              <form onSubmit={handlePassword} className="space-y-4 p-5">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <PasswordField
-                      label="Current password"
-                      value={currentPassword}
-                      onChange={setCurrentPassword}
-                      show={showPassword}
-                      toggle={() => setShowPassword(!showPassword)}
-                    />
-                  </div>
-                  <PasswordField
-                    label="New password"
-                    value={newPassword}
-                    onChange={setNewPassword}
-                    show={showPassword}
-                    toggle={() => setShowPassword(!showPassword)}
-                  />
-                  <PasswordField
-                    label="Confirm new password"
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    show={showPassword}
-                    toggle={() => setShowPassword(!showPassword)}
-                  />
-                </div>
-
-                {/* Strength meter */}
+              <form onSubmit={handlePassword} className="space-y-4 p-6">
+                <PasswordField
+                  label="Current password"
+                  value={currentPassword}
+                  onChange={setCurrentPassword}
+                  show={showPassword}
+                  toggle={() => setShowPassword(!showPassword)}
+                />
+                <PasswordField
+                  label="New password"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  show={showPassword}
+                  toggle={() => setShowPassword(!showPassword)}
+                />
                 <div>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map(level => (
                       <div
                         key={level}
                         className={`h-1 flex-1 rounded-full transition-colors ${
-                          level <= passwordStrength ? 'bg-cyan-500' : 'bg-white/[0.06]'
+                          level <= passwordStrength ? 'bg-cyan-500' : 'bg-tint-3'
                         }`}
                       />
                     ))}
                   </div>
-                  <p className="mt-2 text-[11px] text-slate-500">
+                  <p className="mt-2 text-[11px] text-fg-4">
                     Use at least 8 characters, with mixed case, a number, and a symbol.
                   </p>
                 </div>
-
-                <div className="flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+                <PasswordField
+                  label="Confirm new password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  show={showPassword}
+                  toggle={() => setShowPassword(!showPassword)}
+                />
+                <div className="flex justify-end gap-2 border-t border-line pt-4">
                   <button
                     type="button"
                     onClick={() => setPasswordOpen(false)}
@@ -413,22 +402,22 @@ export function AccountPage() {
                 </div>
               </form>
             ) : (
-              <div className="flex items-center gap-2.5 px-5 py-4 text-[12px] text-slate-500">
-                <LockKeyhole className="h-3.5 w-3.5 text-slate-600" />
+              <div className="flex items-center gap-2.5 px-6 py-5 text-[12px] text-fg-4">
+                <LockKeyhole className="h-3.5 w-3.5 text-fg-5" />
                 Your password is protected.
               </div>
             )}
           </section>
 
-          {/* ═══ APPEARANCE ═══ */}
+          {/* ═══════ APPEARANCE ═══════ */}
           <section className={PANEL}>
-            <header className="border-b border-white/[0.06] px-5 py-3.5">
-              <h2 className="text-[14px] font-semibold text-white">Appearance</h2>
-              <p className="mt-0.5 text-[11px] text-slate-500">
+            <header className="border-b border-line px-6 py-4">
+              <h2 className="text-[15px] font-semibold text-fg">Appearance</h2>
+              <p className="mt-0.5 text-[12px] text-fg-4">
                 Choose how the workspace looks. System follows your OS setting.
               </p>
             </header>
-            <div className="grid grid-cols-3 gap-2 p-5">
+            <div className="grid grid-cols-3 gap-2 p-6">
               {(
                 [
                   ['light', Sun, 'Light'],
@@ -442,10 +431,10 @@ export function AccountPage() {
                     key={value}
                     type="button"
                     onClick={() => setTheme(value)}
-                    className={`flex h-10 items-center justify-center gap-2 rounded border text-[12px] font-medium transition ${
+                    className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-[12px] font-medium transition ${
                       active
-                        ? 'border-cyan-500/50 bg-cyan-500/[0.08] text-cyan-400'
-                        : 'border-white/[0.08] text-slate-500 hover:border-white/[0.16] hover:text-slate-300'
+                        ? 'border-cyan-500/50 bg-cyan-500/[0.08] text-cyan-500'
+                        : 'border-line-2 text-fg-4 hover:border-line-3 hover:bg-tint hover:text-fg-2'
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -458,28 +447,31 @@ export function AccountPage() {
           </section>
         </div>
 
-        {/* ── SIDEBAR ── */}
-        <aside className="space-y-6">
+        {/* ─── SIDEBAR ─── */}
+        <aside className="space-y-5">
           {/* Account details */}
           <section className={PANEL}>
-            <header className="border-b border-white/[0.06] px-5 py-3.5">
-              <h2 className="text-[14px] font-semibold text-white">Account details</h2>
+            <header className="border-b border-line px-6 py-4">
+              <h2 className="text-[15px] font-semibold text-fg">Account details</h2>
             </header>
-            <dl className="divide-y divide-white/[0.05]">
+            <dl className="divide-y divide-line">
               <DetailRow
                 label="Status"
                 value={
-                  <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/[0.08] px-2 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-emerald-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     Active
                   </span>
                 }
               />
-              <DetailRow label="Role" value={<span className="text-[12px] text-slate-300">{role}</span>} />
+              <DetailRow
+                label="Role"
+                value={<span className="text-[12px] text-fg-2">{role}</span>}
+              />
               <DetailRow
                 label="Joined"
                 value={
-                  <span className="font-mono text-[11px] text-slate-300">
+                  <span className="font-mono text-[11px] text-fg-2">
                     {formatFullDate(user.created_at)}
                   </span>
                 }
@@ -487,7 +479,7 @@ export function AccountPage() {
               <DetailRow
                 label="Last updated"
                 value={
-                  <span className="font-mono text-[11px] text-slate-300">
+                  <span className="font-mono text-[11px] text-fg-2">
                     {relativeUpdated(user.updated_at)}
                   </span>
                 }
@@ -497,21 +489,21 @@ export function AccountPage() {
 
           {/* Quick actions */}
           <section className={PANEL}>
-            <header className="border-b border-white/[0.06] px-5 py-3.5">
-              <h2 className="text-[14px] font-semibold text-white">Quick actions</h2>
+            <header className="border-b border-line px-6 py-4">
+              <h2 className="text-[15px] font-semibold text-fg">Quick actions</h2>
             </header>
-            <div className="p-2">
+            <div className="p-3">
               {quickActions.map(([Icon, label, path]) => (
                 <Link
                   key={path}
                   to={path}
-                  className="group flex items-center gap-3 rounded px-3 py-2.5 text-[12px] text-slate-400 transition hover:bg-white/[0.03] hover:text-slate-200"
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] text-fg-3 transition hover:bg-tint-2 hover:text-fg"
                 >
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded border border-white/[0.08] bg-[#07101e] text-slate-500 transition group-hover:text-cyan-400">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-line-2 bg-field text-fg-4 transition group-hover:text-cyan-500">
                     <Icon className="h-3.5 w-3.5" />
                   </span>
                   <span className="truncate">{label}</span>
-                  <span className="ml-auto text-slate-700 transition group-hover:translate-x-0.5 group-hover:text-slate-400">
+                  <span className="ml-auto text-fg-5 transition group-hover:translate-x-0.5 group-hover:text-fg-3">
                     →
                   </span>
                 </Link>
@@ -544,13 +536,13 @@ function Avatar({
       <img
         src={src}
         alt={`${name} avatar`}
-        className={`${dimension} shrink-0 rounded-full border border-white/[0.08] object-cover`}
+        className={`${dimension} shrink-0 rounded-full border border-line-2 object-cover`}
       />
     );
   }
   return (
     <div
-      className={`${dimension} grid shrink-0 place-items-center rounded-full border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.12] to-violet-500/[0.08] font-mono font-semibold text-cyan-400 ${fontSize}`}
+      className={`${dimension} grid shrink-0 place-items-center rounded-full border border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.12] to-violet-500/[0.08] font-mono font-semibold text-cyan-500 ${fontSize}`}
     >
       {getInitials(name)}
     </div>
@@ -562,10 +554,8 @@ function Avatar({
    ═════════════════════════════════════════════════════════════ */
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-3">
-      <dt className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </dt>
+    <div className="flex items-center justify-between gap-4 px-6 py-3.5">
+      <dt className="text-[12px] text-fg-4">{label}</dt>
       <dd className="min-w-0 text-right">{value}</dd>
     </div>
   );
@@ -595,15 +585,15 @@ function PasswordField({
           type={show ? 'text' : 'password'}
           value={value}
           onChange={event => onChange(event.target.value)}
-          className={`${FIELD} pr-9`}
+          className={`${FIELD} pr-10`}
         />
         <button
           type="button"
           onClick={toggle}
           aria-label={show ? 'Hide password' : 'Show password'}
-          className="absolute right-1 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-slate-500 hover:text-slate-200"
+          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-fg-4 hover:bg-tint-2 hover:text-fg-2"
         >
-          {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </span>
     </label>

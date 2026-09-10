@@ -173,3 +173,14 @@ html::-webkit-scrollbar-corner,
 body::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+*,
+*::before,
+*::after {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+/* But don't animate transforms/opacity globally — that breaks other animations */
+[class*="animate-"] {
+  transition: none;
+}
