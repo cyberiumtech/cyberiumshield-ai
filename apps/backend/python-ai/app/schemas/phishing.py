@@ -1,6 +1,7 @@
 """Pydantic schemas for phishing detection."""
-from pydantic import BaseModel, HttpUrl, Field
-from typing import Optional, List, Dict
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class URLScanRequest(BaseModel):
@@ -10,14 +11,16 @@ class URLScanRequest(BaseModel):
 
 class URLScanResponse(BaseModel):
     """Response schema for URL scanning."""
+    model_config = ConfigDict(protected_namespaces=())
+
     url: str
     is_phishing: bool
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0-1)")
     score: int = Field(..., ge=0, le=100, description="Risk score (0-100)")
     risk_level: str = Field(..., description="Risk level: low, medium, high, critical")
     model_version: str
-    features_analyzed: Optional[Dict] = None
-    warnings: List[str] = []
+    features_analyzed: Optional[Dict[str, Any]] = None
+    warnings: List[str] = Field(default_factory=list)
     scanned_at: Optional[str] = None
 
 
@@ -26,7 +29,7 @@ class EmailScanRequest(BaseModel):
     subject: str
     body: str
     sender: str
-    urls: List[str] = []
+    urls: List[str] = Field(default_factory=list)
 
 
 class BatchScanRequest(BaseModel):

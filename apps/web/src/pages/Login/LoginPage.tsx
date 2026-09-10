@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { getErrorMessage } from '../../utils/errors';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,8 +31,8 @@ export function LoginPage() {
 
     try {
       await login({ email, password, remember });
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Login failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Login failed'));
     }
   };
 

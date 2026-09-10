@@ -6,6 +6,11 @@ Thumbs.db
 node_modules/
 .vite/
 .dist/
+apps/web/dist/
+.tmp/
+*-desktop.png
+*-mobile.png
+*-tablet.png
 .env*
 
 # PHP/Laravel

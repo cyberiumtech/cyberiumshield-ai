@@ -1,10 +1,8 @@
 """
 Phishing detection service using trained ML model.
 """
-import joblib
 from pathlib import Path
 from typing import Dict, Optional
-import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,6 +36,8 @@ class PhishingDetectionService:
             return
 
         try:
+            import joblib
+
             logger.info(f"Loading phishing detection model from {model_path}")
             self.model_package = joblib.load(model_path)
 
@@ -73,6 +73,11 @@ class PhishingDetectionService:
             return self._fallback_scan(url)
 
         try:
+            # pandas/numpy are only required by the trained-model path. Keeping
+            # this import lazy lets the API serve its heuristic fallback and
+            # integration routes when no model artifact is installed.
+            import pandas as pd
+
             # Extract features
             features = self.feature_extractor.extract_features(url)
             X = pd.DataFrame([features])

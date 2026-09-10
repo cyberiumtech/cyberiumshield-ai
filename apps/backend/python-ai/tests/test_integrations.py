@@ -78,3 +78,12 @@ def test_provider_auth_failure_is_sanitized(client, monkeypatch):
     assert response.status_code == 502
     assert response.json()["detail"] == "TinyURL rejected the supplied credentials."
     assert "bad-secret" not in response.text
+
+
+def test_integration_endpoints_require_admin_outside_development(client, monkeypatch):
+    monkeypatch.setattr(integrations.settings, "APP_ENV", "production")
+
+    response = client.post("/api/v1/integrations/tinyurl/test", json={"api_key": "secret"})
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"

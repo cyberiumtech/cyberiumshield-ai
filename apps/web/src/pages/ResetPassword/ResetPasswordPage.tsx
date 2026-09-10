@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Shield, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import authService from '../../services/auth.service';
+import { getErrorMessage } from '../../utils/errors';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -58,8 +59,8 @@ export function ResetPasswordPage() {
       });
       setSuccess(true);
       setTimeout(() => navigate('/auth/login'), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password. The link may be expired.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to reset password. The link may be expired.'));
     } finally {
       setIsLoading(false);
     }

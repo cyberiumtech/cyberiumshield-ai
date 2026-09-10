@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Mail, Lock, User, Building, AlertCircle, Eye, EyeOff, Check, Globe, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { getErrorMessage } from '../../utils/errors';
 
 export function RegisterPage() {
   const [name, setName] = useState('');
@@ -84,8 +85,8 @@ export function RegisterPage() {
         country,
         timezone,
       });
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Registration failed'));
     }
   };
 

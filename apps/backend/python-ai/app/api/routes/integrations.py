@@ -4,19 +4,21 @@ Credentials are accepted only for the duration of each request. They are not
 persisted or included in logs/responses.
 """
 
-from __future__ import annotations
-
 import hashlib
 import hmac
 import time
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from app.api.dependencies.auth import get_optional_user
+from app.core.config import settings
+from app.db.models import User
 
 
 router = APIRouter()
@@ -38,6 +40,22 @@ class IntegrationConnectionResponse(BaseModel):
     ok: bool
     provider: str
     message: str
+
+
+def require_integration_admin(
+    current_user: Optional[User] = Depends(get_optional_user),
+) -> Optional[User]:
+    """Require an administrator outside local development.
+
+    The frontend still uses mock authentication in development. Production
+    requests must carry a real API JWT belonging to an administrator.
+    """
+    if settings.APP_ENV.lower() in {"development", "local", "test"} and current_user is None:
+        return None
+    roles = {role.name.strip().lower() for role in current_user.roles} if current_user else set()
+    if not roles.intersection({"admin", "administrator"}):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user
 
 
 async def _provider_request(
@@ -67,6 +85,7 @@ def _provider_error(provider: str, response: httpx.Response) -> HTTPException:
 async def test_tinyurl_connection(
     request: Request,
     payload: TinyUrlConnectionRequest,
+    _admin: Optional[User] = Depends(require_integration_admin),
 ) -> IntegrationConnectionResponse:
     try:
         response = await _provider_request(
@@ -115,6 +134,7 @@ def build_pusher_auth_params(payload: PusherConnectionRequest) -> dict[str, str]
 async def test_pusher_connection(
     request: Request,
     payload: PusherConnectionRequest,
+    _admin: Optional[User] = Depends(require_integration_admin),
 ) -> IntegrationConnectionResponse:
     app_id = payload.app_id.strip()
     cluster = payload.cluster.strip().lower()

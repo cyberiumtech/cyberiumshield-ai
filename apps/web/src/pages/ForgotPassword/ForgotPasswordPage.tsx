@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Mail, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import authService from '../../services/auth.service';
+import { getErrorMessage } from '../../utils/errors';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -31,8 +32,8 @@ export function ForgotPasswordPage() {
     try {
       await authService.forgotPassword({ email });
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send reset link. Please try again.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to send reset link. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +46,8 @@ export function ForgotPasswordPage() {
     try {
       await authService.forgotPassword({ email });
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resend link. Please try again.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to resend link. Please try again.'));
     } finally {
       setIsLoading(false);
     }

@@ -4,6 +4,7 @@ import { Shield, Mail, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import authService from '../../services/auth.service';
 import { useAuth } from '../../hooks/useAuth';
+import { getErrorMessage } from '../../utils/errors';
 
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -30,9 +31,9 @@ export function VerifyEmailPage() {
       await authService.verifyEmail(id, hash);
       setStatus('success');
       setTimeout(() => navigate('/dashboard'), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatus('error');
-      setError(err.response?.data?.message || 'Verification failed. The link may be invalid or expired.');
+      setError(getErrorMessage(err, 'Verification failed. The link may be invalid or expired.'));
     }
   };
 
@@ -44,8 +45,8 @@ export function VerifyEmailPage() {
       await authService.resendVerification();
       setStatus('pending');
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resend verification email.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to resend verification email.'));
     } finally {
       setIsResending(false);
     }

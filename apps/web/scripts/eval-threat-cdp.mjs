@@ -63,7 +63,8 @@ chrome.stdio[4].on('data', chunk => {
     if (message.id && pending.has(message.id)) {
       const { resolve, reject } = pending.get(message.id);
       pending.delete(message.id);
-      message.error ? reject(new Error(JSON.stringify(message.error))) : resolve(message.result);
+      if (message.error) reject(new Error(JSON.stringify(message.error)));
+      else resolve(message.result);
     } else if (message.method === 'Fetch.requestPaused') {
       void handleRequest(message);
     } else if (['Runtime.exceptionThrown','Network.loadingFailed','Log.entryAdded'].includes(message.method)) {
@@ -136,7 +137,7 @@ async function setViewport(width, height) {
 }
 
 async function screenshot(name, full = false) {
-  let params = { format: 'png', captureBeyondViewport: true, fromSurface: true };
+  const params = { format: 'png', captureBeyondViewport: true, fromSurface: true };
   if (full) {
     const { contentSize } = await send('Page.getLayoutMetrics');
     params.clip = { x: 0, y: 0, width: contentSize.width, height: contentSize.height, scale: 1 };

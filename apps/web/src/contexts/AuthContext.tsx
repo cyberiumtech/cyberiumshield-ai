@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { getErrorMessage } from '../utils/errors';
 
 interface User {
   id: number;
@@ -75,9 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Navigate to dashboard
       navigate('/dashboard');
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Login failed. Please check your credentials.';
-      throw new Error(message);
+    } catch (error: unknown) {
+      throw new Error(getErrorMessage(error, 'Login failed. Please check your credentials.'));
     } finally {
       setIsLoading(false);
     }
@@ -91,9 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Auto-login after registration
       await login(registerData.email, registerData.password);
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Registration failed. Please try again.';
-      throw new Error(message);
+    } catch (error: unknown) {
+      throw new Error(getErrorMessage(error, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
