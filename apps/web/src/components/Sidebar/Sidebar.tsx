@@ -81,8 +81,8 @@ const sections: SidebarSection[] = [
    CONSTANTS
    ───────────────────────────────────────────────────────────── */
 const STORAGE_KEY = 'sidebar:collapsed';
-const COLLAPSED_WIDTH = 68;
-const EXPANDED_WIDTH = 268;
+const COLLAPSED_WIDTH = 72;
+const EXPANDED_WIDTH = 272;
 const HEADER_HEIGHT = 72;
 
 /* ─────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       className={
         mobile
           ? 'px-2 py-2'
-          : 'sticky flex flex-col overflow-visible border-r border-white/[0.06] bg-[#0b1424] transition-[width] duration-200 ease-out'
+          : 'sticky flex flex-col overflow-visible border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
       }
     >
       {/* ═══ Scroll area (nav list) ═══ */}
@@ -134,7 +134,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         className={
           mobile
             ? 'space-y-3'
-            : `flex-1 ${isCollapsed ? 'overflow-visible py-2' : 'overflow-y-auto overflow-x-hidden py-4'}`
+            : `flex-1 ${isCollapsed ? 'overflow-visible py-3' : 'overflow-y-auto overflow-x-hidden py-4'}`
         }
       >
         <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-5'}>
@@ -147,13 +147,20 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             return (
               <div key={section.title}>
                 {showDivider && (
-                  <div aria-hidden="true" className="mx-3 mb-1 h-px bg-white/[0.06]" />
+                  <div aria-hidden="true" className="mx-3 mb-1.5 h-px bg-white/[0.06]" />
                 )}
 
+                {/* ── Section label with horizontal line ── */}
                 {!mobile && !isCollapsed && (
-                  <p className="mb-2 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
-                    {section.title}
-                  </p>
+                  <div className="mb-2 flex items-center gap-3 px-4">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
+                      {section.title}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="h-px flex-1 bg-white/[0.06]"
+                    />
+                  </div>
                 )}
 
                 <ul className="space-y-0.5">
@@ -183,12 +190,12 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           {active && (
                             <span
                               aria-hidden="true"
-                              className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400"
+                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400"
                             />
                           )}
 
                           <Icon
-                            className={`h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${
+                            className={`h-5 w-5 shrink-0 transition-colors duration-150 ${
                               active
                                 ? 'text-cyan-400'
                                 : 'text-slate-500 group-hover:text-slate-400'
@@ -233,12 +240,12 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             onClick={toggle}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!isCollapsed}
-            className="grid h-7 w-7 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+            className="grid h-8 w-8 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
+              <PanelLeftOpen className="h-[18px] w-[18px]" />
             ) : (
-              <PanelLeftClose className="h-4 w-4" />
+              <PanelLeftClose className="h-[18px] w-[18px]" />
             )}
           </button>
         </div>
