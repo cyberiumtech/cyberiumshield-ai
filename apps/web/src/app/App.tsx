@@ -31,6 +31,7 @@ import { AdminPage } from '../pages/Admin/AdminPage';
 import { UnauthorizedPage } from '../pages/Unauthorized/UnauthorizedPage';
 import { NotFoundPage } from '../pages/NotFound/NotFoundPage';
 import { AccountPage } from '../pages/Account/AccountPage';
+import { SettingsPage } from '../pages/Settings/SettingsPage';
 
 /**
  * A placeholder component for pages that are not yet implemented.
@@ -135,7 +136,14 @@ export default function App() {
           <Route path="/users" element={<Navigate to="/admin/users" replace />} />
           <Route path="/roles" element={<Navigate to="/admin/roles" replace />} />
           <Route path="/profile" element={<AccountPage />} />
-          <Route path="/settings" element={<AccountPage />} />
+          <Route
+            path="/settings"
+            element={
+              <AdminRoute>
+                <SettingsPage />
+              </AdminRoute>
+            }
+          />
           <Route path="/subscription" element={<PlaceholderRoute pageName="Subscription" />} />
         </Route>
 

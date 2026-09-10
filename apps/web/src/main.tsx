@@ -8,12 +8,9 @@ import { Toaster } from 'sonner';
 import App from './app/App';
 import './styles/global.css';
 import logoUrl from './assets/images/Cybershield-AI.png';
+import { applyFavicon, getSettings } from './services/settings.service';
 
-const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement('link');
-favicon.rel = 'icon';
-favicon.type = 'image/png';
-favicon.href = logoUrl;
-document.head.appendChild(favicon);
+applyFavicon(getSettings().branding, logoUrl);
 
 const queryClient = new QueryClient({
   defaultOptions: {

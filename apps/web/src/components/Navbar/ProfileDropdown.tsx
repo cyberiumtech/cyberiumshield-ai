@@ -3,6 +3,7 @@ import { User as UserIcon, Settings, Key, Shield, LogOut, ChevronDown } from 'lu
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { isAdminRole } from '../AdminRoute/AdminRoute';
 
 export function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,9 +22,9 @@ export function ProfileDropdown() {
         setIsOpen(false);
       },
     },
-    {
+    ...(isAdminRole(user.role) ? [{
       id: 'settings',
-      label: 'Settings',
+      label: 'Organization settings',
       icon: <Settings className="h-4 w-4" />,
       onClick: () => {
         navigate('/settings');
@@ -47,7 +48,7 @@ export function ProfileDropdown() {
         navigate('/settings');
         setIsOpen(false);
       },
-    },
+    }] : []),
   ];
 
   const handleLogout = () => {

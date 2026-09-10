@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,10 +8,16 @@ import { ProfileDropdown } from './ProfileDropdown';
 import { GlobalSearch } from './GlobalSearch';
 import { Sidebar } from '../Sidebar/Sidebar';
 import logoUrl from '../../assets/images/Cybershield-AI.png';
+import { getEffectiveLogo, getSettings, subscribeToSettings } from '../../services/settings.service';
 
 export function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [brandLogo, setBrandLogo] = useState(() => getEffectiveLogo(getSettings().branding, logoUrl));
+
+  useEffect(() => subscribeToSettings(() => {
+    setBrandLogo(getEffectiveLogo(getSettings().branding, logoUrl));
+  }), []);
 
   // Dynamic breadcrumb generation
   const getBreadcrumbs = () => {
@@ -49,7 +55,7 @@ export function Navbar() {
           >
             <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900/80 p-2 shadow-md shadow-cyan-950/30 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:shadow-cyan-500/20">
               <img
-                src={logoUrl}
+                src={brandLogo}
                 alt="CyberShield-AI Logo"
                 className="h-full w-full object-contain"
               />

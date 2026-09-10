@@ -13,7 +13,8 @@ import {
   MailWarning,
   Siren,
   LineChart,
-  Settings
+  Settings,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 // Define the structure for your sidebar items
@@ -37,6 +38,7 @@ const items: SidebarItem[] = [
   { label: 'Incidents', path: '/incidents', icon: Siren },
   { label: 'Analytics', path: '/analytics', icon: LineChart },
   { label: 'Administration', path: '/admin', adminOnly: true, icon: Settings },
+  { label: 'Settings', path: '/settings', adminOnly: true, icon: SlidersHorizontal },
 ];
 
 export function Sidebar({ activePath, mobile = false }: { activePath: string; mobile?: boolean }) {
