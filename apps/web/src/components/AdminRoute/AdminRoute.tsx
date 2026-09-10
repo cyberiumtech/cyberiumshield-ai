@@ -20,6 +20,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+  
   if (!isAuthenticated) return <Navigate to="/auth/login" replace state={{ from: location }} />;
   if (!isAdminRole(user?.role)) return <Navigate to="/403" replace />;
   return <>{children}</>;
