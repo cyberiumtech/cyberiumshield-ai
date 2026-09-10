@@ -7,6 +7,10 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  colors: {
+  chrome: 'var(--bg-nav)',      // or a dedicated --bg-sidebar if you want it darker
+  line: 'var(--line)',
+  },
   theme: {
     extend: {
       colors: {
