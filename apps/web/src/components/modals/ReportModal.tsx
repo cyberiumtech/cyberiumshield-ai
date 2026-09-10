@@ -33,9 +33,16 @@ export interface SecurityReportData {
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: SecurityReportData;
+  data?: SecurityReportData;
   onGenerated?: (artifact: { name: string; format: string; generatedAt: string }) => void;
 }
+
+const emptyReportData: SecurityReportData = {
+  sources: [],
+  findings: [],
+  metrics: [],
+  lastSync: null,
+};
 
 const reportTypes = {
   'security-summary': { label: 'Security evidence summary', description: 'Posture metrics, source health, provenance, and validated findings.' },
@@ -145,7 +152,7 @@ function createPdf(data: SecurityReportData, findings: ReportFinding[], reportTy
   return pdf;
 }
 
-export function ReportModal({ isOpen, onClose, data, onGenerated }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, data = emptyReportData, onGenerated }: ReportModalProps) {
   const [reportType, setReportType] = useState<ReportType>('security-summary');
   const [format, setFormat] = useState<Format>('pdf');
   const [dateRange, setDateRange] = useState<DateRange>('last-30-days');
