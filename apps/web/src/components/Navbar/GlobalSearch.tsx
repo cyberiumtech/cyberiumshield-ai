@@ -55,7 +55,7 @@ export function GlobalSearch() {
       setQuery(value);
       if (value.trim()) {
         const filtered = mockResults.filter(
-          (result) =>
+          result =>
             result.title.toLowerCase().includes(value.toLowerCase()) ||
             (result.subtitle?.toLowerCase().includes(value.toLowerCase()) ?? false)
         );
@@ -98,12 +98,10 @@ export function GlobalSearch() {
       <motion.button
         whileHover={{ scale: 1.02 }}
         onClick={() => setIsOpen(true)}
-        className="hidden md:flex items-center gap-3 w-full max-w-md px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left"
+        className="hidden lg:flex items-center gap-3 w-full max-w-md px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left"
       >
         <Search className="h-4 w-4 text-slate-400" />
-        <span className="text-sm text-slate-400 flex-1">
-          Search threats, incidents, devices...
-        </span>
+        <span className="text-sm text-slate-400 flex-1">Search threats, incidents, devices...</span>
         <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 text-xs font-semibold text-slate-400 bg-white/5 border border-white/10 rounded">
           <Command className="h-3 w-3" />K
         </kbd>
@@ -112,7 +110,7 @@ export function GlobalSearch() {
       <motion.button
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+        className="lg:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
         aria-label="Search"
       >
         <Search className="h-5 w-5" />
@@ -145,7 +143,7 @@ export function GlobalSearch() {
                     ref={inputRef}
                     type="text"
                     value={query}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={e => handleSearch(e.target.value)}
                     placeholder="Search threats, incidents, devices, users, logs..."
                     className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 outline-none"
                     autoFocus
@@ -177,7 +175,7 @@ export function GlobalSearch() {
                         <TrendingUp className="h-3 w-3" />
                         Suggested
                       </div>
-                      {mockResults.slice(0, 3).map((result) => (
+                      {mockResults.slice(0, 3).map(result => (
                         <button
                           key={result.id}
                           onClick={() => handleResultClick(result)}
@@ -187,9 +185,7 @@ export function GlobalSearch() {
                           <div className="flex-1 text-left">
                             <div className="font-medium">{result.title}</div>
                             {result.subtitle && (
-                              <div className="text-xs text-slate-500">
-                                {result.subtitle}
-                              </div>
+                              <div className="text-xs text-slate-500">{result.subtitle}</div>
                             )}
                           </div>
                         </button>
@@ -197,7 +193,7 @@ export function GlobalSearch() {
                     </div>
                   ) : results.length > 0 ? (
                     <div className="p-2">
-                      {results.map((result) => (
+                      {results.map(result => (
                         <button
                           key={result.id}
                           onClick={() => handleResultClick(result)}
@@ -207,9 +203,7 @@ export function GlobalSearch() {
                           <div className="flex-1 text-left">
                             <div className="font-medium">{result.title}</div>
                             {result.subtitle && (
-                              <div className="text-xs text-slate-500">
-                                {result.subtitle}
-                              </div>
+                              <div className="text-xs text-slate-500">{result.subtitle}</div>
                             )}
                           </div>
                         </button>

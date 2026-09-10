@@ -58,7 +58,7 @@ export function ProfileDropdown() {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map((n) => n[0])
+      .map(n => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -81,15 +81,11 @@ export function ProfileDropdown() {
             />
           ) : (
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center ring-2 ring-cyan-400/30">
-              <span className="text-xs font-bold text-white">
-                {getInitials(user.name)}
-              </span>
+              <span className="text-xs font-bold text-white">{getInitials(user.name)}</span>
             </div>
           )}
-          <div className="hidden md:block text-left">
-            <p className="text-xs font-medium text-slate-200 leading-tight">
-              {user.name}
-            </p>
+          <div className="hidden lg:block text-left">
+            <p className="text-xs font-medium text-slate-200 leading-tight">{user.name}</p>
             <p className="text-xs text-slate-400 leading-tight">{user.role}</p>
           </div>
         </div>
@@ -103,10 +99,7 @@ export function ProfileDropdown() {
       <AnimatePresence>
         {isOpen && (
           <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
-            />
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -124,29 +117,23 @@ export function ProfileDropdown() {
                     />
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center ring-2 ring-cyan-400/30">
-                      <span className="text-sm font-bold text-white">
-                        {getInitials(user.name)}
-                      </span>
+                      <span className="text-sm font-bold text-white">{getInitials(user.name)}</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-200 truncate">
-                      {user.name}
-                    </p>
+                    <p className="text-sm font-semibold text-slate-200 truncate">{user.name}</p>
                     <p className="text-xs text-slate-400 truncate">{user.email}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{user.role}</p>
                   </div>
                 </div>
                 <div className="mt-3 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
                   <p className="text-xs text-slate-400">Organization</p>
-                  <p className="text-sm text-slate-200 font-medium">
-                    {user.organization_name}
-                  </p>
+                  <p className="text-sm text-slate-200 font-medium">{user.organization_name}</p>
                 </div>
               </div>
 
               <div className="py-2">
-                {menuItems.map((item) => (
+                {menuItems.map(item => (
                   <button
                     key={item.id}
                     onClick={item.onClick}

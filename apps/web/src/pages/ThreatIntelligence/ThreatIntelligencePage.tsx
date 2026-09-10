@@ -413,7 +413,7 @@ function ServiceVisibility({
     {
       label: 'CISA KEV',
       value: feeds
-        ? `${readableLabel(feeds.cisaKEV.status)} · ${numberFormatter.format(feeds.cisaKEV.count)}`
+        ? `${readableLabel(feeds.cisaKEV.status)} / ${numberFormatter.format(feeds.cisaKEV.count)}`
         : 'Checking',
       note: feeds?.cisaKEV.fetchedAt
         ? `Fetched ${formatTimestamp(feeds.cisaKEV.fetchedAt)}`
@@ -483,6 +483,25 @@ function ServiceVisibility({
           ))}
         </div>
       )}
+      <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-800 bg-[#0B1120] px-4 py-3 sm:px-5">
+        <span className="font-mono text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+          Coverage key
+        </span>
+        {(['supported', 'partial', 'degraded', 'inconclusive'] as const).map(status => {
+          const tone = coverageTone(status);
+          return (
+            <span
+              key={status}
+              className={`border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${tone.className}`}
+            >
+              {status}
+            </span>
+          );
+        })}
+        <span className="text-[10px] text-slate-500">
+          Missing reputation evidence is inconclusive, never safe.
+        </span>
+      </footer>
     </section>
   );
 }
@@ -688,7 +707,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
                   NVD
                 </p>
                 <p className="font-mono text-xs text-slate-300">
-                  CVSS {nvd.cvssScore ?? 'N/A'} · {nvd.severity || 'unrated'}
+                  CVSS {nvd.cvssScore ?? 'N/A'} / {nvd.severity || 'unrated'}
                 </p>
               </div>
               <p className="mt-2 text-xs leading-5 text-slate-300">
@@ -758,7 +777,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
           {dns && (
             <section className="border border-slate-800 bg-[#0F1729] px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-cyan-300">
-                DNS resolution · {dns.resolves ? 'resolves' : 'no answer'}
+                DNS resolution / {dns.resolves ? 'resolves' : 'no answer'}
               </p>
               {dns.addresses.length > 0 ? (
                 <ul className="mt-2 space-y-1 font-mono text-xs text-slate-300">
@@ -815,7 +834,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
         <span
           className={`shrink-0 font-mono text-[10px] uppercase tracking-wider ${result.model.loaded ? 'text-emerald-300' : 'text-amber-300'}`}
         >
-          Model {result.model.loaded ? 'loaded' : 'not loaded'} ·{' '}
+          Model {result.model.loaded ? 'loaded' : 'not loaded'} /{' '}
           {result.model.used ? 'used' : 'not used'}
         </span>
       </footer>
@@ -888,19 +907,21 @@ function InvestigationHistory({
         </div>
       ) : (
         <>
-          <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[680px] border-collapse text-left">
+          <div className="hidden overflow-x-auto lg:block">
+            <table className="w-full min-w-[760px] border-collapse text-left">
               <thead className="bg-[#0B1120] font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">Type / indicator</th>
                   <th className="px-4 py-3 font-medium">Score</th>
                   <th className="px-4 py-3 font-medium">Verdict</th>
+                  <th className="px-4 py-3 font-medium">Coverage</th>
                   <th className="px-4 py-3 font-medium">Checked</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {records.map((record, index) => {
                   const tone = verdictTone(record.verdict);
+                  const coverage = coverageTone(record.coverage.status);
                   return (
                     <tr
                       key={record.id ?? `${record.indicator}-${record.checkedAt}-${index}`}
@@ -933,6 +954,13 @@ function InvestigationHistory({
                           {record.verdict}
                         </span>
                       </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${coverage.className}`}
+                        >
+                          {record.coverage.status} / {record.coverage.confidence}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 font-mono text-[10px] text-slate-500">
                         {formatTimestamp(record.checkedAt)}
                       </td>
@@ -942,9 +970,10 @@ function InvestigationHistory({
               </tbody>
             </table>
           </div>
-          <div className="divide-y divide-slate-800 md:hidden">
+          <div className="divide-y divide-slate-800 lg:hidden">
             {records.map((record, index) => {
               const tone = verdictTone(record.verdict);
+              const coverage = coverageTone(record.coverage.status);
               return (
                 <button
                   key={record.id ?? `${record.indicator}-${record.checkedAt}-${index}`}
@@ -959,7 +988,7 @@ function InvestigationHistory({
                     <span
                       className={`border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${tone.className}`}
                     >
-                      {record.riskScore} · {record.verdict}
+                      {record.riskScore} / {record.verdict}
                     </span>
                   </span>
                   <span
@@ -970,6 +999,11 @@ function InvestigationHistory({
                   </span>
                   <span className="mt-1 block font-mono text-[9px] uppercase tracking-wider text-slate-600">
                     {formatTimestamp(record.checkedAt)}
+                  </span>
+                  <span
+                    className={`mt-2 inline-flex border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${coverage.className}`}
+                  >
+                    Coverage: {record.coverage.status} / {record.coverage.confidence}
                   </span>
                 </button>
               );
@@ -1131,7 +1165,7 @@ export function ThreatIntelligencePage() {
       }
     : hasCachedRefreshError
       ? {
-          label: 'Cached · refresh failed',
+          label: 'Cached / refresh failed',
           className: 'border-amber-400/25 bg-amber-400/10 text-amber-300',
           dot: 'bg-amber-300',
         }
@@ -1475,7 +1509,7 @@ export function ThreatIntelligencePage() {
               )}
               {query.data.declaredCount !== null && query.data.declaredCount !== records.length && (
                 <span className="text-amber-300">
-                  Source count {numberFormatter.format(query.data.declaredCount)} · parsed{' '}
+                  Source count {numberFormatter.format(query.data.declaredCount)} / parsed{' '}
                   {numberFormatter.format(records.length)}
                 </span>
               )}
@@ -1561,7 +1595,7 @@ export function ThreatIntelligencePage() {
                     tone: 'text-cyan-300',
                   },
                   {
-                    label: 'Added · 30 days',
+                    label: 'Added / 30 days',
                     value: metrics.addedLast30,
                     note: 'By CISA date added',
                     icon: Clock3,
@@ -1570,14 +1604,14 @@ export function ThreatIntelligencePage() {
                   {
                     label: 'Ransomware use',
                     value: metrics.ransomware,
-                    note: 'Marked “Known” by CISA',
+                    note: 'Marked "Known" by CISA',
                     icon: Siren,
                     tone: 'text-rose-300',
                   },
                   {
                     label: 'Remediation timing',
                     value: metrics.overdue + metrics.dueSoon,
-                    note: `${numberFormatter.format(metrics.overdue)} past due · ${numberFormatter.format(metrics.dueSoon)} due in 14d`,
+                    note: `${numberFormatter.format(metrics.overdue)} past due / ${numberFormatter.format(metrics.dueSoon)} due in 14d`,
                     icon: CalendarClock,
                     tone: 'text-amber-300',
                   },
@@ -1612,7 +1646,7 @@ export function ThreatIntelligencePage() {
                           </h2>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
-                          Dated additions to the public KEV catalog · newest first
+                          Dated additions to the public KEV catalog / newest first
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -1622,7 +1656,7 @@ export function ThreatIntelligencePage() {
                           <input
                             value={search}
                             onChange={event => setSearch(event.target.value)}
-                            placeholder="Search CVE, vendor, product…"
+                            placeholder="Search CVE, vendor, product..."
                             className={`${control} w-full pl-9`}
                           />
                         </label>
@@ -1664,7 +1698,7 @@ export function ThreatIntelligencePage() {
                           >
                             <option value="newest">Newest added</option>
                             <option value="deadline">Due date</option>
-                            <option value="vendor">Vendor A–Z</option>
+                            <option value="vendor">Vendor A-Z</option>
                           </select>
                         </label>
                       </div>
@@ -1852,7 +1886,7 @@ export function ThreatIntelligencePage() {
                   <footer className="flex flex-col gap-3 border-t border-slate-800 bg-[#0B1120] px-4 py-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <span>
                       {filtered.length
-                        ? `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filtered.length)} of ${numberFormatter.format(filtered.length)}`
+                        ? `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filtered.length)} of ${numberFormatter.format(filtered.length)}`
                         : '0 results'}
                     </span>
                     <div className="flex items-center gap-2">
@@ -1996,9 +2030,9 @@ export function ThreatIntelligencePage() {
                   <p>
                     <strong className="font-semibold text-slate-300">Methodology.</strong> CISA KEV
                     identifies vulnerabilities with evidence of exploitation in the wild. Counts
-                    describe the catalog, not attacks observed in your environment. “Past due” and
-                    “due soon” compare CISA’s remediation due date with today; they do not indicate
-                    your organization’s patch status.
+                    describe the catalog, not attacks observed in your environment. "Past due" and
+                    "due soon" compare CISA's remediation due date with today; they do not indicate
+                    your organization's patch status.
                   </p>
                 </div>
                 <a

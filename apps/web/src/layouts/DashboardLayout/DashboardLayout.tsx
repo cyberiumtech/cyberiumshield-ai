@@ -7,9 +7,9 @@ export function DashboardLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-slate-200">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#0B1120] text-slate-200">
       <Navbar />
-      <div className="flex w-full">
+      <div className="flex min-w-0 w-full">
         <aside className="w-72 hidden lg:block shrink-0">
           <Sidebar activePath={location.pathname} />
         </aside>
@@ -20,4 +20,3 @@ export function DashboardLayout() {
     </div>
   );
 }
-

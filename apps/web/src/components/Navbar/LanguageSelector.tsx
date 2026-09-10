@@ -8,11 +8,11 @@ export function LanguageSelector() {
   const [isOpen, setIsOpen] = useState(false);
 
   const languages: { value: Language; label: string; flag: string }[] = [
-    { value: 'en', label: 'English', flag: '🇬🇧' },
-    { value: 'ne', label: 'नेपाली', flag: '🇳🇵' },
+    { value: 'en', label: 'English', flag: 'EN' },
+    { value: 'ne', label: 'Nepali', flag: 'NE' },
   ];
 
-  const currentLanguage = languages.find((l) => l.value === language)!;
+  const currentLanguage = languages.find(l => l.value === language)!;
 
   return (
     <div className="relative">
@@ -24,18 +24,13 @@ export function LanguageSelector() {
         aria-label="Select language"
       >
         <Languages className="h-4 w-4" />
-        <span className="text-xs font-medium hidden sm:block">
-          {currentLanguage.flag}
-        </span>
+        <span className="text-xs font-medium hidden sm:block">{currentLanguage.flag}</span>
       </motion.button>
 
       <AnimatePresence>
         {isOpen && (
           <>
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
-            />
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -43,7 +38,7 @@ export function LanguageSelector() {
               transition={{ duration: 0.15 }}
               className="absolute right-0 top-full mt-2 w-44 rounded-xl bg-[#0F1729]/95 backdrop-blur-xl border border-white/10 shadow-2xl z-50 overflow-hidden"
             >
-              {languages.map((lang) => (
+              {languages.map(lang => (
                 <button
                   key={lang.value}
                   onClick={() => {

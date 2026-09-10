@@ -19,14 +19,15 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const aiStatus: AIStatus = 'online';
-  const environment: Environment = import.meta.env.MODE === 'production' ? 'production' : 'development';
+  const environment: Environment =
+    import.meta.env.MODE === 'production' ? 'production' : 'development';
 
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
     return paths.map((path, index) => ({
       label: path
         .split('-')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' '),
       path: '/' + paths.slice(0, index + 1).join('/'),
     }));
@@ -36,20 +37,16 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-xl shadow-lg">
-      <div className="flex items-center justify-between px-4 lg:px-6 h-[72px] gap-4">
+      <div className="flex min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:h-[72px] lg:gap-4 lg:px-6 h-[72px]">
         {/* Left Section */}
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex min-w-0 shrink items-center gap-3 lg:gap-4">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
           {/* Logo & Brand */}
@@ -66,9 +63,7 @@ export function Navbar() {
               <div className="text-sm font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                 CyberShield-AI
               </div>
-              <div className="text-xs text-slate-400 font-medium">
-                Security Operations Center
-              </div>
+              <div className="text-xs text-slate-400 font-medium">Security Operations Center</div>
             </div>
           </Link>
 
@@ -110,12 +105,12 @@ export function Navbar() {
           </div>
 
           {/* AI Status */}
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <AIStatusIndicator status={aiStatus} />
           </div>
 
           {/* Environment Badge */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <EnvironmentBadge environment={environment} />
           </div>
 
@@ -128,12 +123,12 @@ export function Navbar() {
           </div>
 
           {/* Theme Toggle */}
-          <div className="hidden sm:block">
+          <div className="hidden lg:block">
             <ThemeToggle />
           </div>
 
           {/* Language Selector */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <LanguageSelector />
           </div>
 
@@ -156,19 +151,19 @@ export function Navbar() {
               <Sidebar activePath={location.pathname} mobile />
 
               <div className="border-t border-white/10 pt-3">
-              <div className="flex items-center gap-3">
-                <AIStatusIndicator status={aiStatus} />
-                <EnvironmentBadge environment={environment} />
-              </div>
+                <div className="flex items-center gap-3">
+                  <AIStatusIndicator status={aiStatus} />
+                  <EnvironmentBadge environment={environment} />
+                </div>
 
-              <div className="pt-3 border-t border-white/10">
-                <QuickActionsMenu />
-              </div>
+                <div className="pt-3 border-t border-white/10">
+                  <QuickActionsMenu />
+                </div>
 
-              <div className="flex items-center gap-3 pt-3 border-t border-white/10">
-                <ThemeToggle />
-                <LanguageSelector />
-              </div>
+                <div className="flex items-center gap-3 pt-3 border-t border-white/10">
+                  <ThemeToggle />
+                  <LanguageSelector />
+                </div>
               </div>
             </div>
           </motion.div>

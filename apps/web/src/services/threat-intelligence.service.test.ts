@@ -199,8 +199,11 @@ describe('threat intelligence service', () => {
       verdict: 'low',
       reasons: [],
       checkedAt: '2026-09-01T12:00:00Z',
-      evidence: { dns_resolves: true },
-      details: { dns: { resolves: true, addresses: ['203.0.113.8'] } },
+      evidence: { dns_resolves: true, threatfox_matches: 0 },
+      details: {
+        dns: { resolves: true, addresses: ['203.0.113.8'] },
+        threatFox: { configured: false, matches: [] },
+      },
       providerErrors: ['ThreatFox: not configured'],
       model: { loaded: false, used: false },
     };

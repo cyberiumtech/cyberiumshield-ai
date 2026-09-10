@@ -318,7 +318,8 @@ function normalizeNvdDetail(value: unknown): NvdDetail | null {
 
 function normalizeEvidenceCoverage(
   value: unknown,
-  evidence: Record<string, ThreatEvidenceValue>
+  evidence: Record<string, ThreatEvidenceValue>,
+  legacyThreatFoxQueried: boolean
 ): EvidenceCoverage {
   if (isRecord(value)) {
     const rawStatus = readString(value.status).toLowerCase();
@@ -372,9 +373,9 @@ function normalizeEvidenceCoverage(
     };
   }
 
-  const hasLegacyEvidence = ['cisa_kev', 'cvss_score', 'threatfox_matches'].some(key =>
-    Object.prototype.hasOwnProperty.call(evidence, key)
-  );
+  const hasLegacyEvidence =
+    ['cisa_kev', 'cvss_score'].some(key => Object.prototype.hasOwnProperty.call(evidence, key)) ||
+    (legacyThreatFoxQueried && Object.prototype.hasOwnProperty.call(evidence, 'threatfox_matches'));
   return {
     status: hasLegacyEvidence ? 'partial' : 'inconclusive',
     confidence: hasLegacyEvidence ? 'low' : 'none',
@@ -432,7 +433,11 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
       ([, item]) => ['string', 'number', 'boolean'].includes(typeof item) || item === null
     )
   ) as Record<string, ThreatEvidenceValue>;
-  const coverage = normalizeEvidenceCoverage(expanded.coverage, evidence);
+  const coverage = normalizeEvidenceCoverage(
+    expanded.coverage,
+    evidence,
+    Boolean(rawThreatFox && readBoolean(rawThreatFox.configured))
+  );
   const verdict: ThreatVerdict = coverage.meaningfulEvidence ? reportedVerdict : 'inconclusive';
   const rawModel = isRecord(expanded.model) ? expanded.model : {};
   const rawKev = isRecord(rawDetails.cisaKEV) ? normalizeVulnerability(rawDetails.cisaKEV) : null;

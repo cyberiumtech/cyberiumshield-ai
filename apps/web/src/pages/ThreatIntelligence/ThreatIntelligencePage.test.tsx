@@ -154,4 +154,45 @@ describe('ThreatIntelligencePage', () => {
     expect(screen.getByText('none confidence')).toBeInTheDocument();
     expect(screen.queryByText('low risk')).not.toBeInTheDocument();
   });
+
+  it('shows inconclusive coverage in history and renders encoding-safe text on both tabs', async () => {
+    vi.mocked(fetchThreatHistory).mockResolvedValue([
+      {
+        ...result,
+        id: 42,
+        indicator: 'example.com',
+        indicatorType: 'domain',
+        riskScore: 0,
+        verdict: 'inconclusive',
+        evidence: { dns_resolves: true },
+        coverage: {
+          status: 'inconclusive',
+          confidence: 'none',
+          meaningfulEvidence: false,
+          sourcesQueried: 0,
+          sourcesExpected: 1,
+          summary: 'No reputation provider completed this lookup.',
+          providers: [],
+        },
+      },
+    ]);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { container } = render(
+      <QueryClientProvider client={client}>
+        <ThreatIntelligencePage />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findAllByText('inconclusive')).not.toHaveLength(0);
+    expect(screen.getByText('Coverage: inconclusive / none')).toBeInTheDocument();
+    expect(await screen.findByText('Live / 1,400')).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/[ÃÂâ]/u);
+
+    fireEvent.click(screen.getByRole('button', { name: 'CISA KEV catalog' }));
+
+    expect(await screen.findByText('Added / 30 days')).toBeInTheDocument();
+    expect(screen.getByText('Marked "Known" by CISA')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Vendor A-Z' })).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/[ÃÂâ]/u);
+  });
 });
