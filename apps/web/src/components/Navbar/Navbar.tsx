@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, Slash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EnvironmentBadge } from './EnvironmentBadge';
-import { ThemeToggle } from './ThemeToggle';
-import { LanguageSelector } from './LanguageSelector';
 import { NotificationDropdown } from './NotificationDropdown';
 import { QuickActionsMenu } from './QuickActionsMenu';
 import { ProfileDropdown } from './ProfileDropdown';
 import { GlobalSearch } from './GlobalSearch';
 import { Sidebar } from '../Sidebar/Sidebar';
-import type { Environment } from './types';
 import logoUrl from '../../assets/images/Cybershield-AI.png';
 
 export function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const environment: Environment =
-    import.meta.env.MODE === 'production' ? 'production' : 'development';
 
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
@@ -34,103 +27,101 @@ export function Navbar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-xl shadow-lg">
-      <div className="flex min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:h-[72px] lg:gap-4 lg:px-6 h-[72px]">
-        {/* Left Section */}
+    <header className="sticky top-0 z-50 border-b border-cyan-500/15 bg-[#030712]/90 backdrop-blur-md shadow-[0_10px_30px_-15px_rgba(0,0,0,0.85)]">
+      <div className="flex h-16 min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
+        
+        {/* Left Section: Brand & Breadcrumbs */}
         <div className="flex min-w-0 shrink items-center gap-3 lg:gap-4">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
-            aria-label="Toggle menu"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 transition hover:border-cyan-400/50 hover:bg-cyan-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 lg:hidden"
+            aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {/* Logo & Brand */}
+          {/* Brand Logo & Title */}
           <Link
             to="/dashboard"
-            className="flex items-center gap-3 group transition-transform hover:scale-105"
+            className="group flex items-center gap-3 transition-transform hover:opacity-95"
           >
-            <img
-              src={logoUrl}
-              alt="CyberShield-AI"
-              className="h-11 w-11 rounded-xl object-cover ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-400/20 transition-all group-hover:shadow-xl group-hover:shadow-cyan-400/30"
-            />
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-500/30 bg-[#060b18] p-1 shadow-[0_0_15px_rgba(6,182,212,0.15)] transition group-hover:border-cyan-400 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+              <img
+                src={logoUrl}
+                alt="CyberShield-AI"
+                className="h-full w-full rounded object-contain"
+              />
+            </div>
             <div className="hidden sm:block">
-              <div className="text-sm font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                CyberShield-AI
+              <div className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-white">
+                <span>CyberShield</span>
+                <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1 py-0.2 text-[10px] font-mono font-semibold uppercase tracking-wider text-cyan-400">
+                  AI
+                </span>
               </div>
-              <div className="text-xs text-slate-400 font-medium">Security Operations Center</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Admin Control Portal
+              </div>
             </div>
           </Link>
 
-          {/* Breadcrumbs */}
+          {/* Breadcrumbs Navigation */}
           {breadcrumbs.length > 0 && (
-            <div className="hidden xl:flex items-center gap-2 text-sm">
-              <ChevronRight className="h-4 w-4 text-slate-600" />
+            <div className="hidden xl:flex items-center gap-1.5 border-l border-cyan-500/15 pl-4 text-xs font-medium">
+              <Link
+                to="/dashboard"
+                className="text-slate-400 transition hover:text-slate-200"
+              >
+                Admin
+              </Link>
               {breadcrumbs.map((crumb, index) => (
                 <React.Fragment key={crumb.path}>
+                  <Slash className="h-3 w-3 shrink-0 text-slate-600" />
                   <Link
                     to={crumb.path}
-                    className={`hover:text-cyan-400 transition-colors ${
+                    className={`transition ${
                       index === breadcrumbs.length - 1
-                        ? 'text-cyan-400 font-medium'
-                        : 'text-slate-400'
+                        ? 'font-semibold text-cyan-400'
+                        : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     {crumb.label}
                   </Link>
-                  {index < breadcrumbs.length - 1 && (
-                    <ChevronRight className="h-3 w-3 text-slate-600" />
-                  )}
                 </React.Fragment>
               ))}
             </div>
           )}
         </div>
 
-        {/* Center Section - Global Search */}
-        <div className="flex-1 max-w-2xl hidden lg:block">
+        {/* Center Section: Global Command Search */}
+        <div className="hidden flex-1 max-w-xl lg:block px-4">
           <GlobalSearch />
         </div>
 
-        {/* Right Section */}
-        <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-          {/* Mobile Search */}
+        {/* Right Section: Action Controls & Profile */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Mobile Search Trigger */}
           <div className="lg:hidden">
             <GlobalSearch />
           </div>
 
-          {/* Environment Badge */}
-          <div className="hidden lg:block">
-            <EnvironmentBadge environment={environment} />
-          </div>
-
-          {/* Notifications */}
-          <NotificationDropdown />
-
-          {/* Quick Actions */}
-          <div className="hidden lg:block">
+          {/* Quick Actions Menu */}
+          <div className="hidden sm:block">
             <QuickActionsMenu />
           </div>
 
-          {/* Theme Toggle */}
-          <div className="hidden lg:block">
-            <ThemeToggle />
-          </div>
+          {/* Notifications Dropdown */}
+          <NotificationDropdown />
 
-          {/* Language Selector */}
-          <div className="hidden lg:block">
-            <LanguageSelector />
+          {/* User Profile Menu */}
+          <div className="border-l border-cyan-500/15 pl-1.5 sm:pl-2">
+            <ProfileDropdown />
           </div>
-
-          {/* Profile */}
-          <ProfileDropdown />
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer Navigation */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -138,21 +129,15 @@ export function Navbar() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="lg:hidden border-t border-white/5 bg-[#0B1120]/95 backdrop-blur-xl overflow-hidden"
+            className="overflow-hidden border-t border-cyan-500/15 bg-[#030712]/95 backdrop-blur-xl lg:hidden"
           >
-            <div className="px-4 py-4 space-y-3">
+            <div className="space-y-4 px-4 py-4">
               <Sidebar activePath={location.pathname} mobile />
 
-              <div className="border-t border-white/10 pt-3">
-                <EnvironmentBadge environment={environment} />
-
-                <div className="pt-3 border-t border-white/10">
+              <div className="space-y-3 border-t border-cyan-500/15 pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Quick Tools</span>
                   <QuickActionsMenu />
-                </div>
-
-                <div className="flex items-center gap-3 pt-3 border-t border-white/10">
-                  <ThemeToggle />
-                  <LanguageSelector />
                 </div>
               </div>
             </div>
