@@ -7,7 +7,6 @@ import { ProfileDropdown } from './ProfileDropdown';
 import { GlobalSearch } from './GlobalSearch';
 import { Sidebar } from '../Sidebar/Sidebar';
 import logoUrl from '../../assets/images/Cybershield-AI.png';
-import { useAuth } from '../../hooks/useAuth';
 import { getEffectiveLogo, getSettings, subscribeToSettings } from '../../services/settings.service';
 
 /* ─────────────────────────────────────────────────────────────
@@ -17,7 +16,6 @@ const FONT_SANS = "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI
 
 export function Navbar() {
   const location = useLocation();
-  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [brandLogo, setBrandLogo] = useState(() =>

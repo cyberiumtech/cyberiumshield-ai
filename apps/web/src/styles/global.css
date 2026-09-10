@@ -2,36 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark Theme (Default) */
+/* Semantic application palette. Values are RGB channels so Tailwind opacity
+   modifiers keep working (for example bg-panel/80). */
 :root,
 :root.dark,
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg-primary: #0b1120;
-  --bg-secondary: #0f1729;
-  --bg-tertiary: #1a2332;
-  --text-primary: #e5e7eb;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --border-color: rgba(255, 255, 255, 0.1);
+  --color-canvas: 11 17 32;
+  --color-chrome: 7 11 18;
+  --color-panel: 11 20 36;
+  --color-surface: 15 23 41;
+  --color-field: 7 16 30;
+  --color-fg: 241 245 249;
+  --color-fg-2: 226 232 240;
+  --color-fg-3: 203 213 225;
+  --color-fg-4: 148 163 184;
+  --color-fg-5: 100 116 139;
+  --color-line: 28 39 56;
+  --color-line-2: 42 53 70;
+  --color-line-3: 63 76 96;
+  --color-tint: 14 24 40;
+  --color-tint-2: 20 31 49;
+  --color-tint-3: 30 41 59;
+  --color-chart-tooltip: 11 20 36;
+  --color-chart-grid: 51 65 85;
+  --bg-primary: rgb(var(--color-canvas));
+  --bg-secondary: rgb(var(--color-surface));
+  --bg-tertiary: rgb(var(--color-tint-3));
+  --text-primary: rgb(var(--color-fg));
+  --text-secondary: rgb(var(--color-fg-4));
+  --text-tertiary: rgb(var(--color-fg-5));
+  --border-color: rgb(var(--color-line-2));
   --overlay-bg: rgba(0, 0, 0, 0.6);
-  --card-bg: rgba(15, 23, 41, 0.5);
+  --card-bg: rgb(var(--color-panel) / 0.8);
   --scrollbar-thumb: rgba(6, 182, 212, 0.35);
 }
 
-/* Light Theme */
+/* Intentional daylight SOC: cool canvas, crisp panels, layered fields. */
 :root.light,
 [data-theme='light'] {
   color-scheme: light;
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --border-color: rgba(0, 0, 0, 0.1);
+  --color-canvas: 241 245 249;
+  --color-chrome: 248 250 252;
+  --color-panel: 255 255 255;
+  --color-surface: 248 250 252;
+  --color-field: 241 245 249;
+  --color-fg: 15 23 42;
+  --color-fg-2: 30 41 59;
+  --color-fg-3: 51 65 85;
+  --color-fg-4: 71 85 105;
+  --color-fg-5: 100 116 139;
+  --color-line: 226 232 240;
+  --color-line-2: 203 213 225;
+  --color-line-3: 148 163 184;
+  --color-tint: 248 250 252;
+  --color-tint-2: 241 245 249;
+  --color-tint-3: 226 232 240;
+  --color-chart-tooltip: 255 255 255;
+  --color-chart-grid: 203 213 225;
+  --bg-primary: rgb(var(--color-canvas));
+  --bg-secondary: rgb(var(--color-panel));
+  --bg-tertiary: rgb(var(--color-field));
+  --text-primary: rgb(var(--color-fg));
+  --text-secondary: rgb(var(--color-fg-4));
+  --text-tertiary: rgb(var(--color-fg-5));
+  --border-color: rgb(var(--color-line-2));
   --overlay-bg: rgba(0, 0, 0, 0.3);
-  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-bg: rgb(var(--color-panel) / 0.92);
   --scrollbar-thumb: rgba(6, 182, 212, 0.5);
 }
 
@@ -77,39 +114,201 @@ body {
   background: transparent;
 }
 
-/* Light theme specific overrides */
-.light .bg-\[\#0B1120\],
-.light .bg-\[\#0F1729\] {
-  background-color: var(--bg-secondary) !important;
+/* Light-only compatibility for legacy module surfaces. Keep this list
+   deliberately neutral: accent and severity utilities are left untouched. */
+.light [class~='bg-[#0B1120]'],
+.light [class~='bg-[#05080d]'] {
+  background-color: rgb(var(--color-canvas)) !important;
 }
 
-.light .text-slate-100 {
-  color: var(--text-primary) !important;
+.light [class~='bg-[#0F1729]'],
+.light [class~='bg-[#0b1424]'],
+.light [class~='bg-[#0d1219]'],
+.light [class~='bg-[#07101a]'] {
+  background-color: rgb(var(--color-panel)) !important;
 }
 
+.light [class~='bg-[#07101e]'],
+.light [class~='bg-[#08131e]'] {
+  background-color: rgb(var(--color-field)) !important;
+}
+
+.light [class~='bg-[#0b0e14]'],
+.light [class~='bg-[#070b12]'],
+.light [class~='bg-[#030609]'] {
+  background-color: rgb(var(--color-chrome)) !important;
+}
+
+.light [class~='bg-[#0F1729]/50'],
+.light [class~='bg-[#0b1424]/50'] {
+  background-color: rgb(var(--color-panel) / 0.72) !important;
+}
+
+.light [class~='bg-[#0F1729]/80'],
+.light [class~='bg-[#0B1120]/70'],
+.light [class~='bg-[#0B1120]/80'],
+.light [class~='bg-[#05080d]/90'],
+.light [class~='bg-[#0B1120]/95'],
+.light [class~='bg-[#0F1729]/95'] {
+  background-color: rgb(var(--color-panel) / 0.95) !important;
+}
+
+.light .bg-slate-950,
+.light .bg-slate-900 {
+  background-color: rgb(var(--color-panel)) !important;
+}
+
+.light .bg-slate-800,
+.light [class~='bg-slate-800/80'],
+.light [class~='bg-slate-800/70'],
+.light [class~='bg-slate-800/60'],
+.light [class~='bg-slate-800/50'],
+.light [class~='bg-slate-800/40'],
+.light [class~='bg-slate-800/30'],
+.light [class~='bg-slate-800/20'] {
+  background-color: rgb(var(--color-field)) !important;
+}
+
+.light .bg-slate-700,
+.light .bg-slate-600,
+.light [class~='bg-slate-500/20'] {
+  background-color: rgb(var(--color-tint-3)) !important;
+}
+
+.light [class~='bg-slate-950/75'],
+.light [class~='bg-slate-950/60'],
+.light [class~='bg-slate-950/40'] {
+  background-color: rgb(var(--color-panel) / 0.9) !important;
+}
+
+.light .text-slate-100,
 .light .text-slate-200 {
-  color: var(--text-primary) !important;
+  color: rgb(var(--color-fg)) !important;
 }
 
 .light .text-slate-300 {
-  color: var(--text-secondary) !important;
+  color: rgb(var(--color-fg-2)) !important;
 }
 
 .light .text-slate-400 {
-  color: var(--text-tertiary) !important;
+  color: rgb(var(--color-fg-4)) !important;
 }
 
-.light .border-white\/10,
-.light .border-white\/5 {
-  border-color: var(--border-color) !important;
+.light .text-slate-500,
+.light .text-slate-600,
+.light .text-slate-700 {
+  color: rgb(var(--color-fg-5)) !important;
 }
 
-.light .bg-white\/5 {
-  background-color: rgba(0, 0, 0, 0.05) !important;
+.light [class~='placeholder:text-slate-600']::placeholder,
+.light [class~='placeholder:text-slate-500']::placeholder {
+  color: rgb(var(--color-fg-5)) !important;
 }
 
-.light .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+.light [class~='hover:text-white']:hover {
+  color: rgb(var(--color-fg)) !important;
+}
+
+.light .border-slate-500,
+.light .border-slate-700,
+.light [class~='border-slate-700/50'],
+.light [class~='border-slate-700/60'],
+.light .border-slate-800,
+.light [class~='border-slate-800/80'] {
+  border-color: rgb(var(--color-line-2)) !important;
+}
+
+.light [class~='border-white/5'],
+.light [class~='border-white/10'],
+.light [class~='border-white/[0.05]'],
+.light [class~='border-white/[0.06]'],
+.light [class~='border-white/[0.08]'],
+.light [class~='border-white/[0.1]'],
+.light [class~='border-white/[0.12]'],
+.light [class~='border-white/[0.14]'],
+.light [class~='border-white/[0.15]'],
+.light [class~='border-white/[0.16]'],
+.light [class~='border-white/[0.2]'] {
+  border-color: rgb(var(--color-line-2)) !important;
+}
+
+.light [class~='hover:border-white/[0.12]']:hover,
+.light [class~='hover:border-white/[0.14]']:hover,
+.light [class~='hover:border-white/[0.15]']:hover,
+.light [class~='hover:border-white/[0.16]']:hover {
+  border-color: rgb(var(--color-line-3)) !important;
+}
+
+.light [class~='bg-white/[0.01]'],
+.light [class~='bg-white/[0.015]'],
+.light [class~='bg-white/[0.02]'],
+.light [class~='bg-white/[0.025]'],
+.light [class~='bg-white/[0.03]'],
+.light [class~='bg-white/5'] {
+  background-color: rgb(var(--color-tint)) !important;
+}
+
+.light [class~='bg-white/[0.04]'],
+.light [class~='bg-white/[0.05]'],
+.light [class~='bg-white/[0.06]'],
+.light [class~='bg-white/[0.08]'],
+.light [class~='bg-white/10'] {
+  background-color: rgb(var(--color-tint-2)) !important;
+}
+
+.light [class~='bg-white/[0.16]'] {
+  background-color: rgb(var(--color-tint-3)) !important;
+}
+
+.light [class~='hover:bg-white/[0.02]']:hover,
+.light [class~='hover:bg-white/[0.025]']:hover,
+.light [class~='hover:bg-white/[0.03]']:hover,
+.light [class~='hover:bg-white/[0.04]']:hover,
+.light [class~='hover:bg-white/[0.05]']:hover,
+.light [class~='hover:bg-white/[0.06]']:hover,
+.light [class~='hover:bg-white/5']:hover,
+.light [class~='hover:bg-white/10']:hover,
+.light [class~='focus:bg-white/[0.03]']:focus {
+  background-color: rgb(var(--color-tint-2)) !important;
+}
+
+.light [class~='divide-white/[0.04]'] > :not([hidden]) ~ :not([hidden]),
+.light [class~='divide-white/[0.05]'] > :not([hidden]) ~ :not([hidden]),
+.light [class~='divide-white/[0.06]'] > :not([hidden]) ~ :not([hidden]),
+.light [class~='divide-white/[0.08]'] > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(var(--color-line)) !important;
+}
+
+/* The public landing page shares the persisted theme but uses its own exact
+   neutral palette. These mappings avoid touching cyan and lime brand accents. */
+.light .text-\[\#eef9ff\],
+.light .text-\[\#edf8fc\],
+.light .text-\[\#e3f1f6\],
+.light .text-\[\#dcebf1\],
+.light .text-\[\#d8e8ef\],
+.light .text-\[\#d7e7ee\],
+.light .text-\[\#c6d8e0\] {
+  color: rgb(var(--color-fg)) !important;
+}
+
+.light .text-\[\#a9bcc8\],
+.light .text-\[\#a6bbc7\],
+.light .text-\[\#9eb3bf\],
+.light .text-\[\#91a8b5\],
+.light .text-\[\#839aa7\],
+.light .text-\[\#7893a2\],
+.light .text-\[\#6f8b9a\],
+.light .text-\[\#6f8794\],
+.light .text-\[\#5f7c8d\],
+.light .text-\[\#506a78\] {
+  color: rgb(var(--color-fg-4)) !important;
+}
+
+.light [class~='border-[#8eb0c4]/15'],
+.light [class~='border-[#8eb0c4]/20'],
+.light [class~='border-[#8eb0c4]/25'],
+.light [class~='border-[#8eb0c4]/30'] {
+  border-color: rgb(var(--color-line-2)) !important;
 }
 
 /* Backdrop filter support */

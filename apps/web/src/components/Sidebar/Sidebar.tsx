@@ -137,7 +137,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       className={
         mobile
           ? 'px-2 py-2'
-          : 'sticky flex flex-col border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
+          : 'sticky flex flex-col border-r border-line bg-chrome transition-[width] duration-200 ease-out'
       }
     >
       {/* ═══ Scroll area — thin scrollbar, bottom bar stays pinned ═══ */}
@@ -190,7 +190,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                               : 'mx-3 gap-3 px-3 py-2.5'
                           } ${
                             active
-                              ? 'bg-white/[0.06] text-white'
+                              ? 'bg-tint-2 text-fg'
                               : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-200'
                           }`}
                         >
@@ -224,7 +224,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       {/* ═══ Fixed bottom bar — shrink-0 so it stays pinned ═══ */}
       {!mobile && (
         <div
-          className={`flex shrink-0 items-center border-t border-white/[0.06] bg-[#070b12] ${
+          className={`flex shrink-0 items-center border-t border-line bg-chrome ${
             isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
           }`}
           style={{ height: BOTTOM_BAR_HEIGHT }}
