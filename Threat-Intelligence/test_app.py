@@ -24,7 +24,13 @@ class ThreatIntelligenceTests(unittest.TestCase):
         threat_app.app.config.update(TESTING=True)
         self.client = threat_app.app.test_client()
         with threat_app._cache_lock:
-            threat_app._cache.update(catalog=None, fetched_monotonic=0.0, etag='', last_modified='')
+            threat_app._cache.update(
+                catalog=None,
+                fetched_monotonic=0.0,
+                etag='',
+                last_modified='',
+                last_error='',
+            )
 
     def test_normalize_catalog_validates_deduplicates_and_cleans_records(self):
         catalog = threat_app.normalize_catalog({
@@ -73,6 +79,72 @@ class ThreatIntelligenceTests(unittest.TestCase):
         response = self.client.get('/api/health')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()['source'], 'CISA KEV')
+
+    @patch('app.save_observation')
+    @patch('app._catalog_entry')
+    @patch('app.nvd_cve')
+    def test_cve_check_combines_nvd_and_kev_evidence(self, nvd, catalog_entry, save):
+        nvd.return_value = {
+            'id': 'CVE-2026-12345',
+            'cvssScore': 9.8,
+            'severity': 'CRITICAL',
+            'description': 'Example vulnerability.',
+            'references': ['https://example.gov/advisory'],
+        }
+        catalog_entry.return_value = RECORD
+
+        response = self.client.post('/api/indicator/check', json={'indicator': 'cve-2026-12345'})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result['indicator'], 'CVE-2026-12345')
+        self.assertEqual(result['indicatorType'], 'cve')
+        self.assertEqual(result['verdict'], 'critical')
+        self.assertTrue(result['evidence']['cisa_kev'])
+        self.assertTrue(result['evidence']['ransomware_use'])
+        self.assertEqual(result['evidence']['cvss_score'], 9.8)
+        save.assert_called_once()
+
+    @patch('app.save_observation')
+    @patch('app.threatfox_search', side_effect=RuntimeError('provider unavailable'))
+    def test_indicator_check_keeps_partial_result_when_provider_fails(self, _threatfox, save):
+        response = self.client.post('/api/indicator/check', json={'indicator': '203.0.113.10'})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result['riskScore'], 0)
+        self.assertEqual(result['verdict'], 'low')
+        self.assertIn('ThreatFox: provider unavailable', result['providerErrors'])
+        save.assert_called_once()
+
+    def test_indicator_check_validates_supported_input(self):
+        missing = self.client.post('/api/indicator/check', json={})
+        unsupported = self.client.post('/api/indicator/check', json={'indicator': 'not an ioc'})
+        oversized = self.client.post('/api/indicator/check', json={'indicator': 'x' * 4097})
+
+        self.assertEqual(missing.status_code, 400)
+        self.assertEqual(unsupported.status_code, 400)
+        self.assertEqual(oversized.status_code, 400)
+
+    @patch('app.recent')
+    def test_history_returns_expanded_observations_and_validates_limit(self, recent):
+        recent.return_value = [{'id': 7, 'indicator': 'example.com', 'riskScore': 10}]
+
+        response = self.client.get('/api/history?limit=25')
+        invalid = self.client.get('/api/history?limit=many')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['observations'][0]['id'], 7)
+        recent.assert_called_once_with(25)
+        self.assertEqual(invalid.status_code, 400)
+
+    def test_feeds_reports_cache_state_without_network(self):
+        response = self.client.get('/api/feeds')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload['cisaKEV']['status'], 'not_loaded')
+        self.assertTrue(payload['nvd']['configured'])
 
 
 if __name__ == '__main__':
