@@ -1,8 +1,19 @@
-"""Database seeding for initial data."""
+"""Idempotent development seed data for the CyberShield database."""
 import os
+import json
+from datetime import datetime, timedelta
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.db.models import User, Role, Permission, user_roles
+from app.db.models import (
+    AuditLog,
+    Incident,
+    LoginAttempt,
+    Permission,
+    Role,
+    ScanHistory,
+    User,
+)
 from app.core.security import get_password_hash
 from app.core.config import settings
 import logging
@@ -92,46 +103,230 @@ def seed_roles_and_permissions(session):
     logger.info(f"Created {len(roles_data)} roles")
 
 
-def seed_admin_user(session):
-    """Seed admin user from environment variables."""
+def seed_users(session):
+    """Seed one usable account for each built-in role."""
 
-    # Get admin credentials from env
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@cybershield.local")
-    admin_username = os.getenv("ADMIN_USERNAME", "admin")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-    admin_full_name = os.getenv("ADMIN_FULL_NAME", "System Administrator")
+    users_data = [
+        {
+            "email": os.getenv("ADMIN_EMAIL", "admin@cybershield.ai"),
+            "username": os.getenv("ADMIN_USERNAME", "admin"),
+            "password": os.getenv("ADMIN_PASSWORD", "Admin123!"),
+            "full_name": os.getenv("ADMIN_FULL_NAME", "CyberShield Administrator"),
+            "role": "admin",
+        },
+        {
+            "email": os.getenv("ANALYST_EMAIL", "analyst@cybershield.ai"),
+            "username": os.getenv("ANALYST_USERNAME", "analyst"),
+            "password": os.getenv("ANALYST_PASSWORD", "Analyst123!"),
+            "full_name": os.getenv("ANALYST_FULL_NAME", "Maya Shrestha"),
+            "role": "analyst",
+        },
+        {
+            "email": os.getenv("VIEWER_EMAIL", "viewer@cybershield.ai"),
+            "username": os.getenv("VIEWER_USERNAME", "viewer"),
+            "password": os.getenv("VIEWER_PASSWORD", "Viewer123!"),
+            "full_name": os.getenv("VIEWER_FULL_NAME", "Aarav Rai"),
+            "role": "viewer",
+        },
+    ]
 
-    # Check if admin already exists
-    existing_admin = session.query(User).filter(
-        (User.email == admin_email) | (User.username == admin_username)
-    ).first()
+    roles = {role.name: role for role in session.query(Role).all()}
+    created = 0
+    for user_data in users_data:
+        existing_user = session.query(User).filter(
+            (User.email == user_data["email"]) | (User.username == user_data["username"])
+        ).first()
+        if existing_user:
+            continue
 
-    if existing_admin:
-        logger.info(f"Admin user already exists: {existing_admin.email}")
-        return
+        role = roles.get(user_data["role"])
+        if role is None:
+            raise RuntimeError(f"Required role is missing: {user_data['role']}")
 
-    # Get admin role
-    admin_role = session.query(Role).filter(Role.name == "admin").first()
-    if not admin_role:
-        logger.error("Admin role not found. Run seed_roles_and_permissions first.")
-        return
+        user = User(
+            email=user_data["email"],
+            username=user_data["username"],
+            full_name=user_data["full_name"],
+            hashed_password=get_password_hash(user_data["password"]),
+            is_active=True,
+            is_verified=True,
+        )
+        user.roles.append(role)
+        session.add(user)
+        created += 1
 
-    # Create admin user
-    admin_user = User(
-        email=admin_email,
-        username=admin_username,
-        full_name=admin_full_name,
-        hashed_password=get_password_hash(admin_password),
-        is_active=True,
-        is_verified=True,
-    )
-
-    admin_user.roles.append(admin_role)
-    session.add(admin_user)
     session.commit()
+    logger.info("Created %s development users", created)
 
-    logger.info(f"Created admin user: {admin_email} / {admin_username}")
-    logger.info(f"Admin password: {admin_password}")
+
+def seed_operational_data(session):
+    """Seed representative SOC activity without creating live auth tokens."""
+
+    users = {user.username: user for user in session.query(User).all()}
+    admin = users.get("admin")
+    analyst = users.get("analyst")
+    if admin is None or analyst is None:
+        raise RuntimeError("Admin and analyst users are required before operational seeding")
+
+    now = datetime.utcnow()
+
+    if session.query(ScanHistory).count() == 0:
+        session.add_all([
+            ScanHistory(
+                user_id=analyst.id,
+                url="https://portal.cybershield.ai/login",
+                is_phishing=False,
+                confidence=0.97,
+                risk_score=4,
+                risk_level="low",
+                model_version="phishing-xgb-1.0",
+                scan_duration_ms=41,
+                created_at=now - timedelta(hours=2),
+            ),
+            ScanHistory(
+                user_id=analyst.id,
+                url="http://secure-account-review.example/verify",
+                is_phishing=True,
+                confidence=0.94,
+                risk_score=92,
+                risk_level="critical",
+                model_version="phishing-xgb-1.0",
+                scan_duration_ms=55,
+                created_at=now - timedelta(hours=5),
+            ),
+            ScanHistory(
+                user_id=admin.id,
+                url="https://updates.example.org/security-advisory",
+                is_phishing=False,
+                confidence=0.88,
+                risk_score=18,
+                risk_level="low",
+                model_version="phishing-xgb-1.0",
+                scan_duration_ms=38,
+                created_at=now - timedelta(days=1),
+            ),
+            ScanHistory(
+                user_id=analyst.id,
+                url="http://invoice-payment-check.example/download",
+                is_phishing=True,
+                confidence=0.86,
+                risk_score=84,
+                risk_level="high",
+                model_version="phishing-xgb-1.0",
+                scan_duration_ms=63,
+                created_at=now - timedelta(days=2),
+            ),
+        ])
+
+    if session.query(Incident).count() == 0:
+        session.add_all([
+            Incident(
+                title="Credential phishing campaign detected",
+                description="Multiple users received links imitating the employee sign-in portal.",
+                severity="critical",
+                status="in_progress",
+                source="phishing-detector",
+                affected_systems="identity,email-gateway",
+                assigned_to_id=analyst.id,
+                created_by_id=admin.id,
+                created_at=now - timedelta(hours=6),
+                updated_at=now - timedelta(hours=1),
+            ),
+            Incident(
+                title="Suspicious outbound network traffic",
+                description="A workstation contacted a newly registered external domain.",
+                severity="high",
+                status="open",
+                source="network-monitor",
+                affected_systems="finance-ws-17",
+                assigned_to_id=analyst.id,
+                created_by_id=admin.id,
+                created_at=now - timedelta(days=1, hours=3),
+                updated_at=now - timedelta(days=1, hours=2),
+            ),
+            Incident(
+                title="Critical dependency vulnerability remediated",
+                description="The exposed package was upgraded and the service was rescanned.",
+                severity="high",
+                status="resolved",
+                source="vulnerability-manager",
+                affected_systems="public-api",
+                assigned_to_id=analyst.id,
+                created_by_id=admin.id,
+                created_at=now - timedelta(days=4),
+                updated_at=now - timedelta(days=2),
+                resolved_at=now - timedelta(days=2),
+            ),
+            Incident(
+                title="Malicious attachment quarantined",
+                description="The endpoint scanner isolated a document containing a downloader.",
+                severity="medium",
+                status="closed",
+                source="malware-classifier",
+                affected_systems="hr-laptop-04",
+                assigned_to_id=analyst.id,
+                created_by_id=admin.id,
+                created_at=now - timedelta(days=7),
+                updated_at=now - timedelta(days=6),
+                resolved_at=now - timedelta(days=6),
+            ),
+        ])
+
+    if session.query(LoginAttempt).count() == 0:
+        session.add_all([
+            LoginAttempt(
+                user_id=admin.id,
+                email=admin.email,
+                ip_address="127.0.0.1",
+                user_agent="CyberShield seed data",
+                success=True,
+                created_at=now - timedelta(hours=8),
+            ),
+            LoginAttempt(
+                user_id=analyst.id,
+                email=analyst.email,
+                ip_address="127.0.0.1",
+                user_agent="CyberShield seed data",
+                success=True,
+                created_at=now - timedelta(hours=7),
+            ),
+        ])
+
+    if session.query(AuditLog).count() == 0:
+        session.add_all([
+            AuditLog(
+                user_id=admin.id,
+                action="database.seeded",
+                resource_type="system",
+                details=json.dumps({"database": "cybershield", "revision": "003"}),
+                ip_address="127.0.0.1",
+                user_agent="CyberShield database seeder",
+                created_at=now,
+            ),
+            AuditLog(
+                user_id=analyst.id,
+                action="incident.assigned",
+                resource_type="incident",
+                resource_id=1,
+                details=json.dumps({"source": "phishing-detector", "severity": "critical"}),
+                ip_address="127.0.0.1",
+                user_agent="CyberShield database seeder",
+                created_at=now - timedelta(hours=5),
+            ),
+            AuditLog(
+                user_id=analyst.id,
+                action="scan.completed",
+                resource_type="phishing_scan",
+                resource_id=2,
+                details=json.dumps({"result": "phishing", "risk_score": 92}),
+                ip_address="127.0.0.1",
+                user_agent="CyberShield database seeder",
+                created_at=now - timedelta(hours=5),
+            ),
+        ])
+
+    session.commit()
+    logger.info("Seeded representative scans, incidents, login attempts, and audit logs")
 
 
 def run_seeds():
@@ -143,7 +338,8 @@ def run_seeds():
     try:
         logger.info("Starting database seeding...")
         seed_roles_and_permissions(session)
-        seed_admin_user(session)
+        seed_users(session)
+        seed_operational_data(session)
         logger.info("Database seeding completed successfully")
     except Exception as e:
         logger.error(f"Error during seeding: {e}")
