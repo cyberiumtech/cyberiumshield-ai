@@ -11,6 +11,7 @@ import numpy as np
 from scipy.sparse import hstack, csr_matrix
 from flask import Flask, request, jsonify, render_template
 from features import extract_features, features_to_vector
+from database import save_scan
 
 app = Flask(__name__)
 LOGGER = logging.getLogger(__name__)
@@ -125,7 +126,9 @@ def predict():
     if len(url)>2048:
         return jsonify({"error":"URL is too long (max 2048 characters)."}),400
     try:
-        return jsonify(score_url(url))
+        result = score_url(url)
+        save_scan(result)
+        return jsonify(result)
     except (TypeError, ValueError):
         return jsonify({"error":"The URL format could not be parsed safely."}),400
     except Exception:

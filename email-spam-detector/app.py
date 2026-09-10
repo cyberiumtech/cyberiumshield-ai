@@ -13,6 +13,7 @@ from flask import Flask, jsonify, request
 
 from email_parser import parse_email
 from signals import explain_email
+from database import save_scan
 
 ROOT = Path(__file__).resolve().parent
 MAX_CONTENT_LENGTH = 100_000
@@ -46,13 +47,15 @@ def add_security_headers(response):
 
 @app.get("/api/health")
 def health():
-    return jsonify({
+    result = {
         "status": "ok",
         "model": METADATA["model_name"],
         "model_version": METADATA["model_version"],
         "dataset_size": METADATA["dataset"]["messages"],
         "test_metrics": METADATA["test_metrics"],
-    })
+    }
+    save_scan(result)
+    return jsonify(result)
 
 
 @app.route("/api/predict", methods=["POST", "OPTIONS"])
