@@ -1,4 +1,4 @@
-import React, from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { isAdminRole } from '../AdminRoute/AdminRoute';
@@ -91,7 +91,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
   const { user } = useAuth();
   const isAdmin = isAdminRole(user?.role);
 
-  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (mobile) return false;
     if (typeof window === 'undefined') return false;
     try {
@@ -152,7 +152,6 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
           const items = section.items.filter(it => !it.adminOnly || isAdmin);
           if (!items.length) return null;
 
-          // When collapsed, add a hairline divider between sections (skip the first)
           const showDivider = isCollapsed && sectionIndex > 0;
 
           return (
@@ -167,7 +166,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                 </p>
               )}
 
-              <ul className={isCollapsed ? 'space-y-0.5' : 'space-y-0.5'}>
+              <ul className="space-y-0.5">
                 {items.map(it => {
                   const Icon = it.icon;
                   const active =
@@ -191,13 +190,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                             : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-200'
                         }`}
                       >
-                        {/* Left accent bar — only when active */}
                         {active && (
                           <span
                             aria-hidden="true"
-                            className={`absolute top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400 ${
-                              isCollapsed ? 'left-0' : 'left-0'
-                            }`}
+                            className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400"
                           />
                         )}
 
