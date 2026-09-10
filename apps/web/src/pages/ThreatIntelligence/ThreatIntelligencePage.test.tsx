@@ -54,6 +54,14 @@ const result = {
 
 describe('ThreatIntelligencePage', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    );
     vi.mocked(checkThreatIndicator).mockResolvedValue(result);
     vi.mocked(fetchThreatHistory).mockResolvedValue([]);
     vi.mocked(fetchThreatIntelligenceHealth).mockResolvedValue({
@@ -185,9 +193,7 @@ describe('ThreatIntelligencePage', () => {
 
     expect(await screen.findAllByTitle('example.com')).not.toHaveLength(0);
     expect(screen.getAllByText('inconclusive')).not.toHaveLength(0);
-    expect(
-      screen.getAllByLabelText('Evidence coverage inconclusive, confidence none')
-    ).not.toHaveLength(0);
+    expect(container.textContent).toContain('Coverage: inconclusive / none');
     expect(await screen.findByText('Live / 1,400')).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/[ÃÂâ]/u);
 
