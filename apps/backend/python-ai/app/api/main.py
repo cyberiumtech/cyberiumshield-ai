@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 import logging
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.routes import health, auth, users, phishing, integrations
+from app.api.routes import health, auth, users, phishing, integrations, storage
 
 # Setup logging
 setup_logging()
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
         prefix=f"{settings.API_V1_PREFIX}/integrations",
         tags=["integrations"],
     )
+    app.include_router(storage.router, prefix=f"{settings.API_V1_PREFIX}/storage", tags=["storage"])
 
     @app.on_event("startup")
     async def startup_event():
