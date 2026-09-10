@@ -291,10 +291,6 @@ export function DashboardPage() {
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(310px,.68fr)]">
         <Surface className="relative min-w-0 overflow-hidden bg-[#07101e]">
           <div className="relative z-10 flex min-w-0 flex-col gap-3 border-b border-white/[0.06] px-5 py-4 sm:absolute sm:inset-x-0 sm:top-0 sm:flex-row sm:items-start sm:justify-between sm:border-0">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Global signal canvas</p>
-              <h2 className="mt-1 text-xl font-semibold text-white">Activity orbit</h2>
-            </div>
             <div className="flex shrink-0 items-center gap-2">
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-slate-400" aria-live="polite">
                 <Globe2 className={`h-3.5 w-3.5 ${isGlobePaused ? 'text-slate-500' : 'text-cyan-300'}`} />
