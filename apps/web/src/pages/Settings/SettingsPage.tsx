@@ -10,10 +10,10 @@ import type { User } from '../../services/auth.service';
 import { testPusherConnection, testTinyUrlConnection } from '../../services/integration.service';
 import defaultLogo from '../../assets/images/Cybershield-AI.png';
 import {
-  applyFavicon, BrandingSettings, CompanySettings, EmailSettings, getEffectiveFavicon,
-  getEffectiveLogo, getSettings, NotificationSettings, resetBrandingSettings, resetScanHistory,
+  applyFavicon, CompanySettings, EmailSettings, getEffectiveFavicon,
+  getEffectiveLogo, getSettings, resetBrandingSettings, resetScanHistory,
   saveBrandingSettings, saveCompanySettings, saveEmailSettings, saveNotificationSettings,
-  saveTinyUrlSettings, TinyUrlSettings, validatePusherConfiguration, validateTinyUrlConfiguration,
+  saveTinyUrlSettings, validatePusherConfiguration, validateTinyUrlConfiguration,
 } from '../../services/settings.service';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

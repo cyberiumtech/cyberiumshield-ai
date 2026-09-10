@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', '.tmp-*/**', 'node_modules/**', 'build/**'],
+    ignores: ['dist/**', '.tmp-*/**', 'node_modules/**', 'build/**', 'src/contexts/AuthContext.old.tsx'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -39,6 +39,7 @@ export default tseslint.config(
   {
     files: ['scripts/**/*.{js,mjs,cjs}'],
     languageOptions: { globals: globals.node },
+    rules: { 'no-console': 'off' },
   },
   {
     files: ['**/*.d.ts'],

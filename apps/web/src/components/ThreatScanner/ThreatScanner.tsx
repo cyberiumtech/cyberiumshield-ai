@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Mail, Link as LinkIcon, AlertTriangle, Shield, CheckCircle, XCircle, Clock, Globe, Server } from 'lucide-react';
+import { Search, Mail, Link as LinkIcon, AlertTriangle, Shield, CheckCircle, XCircle, Clock, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Badge } from '../shared/Badge';
 
 type ScanType = 'url' | 'email';
 
@@ -73,7 +72,6 @@ export function ThreatScanner() {
       }
 
       // Check for typosquatting patterns
-      const commonBrands = ['paypal', 'microsoft', 'google', 'amazon', 'facebook', 'apple', 'netflix', 'bank'];
       const typoPatterns = ['paypa1', 'micros0ft', 'g00gle', 'amaz0n', 'faceb00k', 'app1e', 'netf1ix'];
 
       const hasTypo = typoPatterns.some(pattern => domain.includes(pattern));
@@ -139,7 +137,7 @@ export function ThreatScanner() {
         severity: subdomainCount > 2 ? 'warning' : 'safe'
       });
 
-    } catch (error) {
+    } catch {
       threats.push('Invalid or malformed URL');
       threatScore = 100;
     }
@@ -253,7 +251,7 @@ export function ThreatScanner() {
         severity: email.length > 50 ? 'warning' : 'safe'
       });
 
-    } catch (error) {
+    } catch {
       threats.push('Invalid email format');
       threatScore = 100;
     }

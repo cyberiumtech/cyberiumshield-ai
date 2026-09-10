@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Scan } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface ScanModalProps {
   isOpen: boolean;
@@ -13,9 +14,7 @@ export function ScanModal({ isOpen, onClose }: ScanModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Starting scan:', { scanType, target });
-    // TODO: Implement actual scan logic
-    onClose();
+    toast.info('Start scans from the dedicated scanner page for the selected target.');
   };
 
   return (

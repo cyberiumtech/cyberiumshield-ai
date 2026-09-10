@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -15,9 +16,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Adding user:', { name, email, role, department });
-    // TODO: Implement actual user creation logic
-    onClose();
+    toast.info('User creation requires the admin API and is not available in demo mode.');
   };
 
   return (

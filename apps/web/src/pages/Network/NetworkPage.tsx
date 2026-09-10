@@ -27,7 +27,6 @@ import {
   formatDataRate,
   formatUptime,
   getNetworkStatus,
-  NetworkConnection,
   NetworkStatus,
   startNetworkMonitor,
   stopNetworkMonitor,

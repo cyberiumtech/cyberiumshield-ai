@@ -1,5 +1,3 @@
-import api from './api';
-
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -128,7 +126,7 @@ class AuthService {
     localStorage.removeItem('cybershield_user');
   }
 
-  async forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
+  async forgotPassword(_data: ForgotPasswordData): Promise<{ message: string }> {
     await this.getCsrfCookie();
     // TODO: Replace with actual Laravel endpoint
     // const response = await api.post('/auth/forgot-password', data);
@@ -138,7 +136,7 @@ class AuthService {
     return { message: 'Password reset link sent to your email' };
   }
 
-  async resetPassword(data: ResetPasswordData): Promise<{ message: string }> {
+  async resetPassword(_data: ResetPasswordData): Promise<{ message: string }> {
     await this.getCsrfCookie();
     // TODO: Replace with actual Laravel endpoint
     // const response = await api.post('/auth/reset-password', data);
@@ -148,7 +146,7 @@ class AuthService {
     return { message: 'Password has been reset successfully' };
   }
 
-  async verifyEmail(id: string, hash: string): Promise<{ message: string }> {
+  async verifyEmail(_id: string, _hash: string): Promise<{ message: string }> {
     // TODO: Replace with actual Laravel endpoint
     // const response = await api.get(`/auth/verify-email/${id}/${hash}`);
     // return response.data;

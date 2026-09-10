@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Clock3,

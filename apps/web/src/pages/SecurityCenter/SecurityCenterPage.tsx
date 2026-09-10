@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertTriangle, Archive, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft,
   ChevronsRight, CircleDot, Database, Download, FileCheck2, FileText, Filter,
-  RefreshCw, Search, ShieldCheck, SlidersHorizontal, Layers, Activity
+  RefreshCw, Search, ShieldCheck, SlidersHorizontal, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSecurityDashboard, type SourceKey } from '../../hooks/useSecurityDashboard';
