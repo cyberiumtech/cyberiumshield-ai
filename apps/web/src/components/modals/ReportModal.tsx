@@ -328,6 +328,7 @@ export function ReportModal({
     <AnimatePresence>
       {isOpen && (
         <>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
           <motion.button
             type="button"
             aria-label="Close report builder"
@@ -335,8 +336,9 @@ export function ReportModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !isGenerating && onClose()}
-            className="fixed inset-0 z-[60] cursor-default bg-slate-950/75 backdrop-blur-sm"
+            className="absolute inset-0 cursor-default bg-slate-950/75 backdrop-blur-sm"
           />
+          </div>
           <motion.section
             initial={{ opacity: 0, scale: 0.98, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
