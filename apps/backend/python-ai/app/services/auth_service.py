@@ -235,7 +235,14 @@ class AuthService:
             )
 
         # Get user
-        user_id = payload.get("sub")
+        try:
+            user_id = int(payload.get("sub"))
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token subject",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from None
         user = db.query(User).filter(User.id == user_id).first()
         if not user or not user.is_active:
             raise HTTPException(

@@ -1,3 +1,5 @@
+import api from '../lib/api';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -45,6 +47,46 @@ export interface AuthResponse {
   expires_at?: string;
 }
 
+interface BackendUser {
+  id: number;
+  email: string;
+  username: string;
+  full_name?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  roles: string[];
+  created_at: string;
+}
+
+interface BackendTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+function mapBackendUser(user: BackendUser): User {
+  return {
+    id: String(user.id),
+    name: user.full_name || user.username,
+    email: user.email,
+    email_verified_at: user.is_verified ? user.created_at : null,
+    role: user.roles[0] || 'viewer',
+    organization_id: 'cybershield',
+    organization_name: 'CyberShield',
+    created_at: user.created_at,
+    updated_at: user.created_at,
+  };
+}
+
+function usernameFromEmail(email: string): string {
+  const candidate = email
+    .split('@')[0]
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .slice(0, 50);
+
+  return candidate.length >= 3 ? candidate : `user_${candidate}`;
+}
+
 export function getAuthenticatedHomePath(user?: Pick<User, 'role'> | null): string {
   const role = (user?.role ?? '').trim().toLowerCase().replace(/[_-]+/g, ' ');
   return role === 'admin' || role === 'administrator' ? '/admin' : '/dashboard';
@@ -52,98 +94,61 @@ export function getAuthenticatedHomePath(user?: Pick<User, 'role'> | null): stri
 
 class AuthService {
   async getCsrfCookie(): Promise<void> {
-    // TODO: Implement CSRF cookie endpoint when backend is ready
-    // await api.get('/csrf-cookie');
+    // The FastAPI backend uses bearer tokens and does not require a CSRF cookie.
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await this.getCsrfCookie();
-    // TODO: Replace with actual Laravel Sanctum endpoint
-    // const response = await api.post<AuthResponse>('/auth/login', credentials);
-
-    // Temporary mock implementation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const mockUser: User = {
-      id: '1',
-      name: credentials.email.split('@')[0],
+    const { data: tokens } = await api.post<BackendTokenResponse>('/auth/login', {
       email: credentials.email,
-      email_verified_at: new Date().toISOString(),
-      // Deterministic demo RBAC: admin@* is an administrator. This is only a
-      // frontend mock convenience; production authorization must be enforced by the API.
-      role: credentials.email.trim().toLowerCase().startsWith('admin@')
-        ? 'administrator'
-        : 'security_analyst',
-      organization_id: '1',
-      organization_name: 'Demo Organization',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+      password: credentials.password,
+    });
 
-    const mockToken = 'mock_token_' + Date.now();
+    localStorage.setItem('access_token', tokens.access_token);
+    localStorage.setItem('refresh_token', tokens.refresh_token);
+
+    const { data: backendUser } = await api.get<BackendUser>('/users/me');
 
     return {
-      user: mockUser,
-      token: mockToken,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      user: mapBackendUser(backendUser),
+      token: tokens.access_token,
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    await this.getCsrfCookie();
-    // TODO: Replace with actual Laravel Sanctum endpoint
-    // const response = await api.post<AuthResponse>('/auth/register', data);
-
-    // Temporary mock implementation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const mockUser: User = {
-      id: Date.now().toString(),
-      name: data.name,
+    await api.post<BackendUser>('/auth/register', {
       email: data.email,
-      email_verified_at: null,
-      role: 'security_analyst',
-      organization_id: Date.now().toString(),
-      organization_name: data.organization_name,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+      username: usernameFromEmail(data.email),
+      password: data.password,
+      full_name: data.name,
+    });
 
-    const mockToken = 'mock_token_' + Date.now();
-
-    return {
-      user: mockUser,
-      token: mockToken,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
+    return this.login({ email: data.email, password: data.password });
   }
 
   async logout(): Promise<void> {
-    // TODO: Replace with actual Laravel Sanctum endpoint
-    // await api.post('/auth/logout');
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (refreshToken) {
+      await api.post('/auth/logout', { refresh_token: refreshToken });
+    }
 
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('cybershield_token');
     localStorage.removeItem('cybershield_user');
   }
 
-  async forgotPassword(_data: ForgotPasswordData): Promise<{ message: string }> {
-    await this.getCsrfCookie();
-    // TODO: Replace with actual Laravel endpoint
-    // const response = await api.post('/auth/forgot-password', data);
-    // return response.data;
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { message: 'Password reset link sent to your email' };
+  async forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/request-password-reset', data);
+    return response.data;
   }
 
-  async resetPassword(_data: ResetPasswordData): Promise<{ message: string }> {
-    await this.getCsrfCookie();
-    // TODO: Replace with actual Laravel endpoint
-    // const response = await api.post('/auth/reset-password', data);
-    // return response.data;
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return { message: 'Password has been reset successfully' };
+  async resetPassword(data: ResetPasswordData): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/auth/reset-password', {
+      token: data.token,
+      new_password: data.password,
+    });
+    return response.data;
   }
 
   async verifyEmail(_id: string, _hash: string): Promise<{ message: string }> {
@@ -165,15 +170,8 @@ class AuthService {
   }
 
   async getCurrentUser(): Promise<User> {
-    // TODO: Replace with actual Laravel Sanctum endpoint
-    // const response = await api.get<User>('/auth/user');
-    // return response.data;
-
-    const storedUser = localStorage.getItem('cybershield_user');
-    if (storedUser) {
-      return JSON.parse(storedUser);
-    }
-    throw new Error('Not authenticated');
+    const response = await api.get<BackendUser>('/users/me');
+    return mapBackendUser(response.data);
   }
 }
 

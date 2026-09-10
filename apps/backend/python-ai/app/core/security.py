@@ -32,6 +32,10 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         Encoded JWT token string
     """
     to_encode = data.copy()
+    if "sub" in to_encode:
+        # JWT requires the subject claim to be a string. python-jose rejects
+        # integer subjects while decoding, which made newly issued tokens unusable.
+        to_encode["sub"] = str(to_encode["sub"])
 
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -60,6 +64,8 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
         Encoded JWT refresh token string
     """
     to_encode = data.copy()
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
 
     if expires_delta:
         expire = datetime.utcnow() + expires_delta

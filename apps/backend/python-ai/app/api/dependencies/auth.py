@@ -40,13 +40,22 @@ def get_current_user(
         )
 
     # Get user ID from token
-    user_id: Optional[int] = payload.get("sub")
-    if user_id is None:
+    subject = payload.get("sub")
+    if subject is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    try:
+        user_id = int(subject)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
 
     # Get user from database
     user = db.query(User).filter(User.id == user_id).first()
