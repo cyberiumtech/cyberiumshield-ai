@@ -144,7 +144,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       {/* ═══ Scroll area ═══ */}
       <div
         className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${THIN_SCROLLBAR} ${
-          isCollapsed ? 'py-2' : 'pt-2.5 pb-4'
+          isCollapsed ? 'py-2' : 'pt-5 pb-4'
         }`}
       >
         <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-4'}>
@@ -202,7 +202,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           )}
 
                           <Icon
-                            className={`h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${
+                            className={`h-5 w-5 shrink-0 transition-colors duration-150 ${ // 👈 Changed to h-5 w-5 (20px)
                               active
                                 ? 'text-cyan-400'
                                 : 'text-slate-500 group-hover:text-slate-400'
