@@ -1,10 +1,14 @@
 """Idempotent development seed data for the CyberShield database."""
-import os
 import json
-from datetime import datetime, timedelta, timezone
+import logging
+import os
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from app.core.config import settings
+from app.core.security import get_password_hash
 from app.db.models import (
     AuditLog,
     Incident,
@@ -14,9 +18,6 @@ from app.db.models import (
     ScanHistory,
     User,
 )
-from app.core.security import get_password_hash
-from app.core.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ def seed_operational_data(session):
         raise RuntimeError("Admin and analyst users are required before operational seeding")
 
     # Models currently use naive UTC DateTime columns, so normalize before insert.
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     if session.query(ScanHistory).count() == 0:
         session.add_all([
