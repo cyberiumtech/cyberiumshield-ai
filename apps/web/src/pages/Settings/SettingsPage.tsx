@@ -48,15 +48,6 @@ const LABEL = 'block mb-1.5 text-[11px] font-medium text-slate-400';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_BRAND_ASSET_SIZE = 350 * 1024;
 
-const sections = [
-  ['company', 'Company profile', Building2],
-  ['tinyurl', 'TinyURL', Link2],
-  ['email', 'Email delivery', Mail],
-  ['notifications', 'Notifications', Bell],
-  ['branding', 'Branding', Image],
-  ['data-reset', 'Data reset', ShieldAlert],
-] as const;
-
 const validUrl = (value: string) => {
   if (!value.trim()) return true;
   try {
@@ -84,26 +75,8 @@ export function SettingsPage() {
   const [testingPusher, setTestingPusher] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetText, setResetText] = useState('');
-  const [activeSection, setActiveSection] = useState<string>('company');
 
   useEffect(() => applyFavicon(branding, defaultLogo), [branding]);
-
-  /* Scroll spy */
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) setActiveSection(entry.target.id);
-        });
-      },
-      { rootMargin: '-120px 0px -55% 0px', threshold: 0 }
-    );
-    sections.forEach(([id]) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
 
   /* ── Handlers ── */
   const saveCompany = (event: FormEvent) => {
@@ -265,7 +238,7 @@ export function SettingsPage() {
     );
   };
 
-  /* ── Status summary ── */
+  /* ── Status chips ── */
   const statusChips = [
     {
       label: 'Company',
@@ -298,7 +271,7 @@ export function SettingsPage() {
   return (
     <div
       style={{ fontFamily: FONT_SANS }}
-      className="mx-auto w-full max-w-[1360px] px-6 pb-16 pt-6 text-slate-200"
+      className="mx-auto w-full max-w-[1400px] px-6 pb-16 pt-6 text-slate-200"
     >
       {/* ═══════════════ HEADER ═══════════════ */}
       <header className="mb-6">
@@ -330,36 +303,10 @@ export function SettingsPage() {
         </div>
       </header>
 
-      {/* ═══════════════ LAYOUT ═══════════════ */}
-      <div className="grid gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
-        {/* ── Sidebar ── */}
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <nav aria-label="Settings sections" className="space-y-0.5">
-            {sections.map(([id, label, Icon]) => {
-              const active = activeSection === id;
-              return (
-                <a
-                  key={id}
-                  href={`#${id}`}
-                  onClick={() => setActiveSection(id)}
-                  className={`flex items-center gap-2.5 rounded px-2 py-1.5 text-[12px] font-medium transition ${
-                    active
-                      ? 'bg-white/[0.06] text-white'
-                      : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-200'
-                  }`}
-                >
-                  <Icon
-                    className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-cyan-400' : 'text-slate-500'}`}
-                  />
-                  <span className="truncate">{label}</span>
-                </a>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* ── Main content ── */}
-        <main className="min-w-0 space-y-6">
+      {/* ═══════════════ 2-COLUMN GRID ═══════════════ */}
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        {/* ── LEFT COLUMN ── */}
+        <div className="min-w-0 space-y-6">
           {/* ═══ COMPANY ═══ */}
           <Section
             id="company"
@@ -506,119 +453,6 @@ export function SettingsPage() {
             </form>
           </Section>
 
-          {/* ═══ EMAIL ═══ */}
-          <Section
-            id="email"
-            title="Email delivery"
-            description="ZeptoMail primary delivery with a controlled SMTP fallback."
-          >
-            <form onSubmit={saveEmail} className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <SecretField
-                  label="ZeptoMail API key"
-                  value={email.zeptoApiKey}
-                  onChange={zeptoApiKey => setEmail({ ...email, zeptoApiKey })}
-                  autoComplete="off"
-                />
-                <Field
-                  label="ZeptoMail from address"
-                  type="email"
-                  value={email.zeptoFromAddress}
-                  onChange={zeptoFromAddress => setEmail({ ...email, zeptoFromAddress })}
-                />
-                <Field
-                  label="From name"
-                  value={email.zeptoFromName}
-                  onChange={zeptoFromName => setEmail({ ...email, zeptoFromName })}
-                />
-              </div>
-
-              <fieldset className="border-t border-white/[0.06] pt-5">
-                <legend className="sr-only">SMTP fallback</legend>
-                <Toggle
-                  label="SMTP fallback"
-                  description="Use SMTP only if primary ZeptoMail delivery is unavailable."
-                  checked={email.smtpEnabled}
-                  onChange={smtpEnabled => setEmail({ ...email, smtpEnabled })}
-                />
-                <div
-                  className={`mt-4 grid gap-4 sm:grid-cols-2 ${!email.smtpEnabled ? 'pointer-events-none opacity-50' : ''}`}
-                  aria-disabled={!email.smtpEnabled}
-                >
-                  <Field
-                    label="SMTP host"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpHost}
-                    onChange={smtpHost => setEmail({ ...email, smtpHost })}
-                  />
-                  <Field
-                    label="Port"
-                    type="number"
-                    min={1}
-                    max={65535}
-                    disabled={!email.smtpEnabled}
-                    value={String(email.smtpPort)}
-                    onChange={smtpPort => setEmail({ ...email, smtpPort: Number(smtpPort) })}
-                  />
-                  <Field
-                    label="Username"
-                    autoComplete="off"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpUsername}
-                    onChange={smtpUsername => setEmail({ ...email, smtpUsername })}
-                  />
-                  <SecretField
-                    label="Password"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpPassword}
-                    onChange={smtpPassword => setEmail({ ...email, smtpPassword })}
-                    autoComplete="new-password"
-                  />
-                  <SelectField
-                    label="Encryption"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpEncryption}
-                    onChange={smtpEncryption =>
-                      setEmail({
-                        ...email,
-                        smtpEncryption: smtpEncryption as EmailSettings['smtpEncryption'],
-                      })
-                    }
-                    options={[
-                      ['none', 'None'],
-                      ['tls', 'TLS'],
-                      ['ssl', 'SSL'],
-                    ]}
-                  />
-                  <Field
-                    label="From name"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpFromName}
-                    onChange={smtpFromName => setEmail({ ...email, smtpFromName })}
-                  />
-                  <Field
-                    label="From address"
-                    type="email"
-                    disabled={!email.smtpEnabled}
-                    value={email.smtpFromAddress}
-                    onChange={smtpFromAddress => setEmail({ ...email, smtpFromAddress })}
-                  />
-                </div>
-              </fieldset>
-
-              <p className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
-                <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" />
-                Credentials remain in this browser for demonstration only.
-              </p>
-
-              <Actions>
-                <button type="submit" className={BTN_PRIMARY}>
-                  Save changes
-                </button>
-              </Actions>
-            </form>
-          </Section>
-
           {/* ═══ NOTIFICATIONS ═══ */}
           <Section
             id="notifications"
@@ -734,6 +568,122 @@ export function SettingsPage() {
               </Actions>
             </form>
           </Section>
+        </div>
+
+        {/* ── RIGHT COLUMN ── */}
+        <div className="min-w-0 space-y-6">
+          {/* ═══ EMAIL ═══ */}
+          <Section
+            id="email"
+            title="Email delivery"
+            description="ZeptoMail primary delivery with a controlled SMTP fallback."
+          >
+            <form onSubmit={saveEmail} className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SecretField
+                  label="ZeptoMail API key"
+                  value={email.zeptoApiKey}
+                  onChange={zeptoApiKey => setEmail({ ...email, zeptoApiKey })}
+                  autoComplete="off"
+                />
+                <Field
+                  label="ZeptoMail from address"
+                  type="email"
+                  value={email.zeptoFromAddress}
+                  onChange={zeptoFromAddress => setEmail({ ...email, zeptoFromAddress })}
+                />
+                <Field
+                  label="From name"
+                  value={email.zeptoFromName}
+                  onChange={zeptoFromName => setEmail({ ...email, zeptoFromName })}
+                />
+              </div>
+
+              <fieldset className="border-t border-white/[0.06] pt-5">
+                <legend className="sr-only">SMTP fallback</legend>
+                <Toggle
+                  label="SMTP fallback"
+                  description="Use SMTP only if primary ZeptoMail delivery is unavailable."
+                  checked={email.smtpEnabled}
+                  onChange={smtpEnabled => setEmail({ ...email, smtpEnabled })}
+                />
+                <div
+                  className={`mt-4 grid gap-4 sm:grid-cols-2 ${!email.smtpEnabled ? 'pointer-events-none opacity-50' : ''}`}
+                  aria-disabled={!email.smtpEnabled}
+                >
+                  <Field
+                    label="SMTP host"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpHost}
+                    onChange={smtpHost => setEmail({ ...email, smtpHost })}
+                  />
+                  <Field
+                    label="Port"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    disabled={!email.smtpEnabled}
+                    value={String(email.smtpPort)}
+                    onChange={smtpPort => setEmail({ ...email, smtpPort: Number(smtpPort) })}
+                  />
+                  <Field
+                    label="Username"
+                    autoComplete="off"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpUsername}
+                    onChange={smtpUsername => setEmail({ ...email, smtpUsername })}
+                  />
+                  <SecretField
+                    label="Password"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpPassword}
+                    onChange={smtpPassword => setEmail({ ...email, smtpPassword })}
+                    autoComplete="new-password"
+                  />
+                  <SelectField
+                    label="Encryption"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpEncryption}
+                    onChange={smtpEncryption =>
+                      setEmail({
+                        ...email,
+                        smtpEncryption: smtpEncryption as EmailSettings['smtpEncryption'],
+                      })
+                    }
+                    options={[
+                      ['none', 'None'],
+                      ['tls', 'TLS'],
+                      ['ssl', 'SSL'],
+                    ]}
+                  />
+                  <Field
+                    label="From name"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpFromName}
+                    onChange={smtpFromName => setEmail({ ...email, smtpFromName })}
+                  />
+                  <Field
+                    label="From address"
+                    type="email"
+                    disabled={!email.smtpEnabled}
+                    value={email.smtpFromAddress}
+                    onChange={smtpFromAddress => setEmail({ ...email, smtpFromAddress })}
+                  />
+                </div>
+              </fieldset>
+
+              <p className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
+                <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" />
+                Credentials remain in this browser for demonstration only.
+              </p>
+
+              <Actions>
+                <button type="submit" className={BTN_PRIMARY}>
+                  Save changes
+                </button>
+              </Actions>
+            </form>
+          </Section>
 
           {/* ═══ BRANDING ═══ */}
           <Section
@@ -802,7 +752,7 @@ export function SettingsPage() {
               </div>
             </div>
           </section>
-        </main>
+        </div>
       </div>
 
       {/* ═══════════════ RESET DIALOG ═══════════════ */}
@@ -1017,7 +967,7 @@ function Toggle({
       />
       <span
         aria-hidden="true"
-        className="relative h-4.5 w-8 shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04] transition peer-checked:border-cyan-500/60 peer-checked:bg-cyan-500/30 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500/40 after:absolute after:left-[2px] after:top-1/2 after:h-3.5 after:w-3.5 after:-translate-y-1/2 after:rounded-full after:bg-slate-500 after:transition-all peer-checked:after:translate-x-[15px] peer-checked:after:bg-cyan-400"
+        className="relative shrink-0 rounded-full border border-white/[0.1] bg-white/[0.04] transition peer-checked:border-cyan-500/60 peer-checked:bg-cyan-500/30 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500/40 after:absolute after:left-[2px] after:top-1/2 after:h-3.5 after:w-3.5 after:-translate-y-1/2 after:rounded-full after:bg-slate-500 after:transition-all peer-checked:after:translate-x-[15px] peer-checked:after:bg-cyan-400"
         style={{ height: 18, width: 32 }}
       />
     </label>
