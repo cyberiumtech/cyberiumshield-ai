@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertTriangle, Archive, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft,
-  ChevronsRight, CircleDot, Database, Download, FileCheck2, FileText, Filter,
+  ChevronsRight, Database, Download, FileCheck2, FileText, Filter,
   RefreshCw, Search, ShieldCheck, SlidersHorizontal, Activity, Lock, Eye, Zap,
-  BarChart3, Globe, Server, Shield, XCircle, Wifi, WifiOff, Info,
+  BarChart3, Globe, Server, Shield, XCircle, Wifi, WifiOff, Info, Minus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSecurityDashboard, type SourceKey } from '../../hooks/useSecurityDashboard';
@@ -15,17 +15,17 @@ import {
 } from '../../components/modals/ReportModal';
 
 /* ─────────────────────────────────────────────────────────────
-   SOURCE METADATA (plain-English labels for students)
+   SOURCE METADATA
    ───────────────────────────────────────────────────────────── */
 const sourceMeta: Record<SourceKey, {
-  label: string; short: string; code: string; provenance: string; icon: React.ReactNode;
+  label: string; code: string; provenance: string; icon: React.ReactNode;
 }> = {
-  email:         { label: 'Email Security',        short: 'Email',   code: 'EMAIL',  provenance: 'Scans incoming email for spam, phishing, and suspicious content.',  icon: <Globe className="h-5 w-5" /> },
-  phishing:      { label: 'Phishing Detection',    short: 'Phishing',code: 'URL',    provenance: 'Checks URLs for known phishing patterns and risky domains.',        icon: <Eye className="h-5 w-5" /> },
-  malware:       { label: 'Malware Scanner',       short: 'Malware', code: 'FILE',   provenance: 'Analyses files for malicious signatures and known malware families.',icon: <Lock className="h-5 w-5" /> },
-  network:       { label: 'Network Monitor',       short: 'Network', code: 'NET',    provenance: 'Tracks active connections and flags unusual network behaviour.',     icon: <Server className="h-5 w-5" /> },
-  vulnerability: { label: 'Vulnerability Register',short: 'Vulns',   code: 'VULN',   provenance: 'Lists known weaknesses in your systems that need patching.',         icon: <AlertTriangle className="h-5 w-5" /> },
-  intel:         { label: 'Threat Intelligence',   short: 'Intel',   code: 'KEV',    provenance: 'External feed of actively exploited vulnerabilities (CISA).',       icon: <Zap className="h-5 w-5" /> },
+  email:         { label: 'Email Security',         code: 'EMAIL', provenance: 'Scans incoming email for spam, phishing, and suspicious content.',   icon: <Globe className="h-4 w-4" /> },
+  phishing:      { label: 'Phishing Detection',     code: 'URL',   provenance: 'Checks URLs against known phishing patterns and risky domains.',      icon: <Eye className="h-4 w-4" /> },
+  malware:       { label: 'Malware Scanner',        code: 'FILE',  provenance: 'Analyses files for malicious signatures and known malware families.',  icon: <Lock className="h-4 w-4" /> },
+  network:       { label: 'Network Monitor',        code: 'NET',   provenance: 'Tracks active connections and flags unusual network behaviour.',       icon: <Server className="h-4 w-4" /> },
+  vulnerability: { label: 'Vulnerability Register', code: 'VULN',  provenance: 'Lists known weaknesses in your systems that need patching.',           icon: <AlertTriangle className="h-4 w-4" /> },
+  intel:         { label: 'Threat Intelligence',    code: 'KEV',   provenance: 'External feed of actively exploited vulnerabilities (CISA).',         icon: <Zap className="h-4 w-4" /> },
 };
 
 const severityRank: Record<string, number> = { critical: 5, high: 4, medium: 3, warning: 3, low: 2, info: 1, clear: 0 };
@@ -34,7 +34,7 @@ const severityRank: Record<string, number> = { critical: 5, high: 4, medium: 3, 
    UTILITIES
    ───────────────────────────────────────────────────────────── */
 function dateLabel(value: string | null, includeDate = false) {
-  if (!value) return 'Unavailable';
+  if (!value) return '—';
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return value;
   return date.toLocaleString(undefined, includeDate
@@ -43,9 +43,9 @@ function dateLabel(value: string | null, includeDate = false) {
 }
 
 function relativeTime(value: string | null) {
-  if (!value) return 'Not recorded';
+  if (!value) return '—';
   const time = new Date(value).getTime();
-  if (!Number.isFinite(time)) return 'Time unavailable';
+  if (!Number.isFinite(time)) return '—';
   const seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
@@ -53,139 +53,121 @@ function relativeTime(value: string | null) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-/** Plain-English severity label for students */
 function severityLabel(sev: string) {
-  if (sev === 'critical') return 'Critical';
-  if (sev === 'high') return 'High';
-  if (sev === 'medium' || sev === 'warning') return 'Medium';
-  if (sev === 'low') return 'Low';
-  if (sev === 'clear') return 'Clean';
+  const s = sev.toLowerCase();
+  if (s === 'critical') return 'Critical';
+  if (s === 'high') return 'High';
+  if (s === 'medium' || s === 'warning') return 'Medium';
+  if (s === 'low') return 'Low';
+  if (s === 'clear') return 'Clean';
   return 'Info';
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PRIMITIVE: HUD corner brackets
+   PRIMITIVES
    ───────────────────────────────────────────────────────────── */
-function Corners({ tone = 'cyan' }: { tone?: 'cyan' | 'emerald' | 'amber' | 'rose' }) {
-  const map = {
-    cyan:    'border-cyan-400/70',
-    emerald: 'border-emerald-400/70',
-    amber:   'border-amber-400/70',
-    rose:    'border-rose-400/70',
-  }[tone];
-  return (
-    <>
-      <span className={`pointer-events-none absolute -top-px -left-px h-3 w-3 border-t-2 border-l-2 ${map}`} />
-      <span className={`pointer-events-none absolute -top-px -right-px h-3 w-3 border-t-2 border-r-2 ${map}`} />
-      <span className={`pointer-events-none absolute -bottom-px -left-px h-3 w-3 border-b-2 border-l-2 ${map}`} />
-      <span className={`pointer-events-none absolute -bottom-px -right-px h-3 w-3 border-b-2 border-r-2 ${map}`} />
-    </>
-  );
-}
 
-/* ─────────────────────────────────────────────────────────────
-   PRIMITIVE: Cyber card wrapper
-   ───────────────────────────────────────────────────────────── */
-function CyberCard({
-  children, className = '', glow = 'cyan',
-}: { children: React.ReactNode; className?: string; glow?: 'cyan' | 'emerald' | 'amber' | 'rose' | 'none' }) {
-  const glowMap = {
-    cyan:    'shadow-[0_0_30px_-10px_rgba(34,211,238,0.35)]',
-    emerald: 'shadow-[0_0_30px_-10px_rgba(52,211,153,0.35)]',
-    amber:   'shadow-[0_0_30px_-10px_rgba(251,191,36,0.35)]',
-    rose:    'shadow-[0_0_30px_-10px_rgba(244,63,94,0.35)]',
-    none:    '',
-  }[glow];
+/** Flat card — solid surface, single-pixel border, no effects. */
+function Panel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <section className={`relative rounded-lg border border-cyan-500/25 bg-slate-950/70 backdrop-blur-sm ${glowMap} ${className}`}>
-      <Corners tone={glow === 'none' ? 'cyan' : glow} />
+    <section className={`rounded-md border border-slate-800 bg-slate-900 ${className}`}>
       {children}
     </section>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PRIMITIVE: Terminal-style section title
-   ───────────────────────────────────────────────────────────── */
-function SectionTitle({ kicker, title, hint }: { kicker: string; title: string; hint?: string }) {
+function SectionHeader({ kicker, title, hint, right }: {
+  kicker: string; title: string; hint?: string; right?: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-400">
-        <span className="text-cyan-500/60">&gt;</span> {kicker}
-      </p>
-      <h2 className="text-base font-bold text-slate-100 sm:text-lg">{title}</h2>
-      {hint && <p className="text-[11px] text-slate-500">{hint}</p>}
+    <div className="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{kicker}</p>
+        <h2 className="mt-1 text-base font-semibold text-slate-100">{title}</h2>
+        {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+      </div>
+      {right}
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PRIMITIVE: Status dot
-   ───────────────────────────────────────────────────────────── */
+/** Flat status dot — no pulse, no glow. */
 function StatusDot({ status }: { status: 'loading' | 'online' | 'error' }) {
-  const tone = status === 'online' ? 'bg-emerald-400' : status === 'loading' ? 'bg-amber-300' : 'bg-rose-400';
-  return (
-    <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
-      <span className={`absolute inline-flex h-full w-full ${status === 'loading' ? 'animate-ping' : ''} rounded-full opacity-40 ${tone}`} />
-      <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${tone}`} />
-    </span>
-  );
+  const tone = status === 'online' ? 'bg-emerald-500' : status === 'loading' ? 'bg-amber-500' : 'bg-rose-500';
+  return <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${tone}`} aria-hidden="true" />;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PRIMITIVE: Severity pill
-   ───────────────────────────────────────────────────────────── */
 function SeverityPill({ severity }: { severity: string }) {
   const s = severity.toLowerCase();
   const tone = s === 'critical'
-    ? 'border-rose-500/50 bg-rose-500/10 text-rose-300'
+    ? 'border-rose-900 bg-rose-950/60 text-rose-300'
     : s === 'high'
-      ? 'border-orange-500/50 bg-orange-500/10 text-orange-300'
+      ? 'border-orange-900 bg-orange-950/60 text-orange-300'
       : s === 'medium' || s === 'warning'
-        ? 'border-amber-500/50 bg-amber-500/10 text-amber-300'
+        ? 'border-amber-900 bg-amber-950/60 text-amber-300'
         : s === 'clear'
-          ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-          : 'border-cyan-500/50 bg-cyan-500/10 text-cyan-300';
+          ? 'border-emerald-900 bg-emerald-950/60 text-emerald-300'
+          : 'border-slate-700 bg-slate-800/60 text-slate-300';
   return (
-    <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${tone}`}>
+    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${tone}`}>
       {severityLabel(severity)}
     </span>
   );
 }
 
+function StatusPill({ status }: { status: string }) {
+  const s = status.toLowerCase();
+  const tone = s === 'cleared' || s === 'resolved' || s === 'closed'
+    ? 'border-emerald-900 bg-emerald-950/60 text-emerald-300'
+    : s === 'open' || s === 'attention'
+      ? 'border-rose-900 bg-rose-950/60 text-rose-300'
+      : 'border-slate-700 bg-slate-800/60 text-slate-400';
+  return (
+    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${tone}`}>
+      {status}
+    </span>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────
-   HERO: Big overall health orb
+   HEALTH GAUGE (flat ring, no glow)
    ───────────────────────────────────────────────────────────── */
-function HealthOrb({ score, label, tone }: { score: number | null; label: string; tone: 'emerald' | 'amber' | 'rose' | 'slate' }) {
-  const color = {
-    emerald: { ring: 'stroke-emerald-400', text: 'text-emerald-400', glow: 'shadow-[0_0_40px_-5px_rgba(52,211,153,0.6)]', bg: 'from-emerald-500/20' },
-    amber:   { ring: 'stroke-amber-400',   text: 'text-amber-400',   glow: 'shadow-[0_0_40px_-5px_rgba(251,191,36,0.6)]', bg: 'from-amber-500/20' },
-    rose:    { ring: 'stroke-rose-400',    text: 'text-rose-400',    glow: 'shadow-[0_0_40px_-5px_rgba(244,63,94,0.6)]',  bg: 'from-rose-500/20' },
-    slate:   { ring: 'stroke-slate-500',   text: 'text-slate-400',   glow: '', bg: 'from-slate-500/10' },
+function HealthGauge({ score, tone }: { score: number | null; tone: 'emerald' | 'amber' | 'rose' | 'slate' }) {
+  const stroke = {
+    emerald: 'stroke-emerald-500',
+    amber:   'stroke-amber-500',
+    rose:    'stroke-rose-500',
+    slate:   'stroke-slate-700',
   }[tone];
 
-  const pct = score ?? 0;
-  const radius = 44;
+  const text = {
+    emerald: 'text-emerald-400',
+    amber:   'text-amber-400',
+    rose:    'text-rose-400',
+    slate:   'text-slate-500',
+  }[tone];
+
+  const radius = 42;
   const circumference = 2 * Math.PI * radius;
+  const pct = score ?? 0;
   const dash = (pct / 100) * circumference;
 
   return (
-    <div className={`relative grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br ${color.bg} to-transparent ${color.glow}`}>
+    <div className="relative grid h-24 w-24 shrink-0 place-items-center">
       <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r={radius} className="fill-none stroke-slate-800" strokeWidth="6" />
         {score !== null && (
           <circle
             cx="50" cy="50" r={radius}
-            className={`fill-none ${color.ring} transition-all duration-1000`}
-            strokeWidth="6" strokeLinecap="round"
+            className={`fill-none ${stroke}`}
+            strokeWidth="6" strokeLinecap="butt"
             strokeDasharray={`${dash} ${circumference}`}
           />
         )}
       </svg>
       <div className="relative flex flex-col items-center">
-        <Shield className={`h-4 w-4 ${color.text}`} />
-        <span className={`font-mono text-2xl font-black leading-none ${color.text}`}>{score ?? '—'}</span>
-        <span className="mt-0.5 font-mono text-[8px] uppercase tracking-widest text-slate-500">{label}</span>
+        <span className={`font-mono text-2xl font-bold leading-none ${text}`}>{score ?? '—'}</span>
+        <span className="mt-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">/ 100</span>
       </div>
     </div>
   );
@@ -293,46 +275,44 @@ export function SecurityCenterPage() {
     ? Math.max(0, Math.round((data.summary.online / 6) * 70 + Math.max(0, 30 - Math.min(30, riskyFindings * 3))))
     : null;
 
-  // Simple tone + label for students
-  const orbTone: 'emerald' | 'amber' | 'rose' | 'slate' =
+  const tone: 'emerald' | 'amber' | 'rose' | 'slate' =
     postureScore === null ? 'slate'
     : postureScore >= 85 ? 'emerald'
     : postureScore >= 65 ? 'amber'
     : 'rose';
 
-  const plainStatus =
-    postureScore === null ? 'Checking…'
-    : postureScore >= 85 ? 'Looking Good'
-    : postureScore >= 65 ? 'Some Issues'
-    : 'Needs Attention';
+  const statusLabel =
+    postureScore === null ? 'Checking sources'
+    : postureScore >= 85 ? 'Operational'
+    : postureScore >= 65 ? 'Degraded'
+    : 'At risk';
 
-  const bannerTone = {
-    emerald: { text: 'text-emerald-400', bg: 'bg-emerald-500/5', border: 'border-emerald-500/30' },
-    amber:   { text: 'text-amber-400',   bg: 'bg-amber-500/5',   border: 'border-amber-500/30'   },
-    rose:    { text: 'text-rose-400',    bg: 'bg-rose-500/5',    border: 'border-rose-500/30'    },
-    slate:   { text: 'text-slate-400',   bg: 'bg-slate-500/5',   border: 'border-slate-500/30'   },
-  }[orbTone];
+  const statusTone =
+    tone === 'emerald' ? 'text-emerald-400'
+    : tone === 'amber' ? 'text-amber-400'
+    : tone === 'rose' ? 'text-rose-400'
+    : 'text-slate-400';
 
   const onlineCount = data.summary.online;
   const offlineCount = data.summary.offline;
 
   /* ── Readiness ───────────────────────────────────────────── */
   const readiness = [
-    { label: 'Detection Tools', detail: 'Email · Phishing · Malware', ready: ['email', 'phishing', 'malware'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 3 },
-    { label: 'Infrastructure',  detail: 'Network · Vulnerabilities',   ready: ['network', 'vulnerability'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 2 },
-    { label: 'Threat Intel',    detail: 'External CISA feed',          ready: data.sources.intel.status === 'online' ? 1 : 0, total: 1 },
+    { label: 'Detection tools',  detail: 'Email, phishing, malware',   ready: ['email', 'phishing', 'malware'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 3 },
+    { label: 'Infrastructure',   detail: 'Network, vulnerabilities',   ready: ['network', 'vulnerability'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 2 },
+    { label: 'Threat intel',     detail: 'External CISA feed',          ready: data.sources.intel.status === 'online' ? 1 : 0, total: 1 },
   ];
 
   /* ── Report data ─────────────────────────────────────────── */
   const reportData: SecurityReportData = {
     sources, findings,
     metrics: [
-      { label: 'Overall health', value: postureScore === null ? 'Unavailable' : `${postureScore}/100 (${plainStatus})` },
-      { label: 'Sources online', value: `${data.summary.online}/6` },
+      { label: 'Overall health',           value: postureScore === null ? 'Unavailable' : `${postureScore}/100 (${statusLabel})` },
+      { label: 'Sources online',           value: `${data.summary.online}/6` },
       { label: 'Evidence records exposed', value: evidenceVolume.toLocaleString() },
-      { label: 'Attention findings', value: riskyFindings.toLocaleString() },
-      { label: 'Network monitoring', value: data.network ? (data.network.monitoring ? 'Active' : 'Stopped') : 'Unavailable' },
-      { label: 'Open vulnerabilities', value: data.vulnerability ? String(data.vulnerability.counts.open) : 'Unavailable' },
+      { label: 'Attention findings',       value: riskyFindings.toLocaleString() },
+      { label: 'Network monitoring',       value: data.network ? (data.network.monitoring ? 'Active' : 'Stopped') : 'Unavailable' },
+      { label: 'Open vulnerabilities',     value: data.vulnerability ? String(data.vulnerability.counts.open) : 'Unavailable' },
     ],
     lastSync: data.lastSync,
   };
@@ -350,27 +330,18 @@ export function SecurityCenterPage() {
   return (
     <div className="relative mx-auto min-w-0 max-w-[1400px] pb-12 font-sans text-slate-100">
 
-      {/* Cyber background layers */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(34,211,238,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(34,211,238,0.05)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,black_60%,transparent_100%)]" />
-        <div className="absolute -top-40 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[120px]" />
-        <div className="absolute top-1/3 right-0 h-[300px] w-[400px] rounded-full bg-emerald-500/5 blur-[100px]" />
-      </div>
+      {/* Subtle grid backdrop — flat, no glow */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgba(148,163,184,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.04)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
       {/* ═══════════════ HEADER ═══════════════ */}
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative grid h-12 w-12 place-items-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 shadow-[0_0_20px_-5px_rgba(34,211,238,0.6)]">
-            <ShieldCheck className="h-6 w-6 text-cyan-400" />
-            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+      <header className="flex flex-col gap-4 pb-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-md border border-slate-800 bg-slate-900">
+            <ShieldCheck className="h-5 w-5 text-cyan-500" />
           </div>
           <div>
-            <p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400">
-              <span className="text-cyan-500/60">&gt;</span> Security Operations
-            </p>
-            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              Security Center
-            </h1>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Security Operations</p>
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">Security Center</h1>
           </div>
         </div>
 
@@ -380,7 +351,7 @@ export function SecurityCenterPage() {
             onClick={() => void refresh()}
             disabled={data.isRefreshing}
             aria-busy={data.isRefreshing}
-            className="group inline-flex h-10 items-center gap-2 rounded-md border border-cyan-500/40 bg-slate-950/80 px-4 font-mono text-xs font-bold uppercase tracking-wider text-cyan-300 transition hover:border-cyan-400 hover:bg-cyan-500/10 hover:shadow-[0_0_15px_-3px_rgba(34,211,238,0.6)] disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-800 bg-slate-900 px-3.5 text-xs font-medium text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white disabled:cursor-wait disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${data.isRefreshing ? 'animate-spin' : ''}`} />
             {data.isRefreshing ? 'Syncing' : 'Refresh'}
@@ -388,86 +359,73 @@ export function SecurityCenterPage() {
           <button
             type="button"
             onClick={() => setReportModalOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-cyan-500 px-4 font-mono text-xs font-bold uppercase tracking-wider text-slate-950 transition hover:bg-cyan-400 hover:shadow-[0_0_20px_-3px_rgba(34,211,238,0.9)]"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-cyan-800 bg-cyan-950/60 px-3.5 text-xs font-medium text-cyan-200 transition hover:border-cyan-700 hover:bg-cyan-900/60 hover:text-cyan-100"
           >
             <FileText className="h-3.5 w-3.5" />
-            Build Report
+            Build report
           </button>
         </div>
       </header>
 
-      {/* ═══════════════ HERO: Health + Stats ═══════════════ */}
-      <CyberCard className="mt-6 p-5 sm:p-6" glow={orbTone === 'slate' ? 'cyan' : orbTone}>
-        <div className="grid gap-6 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+      {/* ═══════════════ OVERVIEW ═══════════════ */}
+      <Panel className="overflow-hidden">
+        <div className="grid gap-0 lg:grid-cols-[280px_1fr]">
 
-          {/* Health orb */}
-          <div className="flex items-center gap-5">
-            <HealthOrb score={postureScore} label="Health" tone={orbTone} />
-            <div className="flex flex-col gap-1">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-500">System Status</p>
-              <p className={`text-2xl font-black tracking-tight ${bannerTone.text}`}>{plainStatus}</p>
-              <p className="max-w-xs text-[11px] leading-relaxed text-slate-400">
-                Based on <span className="font-mono text-slate-200">{onlineCount}/6</span> active data sources and{' '}
-                <span className="font-mono text-slate-200">{riskyFindings}</span> open risk items.
+          {/* Health summary */}
+          <div className="flex items-center gap-4 border-b border-slate-800 p-5 lg:border-b-0 lg:border-r">
+            <HealthGauge score={postureScore} tone={tone} />
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-slate-500">System status</p>
+              <p className={`text-lg font-semibold ${statusTone}`}>{statusLabel}</p>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                {onlineCount}/6 sources online · {riskyFindings} open risk{riskyFindings === 1 ? '' : 's'}
               </p>
             </div>
           </div>
 
-          {/* Stat blocks */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:border-l lg:border-cyan-500/15 lg:pl-6">
-            <StatBlock
-              icon={<Activity className="h-4 w-4" />}
-              label="Sources Online"
+          {/* Metrics grid */}
+          <div className="grid grid-cols-2 divide-slate-800 sm:grid-cols-4 sm:divide-x">
+            <MetricCell
+              icon={<Activity className="h-3.5 w-3.5" />}
+              label="Sources online"
               value={`${onlineCount}/6`}
               sub={offlineCount > 0 ? `${offlineCount} offline` : 'All reachable'}
               tone={offlineCount === 0 ? 'emerald' : offlineCount <= 2 ? 'amber' : 'rose'}
             />
-            <StatBlock
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label="Open Risks"
+            <MetricCell
+              icon={<AlertTriangle className="h-3.5 w-3.5" />}
+              label="Open risks"
               value={String(riskyFindings)}
               sub={riskyFindings === 0 ? 'Nothing urgent' : 'Needs review'}
               tone={riskyFindings === 0 ? 'emerald' : riskyFindings < 5 ? 'amber' : 'rose'}
             />
-            <StatBlock
-              icon={<BarChart3 className="h-4 w-4" />}
-              label="Evidence Logs"
+            <MetricCell
+              icon={<BarChart3 className="h-3.5 w-3.5" />}
+              label="Evidence logs"
               value={evidenceVolume.toLocaleString()}
               sub="Recorded events"
-              tone="cyan"
+              tone="slate"
             />
-            <StatBlock
-              icon={<RefreshCw className="h-4 w-4" />}
-              label="Last Sync"
-              value={data.lastSync ? relativeTime(data.lastSync) : '…'}
+            <MetricCell
+              icon={<RefreshCw className="h-3.5 w-3.5" />}
+              label="Last sync"
+              value={data.lastSync ? relativeTime(data.lastSync) : '—'}
               sub={data.lastSync ? dateLabel(data.lastSync) : 'Checking'}
-              tone="cyan"
+              tone="slate"
             />
-          </div>
-
-          {/* Verified badge */}
-          <div className={`hidden flex-col items-end gap-1 lg:flex ${bannerTone.text}`}>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest">Verified</span>
-            </div>
-            <p className="max-w-[160px] text-right text-[10px] leading-relaxed text-slate-500">
-              All metrics cryptographically signed.
-            </p>
           </div>
         </div>
-      </CyberCard>
+      </Panel>
 
       {/* ═══════════════ DATA SOURCES ═══════════════ */}
-      <section className="mt-6">
+      <section className="mt-5">
         <div className="mb-3 flex items-end justify-between">
-          <SectionTitle
-            kicker="Live Data Sources"
-            title="Connected Security Tools"
-            hint="Each tile shows one tool feeding data into the dashboard."
-          />
+          <div>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Live data sources</p>
+            <h2 className="mt-1 text-base font-semibold text-slate-100">Connected security tools</h2>
+          </div>
           <span className="hidden font-mono text-[10px] text-slate-500 sm:block">
-            [{onlineCount} ONLINE / {offlineCount} OFFLINE]
+            {onlineCount} online · {offlineCount} offline
           </span>
         </div>
 
@@ -476,20 +434,19 @@ export function SecurityCenterPage() {
             const meta = sourceMeta[source.key as SourceKey];
             const online = source.status === 'online';
             const loading = source.status === 'loading';
-            const tone: 'emerald' | 'amber' | 'rose' = online ? 'emerald' : loading ? 'amber' : 'rose';
             return (
-              <CyberCard key={source.key} glow={tone} className="group p-4 transition hover:bg-slate-950/90">
+              <Panel key={source.key} className="p-4 transition hover:border-slate-700">
                 <div className="flex items-start justify-between gap-3">
-                  <div className={`grid h-10 w-10 place-items-center rounded-md border ${
-                    online ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
-                    : loading ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
-                    : 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                  <div className={`grid h-9 w-9 place-items-center rounded-md border ${
+                    online ? 'border-emerald-900 bg-emerald-950/50 text-emerald-400'
+                    : loading ? 'border-amber-900 bg-amber-950/50 text-amber-400'
+                    : 'border-rose-900 bg-rose-950/50 text-rose-400'
                   }`}>
                     {meta.icon}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <StatusDot status={source.status as 'loading' | 'online' | 'error'} />
-                    <span className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
+                    <span className={`font-mono text-[10px] font-medium uppercase tracking-wider ${
                       online ? 'text-emerald-400' : loading ? 'text-amber-400' : 'text-rose-400'
                     }`}>
                       {online ? 'Online' : loading ? 'Loading' : 'Offline'}
@@ -497,43 +454,43 @@ export function SecurityCenterPage() {
                   </div>
                 </div>
 
-                <div className="mt-3">
-                  <p className="text-sm font-bold text-slate-100">{meta.label}</p>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500/80">[{meta.code}]</p>
+                <div className="mt-3 flex items-baseline justify-between gap-2">
+                  <p className="truncate text-sm font-medium text-slate-100">{meta.label}</p>
+                  <span className="shrink-0 font-mono text-[10px] text-slate-500">{meta.code}</span>
                 </div>
 
-                <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
+                <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
                   {meta.provenance}
                 </p>
 
-                <div className="mt-3 flex items-end justify-between border-t border-cyan-500/10 pt-3">
+                <div className="mt-3 flex items-end justify-between border-t border-slate-800 pt-3">
                   <div>
                     <p className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Records</p>
-                    <p className="font-mono text-lg font-bold text-slate-100">
+                    <p className="font-mono text-sm font-semibold text-slate-200">
                       {source.recordCount === null ? '—' : source.recordCount.toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Last Sync</p>
-                    <p className="font-mono text-[10px] text-slate-300">
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Last sync</p>
+                    <p className="font-mono text-[11px] text-slate-400">
                       {loading ? 'Connecting…' : relativeTime(source.updatedAt)}
                     </p>
                   </div>
                 </div>
-              </CyberCard>
+              </Panel>
             );
           })}
         </div>
       </section>
 
       {/* ═══════════════ FINDINGS ═══════════════ */}
-      <CyberCard className="mt-6" glow="cyan">
-        <div className="flex flex-col gap-4 border-b border-cyan-500/20 p-5 lg:flex-row lg:items-center lg:justify-between">
-          <SectionTitle
-            kicker="Recent Findings"
-            title="Security Events"
-            hint="Sorted by severity. Use the filters to narrow the list."
-          />
+      <Panel className="mt-5">
+        <div className="flex flex-col gap-4 border-b border-slate-800 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Recent findings</p>
+            <h2 className="mt-1 text-base font-semibold text-slate-100">Security events</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Sorted by severity. Use filters to narrow the list.</p>
+          </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[220px_150px_140px_140px]">
             <div className="relative">
@@ -542,7 +499,7 @@ export function SecurityCenterPage() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search events…"
-                className="h-9 w-full rounded-md border border-cyan-500/20 bg-slate-950 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                className="h-9 w-full rounded-md border border-slate-800 bg-slate-950 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 outline-none transition focus:border-slate-700 focus:ring-1 focus:ring-slate-700"
               />
             </div>
             {[
@@ -554,7 +511,7 @@ export function SecurityCenterPage() {
                 <select
                   value={filter.value}
                   onChange={e => filter.set(e.target.value)}
-                  className="h-9 w-full appearance-none rounded-md border border-cyan-500/20 bg-slate-950 px-3 pr-8 text-xs text-slate-300 outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                  className="h-9 w-full appearance-none rounded-md border border-slate-800 bg-slate-950 px-3 pr-8 text-xs text-slate-300 outline-none transition focus:border-slate-700 focus:ring-1 focus:ring-slate-700"
                 >
                   <option value="all">{filter.label}</option>
                   {filter.values.map(v => <option key={v} value={v}>{v}</option>)}
@@ -565,68 +522,62 @@ export function SecurityCenterPage() {
           </div>
         </div>
 
-        {/* Body */}
+        {/* Table body */}
         {data.summary.loading === 6 ? (
           <div className="grid min-h-56 place-items-center p-8 text-center">
             <div>
-              <RefreshCw className="mx-auto h-6 w-6 animate-spin text-cyan-400" />
-              <p className="mt-3 text-sm font-semibold text-slate-200">Loading security data…</p>
+              <RefreshCw className="mx-auto h-5 w-5 animate-spin text-slate-500" />
+              <p className="mt-3 text-sm font-medium text-slate-300">Loading security data</p>
               <p className="mt-1 text-xs text-slate-500">Contacting all connected sources.</p>
             </div>
           </div>
         ) : paginatedFindings.length ? (
-          <ul className="divide-y divide-cyan-500/10">
-            {paginatedFindings.map(item => {
-              const sev = item.severity.toLowerCase();
-              const bar =
-                sev === 'critical' ? 'bg-rose-500'
-                : sev === 'high' ? 'bg-orange-500'
-                : sev === 'medium' || sev === 'warning' ? 'bg-amber-400'
-                : sev === 'clear' ? 'bg-emerald-400'
-                : 'bg-cyan-400';
-              return (
-                <li key={item.id} className="group relative flex items-stretch gap-4 px-5 py-3.5 transition hover:bg-cyan-500/5">
-                  {/* Severity bar */}
-                  <span className={`my-0.5 w-1 shrink-0 rounded-full ${bar} shadow-[0_0_10px_currentColor]`} />
-
-                  {/* Main info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950/60 font-mono text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                  <th className="px-5 py-2.5 font-medium">Severity</th>
+                  <th className="px-5 py-2.5 font-medium">Source</th>
+                  <th className="px-5 py-2.5 font-medium">Event</th>
+                  <th className="px-5 py-2.5 font-medium">Status</th>
+                  <th className="px-5 py-2.5 font-medium">Observed</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Record ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/70">
+                {paginatedFindings.map(item => (
+                  <tr key={item.id} className="transition hover:bg-slate-800/30">
+                    <td className="whitespace-nowrap px-5 py-3">
                       <SeverityPill severity={item.severity} />
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-cyan-400/80">
-                        {item.source}
-                      </span>
-                      <span className="hidden h-1 w-1 rounded-full bg-slate-600 sm:block" />
-                      <span className="hidden font-mono text-[10px] text-slate-500 sm:block">
-                        {relativeTime(item.timestamp)}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 truncate text-sm font-semibold text-slate-100" title={item.title}>
-                      {item.title}
-                    </p>
-                    <p className="mt-0.5 truncate text-[11px] text-slate-400" title={item.detail || undefined}>
-                      {item.detail || 'No additional details recorded'}
-                    </p>
-                  </div>
-
-                  {/* Meta */}
-                  <div className="hidden flex-col items-end justify-center gap-1 sm:flex">
-                    <span className="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-300">
-                      {item.status}
-                    </span>
-                    <span className="font-mono text-[10px] text-slate-500" title={item.id}>
-                      #{item.id.slice(0, 12)}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3 font-mono text-[11px] text-slate-400">
+                      {item.source}
+                    </td>
+                    <td className="max-w-md px-5 py-3">
+                      <p className="truncate font-medium text-slate-200" title={item.title}>{item.title}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-slate-500" title={item.detail || undefined}>
+                        {item.detail || 'No additional details recorded'}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3">
+                      <StatusPill status={item.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-3 font-mono text-[11px] text-slate-400" title={dateLabel(item.timestamp, true)}>
+                      {relativeTime(item.timestamp)}
+                    </td>
+                    <td className="max-w-[140px] truncate whitespace-nowrap px-5 py-3 text-right font-mono text-[11px] text-slate-500" title={item.id}>
+                      {item.id}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div className="grid min-h-56 place-items-center p-8 text-center">
             <div>
-              {findings.length ? <SlidersHorizontal className="mx-auto h-6 w-6 text-slate-500" /> : <Archive className="mx-auto h-6 w-6 text-slate-500" />}
-              <p className="mt-3 text-sm font-semibold text-slate-200">
+              {findings.length ? <SlidersHorizontal className="mx-auto h-5 w-5 text-slate-600" /> : <Archive className="mx-auto h-5 w-5 text-slate-600" />}
+              <p className="mt-3 text-sm font-medium text-slate-300">
                 {findings.length ? 'No events match your filters' : 'No events recorded yet'}
               </p>
               <p className="mt-1 text-xs text-slate-500">
@@ -637,123 +588,117 @@ export function SecurityCenterPage() {
         )}
 
         {/* Pagination */}
-        <div className="flex flex-col gap-3 border-t border-cyan-500/20 bg-slate-950/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-[11px] text-slate-400">
-            Showing <span className="text-slate-200">{filteredFindings.length ? (currentPage - 1) * pageSize + 1 : 0}</span>
-            –<span className="text-slate-200">{Math.min(currentPage * pageSize, filteredFindings.length)}</span>
-            {' '}of <span className="text-cyan-400">{filteredFindings.length}</span>
+        <div className="flex flex-col gap-3 border-t border-slate-800 bg-slate-950/40 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-mono text-[11px] text-slate-500">
+            Showing <span className="text-slate-300">{filteredFindings.length ? (currentPage - 1) * pageSize + 1 : 0}</span>
+            –<span className="text-slate-300">{Math.min(currentPage * pageSize, filteredFindings.length)}</span>
+            {' '}of <span className="text-slate-300">{filteredFindings.length}</span>
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+            <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500">
               <span>Rows:</span>
               <select
                 value={pageSize}
                 onChange={e => setPageSize(Number(e.target.value))}
-                className="h-7 rounded border border-cyan-500/20 bg-slate-950 px-2 font-mono text-[11px] text-slate-200 outline-none focus:border-cyan-400"
+                className="h-7 rounded border border-slate-800 bg-slate-950 px-2 font-mono text-[11px] text-slate-300 outline-none focus:border-slate-700"
               >
                 {[5, 10, 15, 20, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
 
             <div className="flex items-center gap-1">
-              <PageBtn onClick={() => setCurrentPage(1)}               disabled={currentPage === 1}          title="First"><ChevronsLeft className="h-3.5 w-3.5" /></PageBtn>
-              <PageBtn onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}   title="Prev"><ChevronLeft className="h-3.5 w-3.5" /></PageBtn>
-              <span className="px-2 font-mono text-[11px] text-slate-300">
-                <span className="text-white">{currentPage}</span> / <span className="text-slate-500">{totalPages}</span>
+              <PageBtn onClick={() => setCurrentPage(1)}                       disabled={currentPage === 1}          title="First"><ChevronsLeft className="h-3.5 w-3.5" /></PageBtn>
+              <PageBtn onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}          title="Previous"><ChevronLeft className="h-3.5 w-3.5" /></PageBtn>
+              <span className="px-2 font-mono text-[11px] text-slate-400">
+                <span className="text-slate-100">{currentPage}</span> / <span className="text-slate-500">{totalPages}</span>
               </span>
               <PageBtn onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} title="Next"><ChevronRight className="h-3.5 w-3.5" /></PageBtn>
-              <PageBtn onClick={() => setCurrentPage(totalPages)}      disabled={currentPage === totalPages} title="Last"><ChevronsRight className="h-3.5 w-3.5" /></PageBtn>
+              <PageBtn onClick={() => setCurrentPage(totalPages)}              disabled={currentPage === totalPages} title="Last"><ChevronsRight className="h-3.5 w-3.5" /></PageBtn>
             </div>
           </div>
         </div>
-      </CyberCard>
+      </Panel>
 
-      {/* ═══════════════ COVERAGE + EXPORTS ═══════════════ */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+      {/* ═══════════════ COVERAGE + REPORTS ═══════════════ */}
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
 
-        <CyberCard glow="amber">
-          <div className="border-b border-cyan-500/20 p-5">
-            <SectionTitle
-              kicker="Coverage Check"
-              title="Tool Readiness"
-              hint="Shows how many tools in each group are currently active."
-            />
-          </div>
-          <ul className="divide-y divide-cyan-500/10">
+        <Panel>
+          <SectionHeader kicker="Coverage check" title="Tool readiness" hint="Tools active in each functional group." />
+          <ul className="divide-y divide-slate-800">
             {readiness.map(item => {
               const pct = Math.round((item.ready / item.total) * 100);
-              const tone = pct === 100 ? 'emerald' : pct > 0 ? 'amber' : 'rose';
-              const color = tone === 'emerald' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : 'bg-rose-500';
+              const bar = pct === 100 ? 'bg-emerald-500' : pct > 0 ? 'bg-amber-500' : 'bg-rose-500';
               return (
                 <li key={item.label} className="grid gap-3 px-5 py-3.5 sm:grid-cols-[minmax(160px,.9fr)_1fr_60px] sm:items-center">
                   <div>
-                    <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+                    <p className="text-sm font-medium text-slate-200">{item.label}</p>
                     <p className="text-[11px] text-slate-500">{item.detail}</p>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                    <div className={`h-full ${color} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                    <div className={`h-full ${bar}`} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="font-mono text-xs font-bold text-slate-200 sm:text-right">{item.ready}/{item.total}</p>
+                  <p className="font-mono text-xs font-medium text-slate-300 sm:text-right">{item.ready}/{item.total}</p>
                 </li>
               );
             })}
           </ul>
-        </CyberCard>
+        </Panel>
 
-        <CyberCard glow="cyan">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 p-5">
-            <SectionTitle kicker="Downloads" title="Report History" />
-            <FileCheck2 className="h-5 w-5 text-cyan-400" />
-          </div>
+        <Panel>
+          <SectionHeader
+            kicker="Downloads"
+            title="Report history"
+            right={<FileCheck2 className="h-4 w-4 text-slate-500" />}
+          />
           {artifacts.length ? (
-            <ul className="divide-y divide-cyan-500/10">
+            <ul className="divide-y divide-slate-800">
               {artifacts.map((artifact, i) => (
                 <li key={`${artifact.generatedAt}-${i}`} className="flex items-center gap-3 px-5 py-3">
-                  <div className="grid h-8 w-8 place-items-center rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+                  <div className="grid h-8 w-8 place-items-center rounded border border-slate-800 bg-slate-950 text-slate-400">
                     <Download className="h-3.5 w-3.5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-slate-200">{artifact.name}</p>
+                    <p className="truncate text-xs font-medium text-slate-200">{artifact.name}</p>
                     <p className="font-mono text-[10px] text-slate-500">{artifact.format} · {dateLabel(artifact.generatedAt, true)}</p>
                   </div>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 </li>
               ))}
             </ul>
           ) : (
             <div className="p-5">
-              <div className="flex items-start gap-3 rounded border border-cyan-500/15 bg-cyan-500/5 p-3">
-                <Info className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
-                <p className="text-xs leading-relaxed text-slate-300">
-                  No reports generated yet. Click below to export a PDF, CSV, or JSON summary of your findings.
+              <div className="flex items-start gap-3 rounded border border-slate-800 bg-slate-950/60 p-3">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                <p className="text-xs leading-relaxed text-slate-400">
+                  No reports generated yet. Export a PDF, CSV, or JSON summary of your findings.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setReportModalOpen(true)}
-                className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-cyan-400 transition hover:text-cyan-300"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-400 transition hover:text-cyan-300"
               >
-                Open Report Builder <ChevronRight className="h-3.5 w-3.5" />
+                Open report builder <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
-        </CyberCard>
+        </Panel>
       </div>
 
       {/* ═══════════════ FOOTER ═══════════════ */}
-      <footer className="mt-8 flex flex-col gap-2 border-t border-cyan-500/15 pt-4 font-mono text-[10px] uppercase tracking-widest text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="mt-8 flex flex-col gap-2 border-t border-slate-800 pt-4 font-mono text-[10px] uppercase tracking-widest text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <span className="flex items-center gap-2">
-          <Database className="h-3.5 w-3.5 text-cyan-400" />
+          <Database className="h-3.5 w-3.5" />
           CyberShield · Unified SOC Telemetry
         </span>
         <span className="flex items-center gap-1.5">
           {data.summary.offline ? (
-            <><WifiOff className="h-3.5 w-3.5 text-amber-400" /><span className="text-amber-400">Partial feed</span></>
+            <><WifiOff className="h-3.5 w-3.5 text-amber-500" /><span className="text-amber-500">Partial feed</span></>
           ) : data.summary.loading ? (
-            <><RefreshCw className="h-3.5 w-3.5 animate-spin text-cyan-400" /><span className="text-cyan-400">Syncing…</span></>
+            <><RefreshCw className="h-3.5 w-3.5 animate-spin text-slate-500" /><span className="text-slate-500">Syncing</span></>
           ) : (
-            <><Wifi className="h-3.5 w-3.5 text-emerald-400" /><span className="text-emerald-400">All feeds online</span></>
+            <><Wifi className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-500">All feeds online</span></>
           )}
         </span>
       </footer>
@@ -769,24 +714,28 @@ export function SecurityCenterPage() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SMALL SHARED COMPONENTS
+   SMALL COMPONENTS
    ───────────────────────────────────────────────────────────── */
-function StatBlock({
+function MetricCell({
   icon, label, value, sub, tone,
-}: { icon: React.ReactNode; label: string; value: string; sub: string; tone: 'cyan' | 'emerald' | 'amber' | 'rose' }) {
+}: {
+  icon: React.ReactNode; label: string; value: string; sub: string;
+  tone: 'emerald' | 'amber' | 'rose' | 'slate';
+}) {
   const color = {
-    cyan:    'text-cyan-400 border-cyan-500/30 bg-cyan-500/5',
-    emerald: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/5',
-    amber:   'text-amber-400 border-amber-500/30 bg-amber-500/5',
-    rose:    'text-rose-400 border-rose-500/30 bg-rose-500/5',
+    emerald: 'text-emerald-400',
+    amber:   'text-amber-400',
+    rose:    'text-rose-400',
+    slate:   'text-slate-300',
   }[tone];
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <span className={`grid h-5 w-5 place-items-center rounded border ${color}`}>{icon}</span>
-        <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
+    <div className="flex flex-col gap-1.5 px-5 py-4">
+      <div className="flex items-center gap-1.5 text-slate-500">
+        {icon}
+        <p className="font-mono text-[10px] font-medium uppercase tracking-wider">{label}</p>
       </div>
-      <p className="font-mono text-xl font-bold text-slate-100">{value}</p>
+      <p className={`font-mono text-lg font-semibold ${color}`}>{value}</p>
       <p className="text-[10px] text-slate-500">{sub}</p>
     </div>
   );
@@ -801,7 +750,7 @@ function PageBtn({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="grid h-7 w-7 place-items-center rounded border border-cyan-500/20 bg-slate-950 text-slate-300 transition hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-cyan-500/20 disabled:hover:bg-slate-950 disabled:hover:text-slate-300"
+      className="grid h-7 w-7 place-items-center rounded border border-slate-800 bg-slate-950 text-slate-400 transition hover:border-slate-700 hover:bg-slate-800 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-800 disabled:hover:bg-slate-950 disabled:hover:text-slate-400"
     >
       {children}
     </button>
