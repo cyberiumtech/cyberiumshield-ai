@@ -74,19 +74,41 @@ async function screenshot(name, fullPage = false) {
 }
 
 async function clickText(text, selector = 'button') {
-  return evaluate(`(() => {
+  const target = await evaluate(`(() => {
     const el = [...document.querySelectorAll(${JSON.stringify(selector)})]
       .find(node => node.textContent.trim().includes(${JSON.stringify(text)}));
     if (!el) return false;
-    el.click();
-    return true;
+    el.scrollIntoView({ block: 'center' });
+    const rect = el.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, text: el.textContent.trim() };
   })()`);
+  if (!target) return false;
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: target.x, y: target.y });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: target.x, y: target.y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: target.x, y: target.y, button: 'left', clickCount: 1 });
+  return target;
 }
 
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Log.enable');
 await send('Network.enable');
+await send('Page.navigate', { url: 'http://127.0.0.1:5173/auth/login' });
+await sleep(700);
+await evaluate(`(() => {
+  localStorage.setItem('cybershield_token', 'design-evaluation-token');
+  localStorage.setItem('cybershield_user', JSON.stringify({
+    id: 'design-evaluator',
+    name: 'Design Evaluator',
+    email: 'evaluator@localhost',
+    email_verified_at: new Date().toISOString(),
+    role: 'security_analyst',
+    organization_id: 'local',
+    organization_name: 'Local Evaluation',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }));
+})()`);
 await send('Page.navigate', { url: pageUrl });
 await waitForText('Threat Intelligence');
 await evaluate('document.fonts.ready');
@@ -141,7 +163,14 @@ await send('Emulation.setDeviceMetricsOverride', {
   screenHeight: 1000,
 });
 await evaluate('window.scrollTo(0, 0)');
-await clickText('CISA KEV catalog');
+const catalogClick = await clickText('CISA KEV catalog');
+console.log('catalogClick', JSON.stringify(catalogClick));
+await sleep(500);
+console.log('catalogState', JSON.stringify(await evaluate(`({
+  url: location.href,
+  hasCatalog: document.body.innerText.includes('CISA KEV evidence'),
+  buttons: [...document.querySelectorAll('button')].map(button => ({ text: button.textContent.trim(), current: button.getAttribute('aria-current'), rect: button.getBoundingClientRect().toJSON() })).filter(button => button.text)
+})`)));
 await waitForText('CISA KEV evidence');
 await sleep(800);
 audit.catalog = await evaluate(`({
