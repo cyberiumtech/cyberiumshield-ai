@@ -148,7 +148,46 @@ function verdictTone(verdict: IndicatorResult['verdict']) {
   if (verdict === 'medium') {
     return { ring: '#fbbf24', className: 'border-amber-400/30 bg-amber-400/10 text-amber-200' };
   }
+  if (verdict === 'inconclusive') {
+    return { ring: '#fbbf24', className: 'border-amber-400/30 bg-amber-400/10 text-amber-100' };
+  }
   return { ring: '#34d399', className: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' };
+}
+
+function coverageTone(status: IndicatorResult['coverage']['status']) {
+  if (status === 'supported') {
+    return {
+      icon: ShieldCheck,
+      className: 'border-emerald-400/25 bg-emerald-400/[.07] text-emerald-200',
+      label: 'Supported coverage',
+    };
+  }
+  if (status === 'partial') {
+    return {
+      icon: Radar,
+      className: 'border-cyan-400/25 bg-cyan-400/[.06] text-cyan-200',
+      label: 'Partial coverage',
+    };
+  }
+  if (status === 'degraded') {
+    return {
+      icon: AlertTriangle,
+      className: 'border-amber-400/25 bg-amber-400/[.07] text-amber-100',
+      label: 'Degraded coverage',
+    };
+  }
+  return {
+    icon: CircleAlert,
+    className: 'border-amber-400/30 bg-amber-400/[.09] text-amber-100',
+    label: 'Inconclusive evidence',
+  };
+}
+
+function coverageProviderTone(status: IndicatorResult['coverage']['providers'][number]['status']) {
+  if (status === 'contributed') return 'border-emerald-400/25 text-emerald-200';
+  if (status === 'no_match') return 'border-slate-600 text-slate-300';
+  if (status === 'error') return 'border-amber-400/30 text-amber-200';
+  return 'border-slate-700 text-slate-400';
 }
 
 function safeExternalUrl(value: string) {
@@ -421,6 +460,8 @@ function ServiceVisibility({
 
 function ResultWorkspace({ result }: { result: IndicatorResult }) {
   const tone = verdictTone(result.verdict);
+  const coverage = coverageTone(result.coverage.status);
+  const CoverageIcon = coverage.icon;
   const { cisaKEV, nvd, threatFox, dns, urlFeatures, mlProbability } = result.details;
   const matches = threatFox?.matches ?? [];
 
@@ -430,7 +471,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
         <div
           className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full"
           style={{ background: `conic-gradient(${tone.ring} ${result.riskScore}%, #1e293b ${result.riskScore}% 100%)` }}
-          aria-label={`Risk score ${result.riskScore} out of 100`}
+          aria-label={`Signal score ${result.riskScore} out of 100`}
         >
           <div className="flex h-[92px] w-[92px] flex-col items-center justify-center rounded-full bg-[#0F1729]">
             <span className="font-mono text-3xl font-bold text-slate-100">{result.riskScore}</span>
@@ -440,7 +481,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
         <div className="min-w-0 self-center">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${tone.className}`}>
-              {result.verdict} risk
+              {result.verdict === 'inconclusive' ? 'inconclusive verdict' : `${result.verdict} risk`}
             </span>
             <span className="border border-slate-700 bg-slate-900/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
               {result.indicatorType}
@@ -452,6 +493,47 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
           <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">Checked {formatTimestamp(result.checkedAt)}</p>
         </div>
       </header>
+
+      <section
+        className={`border-b px-4 py-4 sm:px-6 ${coverage.className}`}
+        aria-labelledby="evidence-coverage-title"
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <CoverageIcon className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 id="evidence-coverage-title" className="text-sm font-bold">
+                  {coverage.label}
+                </h3>
+                <span className="border border-current/25 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider">
+                  {result.coverage.confidence} confidence
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-wider opacity-75">
+                  {result.coverage.sourcesQueried}/{result.coverage.sourcesExpected} reputation sources completed
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 opacity-80">{result.coverage.summary}</p>
+            </div>
+          </div>
+          {result.coverage.providers.length > 0 && (
+            <ul className="flex max-w-2xl flex-wrap gap-2" aria-label="Provider contribution status">
+              {result.coverage.providers.map(provider => (
+                <li
+                  key={`${provider.category}-${provider.name}`}
+                  className={`border bg-[#0B1120]/50 px-2.5 py-1.5 ${coverageProviderTone(provider.status)}`}
+                  title={provider.detail}
+                >
+                  <span className="block text-[9px] font-bold uppercase tracking-wider">{provider.name}</span>
+                  <span className="mt-0.5 block font-mono text-[9px] uppercase opacity-75">
+                    {readableLabel(provider.status)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       {result.providerErrors.length > 0 && (
         <aside className="flex items-start gap-2.5 border-b border-amber-400/20 bg-amber-400/[.06] px-4 py-3 text-xs leading-5 text-amber-100 sm:px-6" aria-label="Partial provider warnings">
@@ -481,7 +563,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
                   </li>
                 ))}
               </ol>
-            ) : <p className="mt-3 text-sm leading-6 text-slate-500">No score-changing signals were returned for this indicator.</p>}
+            ) : <p className="mt-3 text-sm leading-6 text-slate-500">No score-changing signals were returned. Review evidence coverage before drawing a conclusion.</p>}
           </section>
           <section aria-labelledby="evidence-title">
             <h3 id="evidence-title" className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Evidence facts</h3>
@@ -566,7 +648,7 @@ function ResultWorkspace({ result }: { result: IndicatorResult }) {
         </div>
       </div>
       <footer className="flex flex-col gap-2 border-t border-slate-800 bg-[#0F1729] px-4 py-3 text-xs leading-5 text-slate-500 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <p className="max-w-3xl">This evidence-weighted score supports analyst triage; it is not a guarantee that an indicator is malicious or safe.</p>
+        <p className="max-w-3xl">The numeric score reflects only observed signals. Coverage and confidence determine whether a verdict is supported; no-match or missing evidence is never proof of safety.</p>
         <span className={`shrink-0 font-mono text-[10px] uppercase tracking-wider ${result.model.loaded ? 'text-emerald-300' : 'text-amber-300'}`}>Model {result.model.loaded ? 'loaded' : 'not loaded'} · {result.model.used ? 'used' : 'not used'}</span>
       </footer>
     </section>
