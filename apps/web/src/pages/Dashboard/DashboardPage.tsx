@@ -110,7 +110,6 @@ function SourceDot({ source, compact = false }: { source: SourceState; compact?:
   );
 }
 
-/* Severity pill — new component */
 function SeverityPill({ severity }: { severity: 'critical' | 'warning' | 'info' | 'ok' }) {
   const map = {
     critical: { label: 'Critical', cls: 'border-rose-500/40 bg-rose-500/[0.08] text-rose-400' },
@@ -264,7 +263,7 @@ function GlobalThreatGlobe() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MODULE TILE — denser, horizontal header
+   MODULE TILE
    ───────────────────────────────────────────────────────────── */
 type ModuleProps = {
   title: string;
@@ -292,7 +291,6 @@ function ModuleTile({ title, eyebrow, value, detail, route, icon: Icon, source, 
       to={route}
       className="group relative flex min-h-[170px] flex-col border-t border-white/[0.08] bg-[#0b1424] px-4 py-4 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:border-l sm:border-t-0"
     >
-      {/* Header row: icon + eyebrow + title */}
       <div className="flex items-center gap-2.5">
         <span className={`grid h-7 w-7 shrink-0 place-items-center border ${accentStyles[accent]}`}>
           <Icon className="h-3.5 w-3.5" />
@@ -305,13 +303,11 @@ function ModuleTile({ title, eyebrow, value, detail, route, icon: Icon, source, 
         </div>
       </div>
 
-      {/* Value + detail */}
       <div className="mt-4">
         <p className="font-mono text-2xl font-semibold leading-none tracking-tight text-white">{value}</p>
         <p className="mt-1.5 truncate text-[11px] text-slate-500" title={detail}>{detail}</p>
       </div>
 
-      {/* Footer */}
       <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
         <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-slate-500">
           <SourceDot source={source} compact />
@@ -636,7 +632,7 @@ export function DashboardPage() {
       {/* ACTIVITY + SIDEBAR */}
       <div className="mt-5 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
 
-        {/* Live attention feed — real table */}
+        {/* Live attention feed — no horizontal scroll */}
         <Panel className="overflow-hidden">
           <PanelHeader
             kicker="Prioritized queue"
@@ -646,25 +642,35 @@ export function DashboardPage() {
           />
 
           {activities.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
+            <div className="w-full">
+              <table className="w-full table-fixed border-collapse text-left">
+                <colgroup>
+                  <col className="w-[96px]" />
+                  <col />
+                  <col className="hidden w-[150px] md:table-column" />
+                  <col className="hidden w-[110px] sm:table-column" />
+                  <col className="w-[44px]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-white/[0.08] bg-white/[0.015] font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                    <th className="w-[92px] px-5 py-2.5 font-medium">Severity</th>
+                    <th className="px-5 py-2.5 font-medium">Severity</th>
                     <th className="px-4 py-2.5 font-medium">Event</th>
-                    <th className="w-[150px] px-4 py-2.5 font-medium">Source</th>
-                    <th className="w-[110px] px-4 py-2.5 font-medium">When</th>
-                    <th className="w-[44px] px-5 py-2.5" aria-label="Open" />
+                    <th className="hidden px-4 py-2.5 font-medium md:table-cell">Source</th>
+                    <th className="hidden px-4 py-2.5 font-medium sm:table-cell">When</th>
+                    <th className="px-5 py-2.5" aria-label="Open" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05]">
                   {activities.map(item => (
-                    <tr
-                      key={item.id}
-                      className="group cursor-pointer transition hover:bg-white/[0.025]"
-                    >
+                    <tr key={item.id} className="group transition hover:bg-white/[0.025]">
                       <td className="px-5 py-3 align-middle">
-                        <SeverityPill severity={item.severity} />
+                        <Link
+                          to={item.route}
+                          className="inline-block focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+                          aria-label={`Open ${item.title}`}
+                        >
+                          <SeverityPill severity={item.severity} />
+                        </Link>
                       </td>
                       <td className="px-4 py-3 align-middle">
                         <Link
@@ -673,12 +679,18 @@ export function DashboardPage() {
                         >
                           <p className="truncate text-[13px] font-medium text-slate-200">{item.title}</p>
                           <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
+                          {/* Inline meta shown only on small screens where Source/When columns are hidden */}
+                          <p className="mt-1 flex items-center gap-2 font-mono text-[10px] text-slate-500 md:hidden">
+                            <span className="truncate">{item.source}</span>
+                            <span className="h-1 w-1 shrink-0 rounded-full bg-slate-700" />
+                            <span className="shrink-0">{relativeTime(item.time)}</span>
+                          </p>
                         </Link>
                       </td>
-                      <td className="px-4 py-3 align-middle">
+                      <td className="hidden px-4 py-3 align-middle md:table-cell">
                         <span className="block truncate font-mono text-[11px] text-slate-400">{item.source}</span>
                       </td>
-                      <td className="px-4 py-3 align-middle">
+                      <td className="hidden px-4 py-3 align-middle sm:table-cell">
                         <span
                           className="block truncate font-mono text-[11px] text-slate-500"
                           title={formatDate(item.time, true)}
