@@ -346,17 +346,16 @@ export function ReportModal({
             aria-modal="true"
             aria-labelledby="report-builder-title"
             className="
-    relative
-    z-[61]
-    max-h-[calc(100vh-2rem)]
-    w-[calc(100vw-2rem)]
-    max-w-2xl
-    overflow-y-auto
-    border
-    border-[var(--border-color)]
-    bg-[var(--bg-secondary)]
-    shadow-2xl
-  "
+                        relative
+                        z-[61]
+                        max-h-[calc(100vh-2rem)]
+                        w-[calc(100vw-2rem)]
+                        max-w-2xl
+                        overflow-y-auto
+                        border
+                        border-[var(--border-color)]
+                        bg-[var(--bg-secondary)]
+                        shadow-2xl"
           >
             <header className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
               <div>
