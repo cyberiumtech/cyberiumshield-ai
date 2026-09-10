@@ -127,37 +127,11 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         mobile
           ? 'px-2 py-2'
           : `sticky flex flex-col border-r border-white/[0.06] bg-[#0b1424] transition-[width] duration-200 ease-out ${
-              isCollapsed ? 'overflow-visible' : 'overflow-y-auto overflow-x-hidden'
+              isCollapsed ? 'overflow-visible' : 'overflow-visible'
             }`
       }
     >
-      {/* ═══ Header row: toggle button ═══ */}
-      {!mobile && (
-        <div className="flex h-11 shrink-0 items-center border-b border-white/[0.06] px-3">
-          {!isCollapsed && (
-            <p className="flex-1 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
-              Navigation
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!isCollapsed}
-            className={`grid h-7 w-7 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className="h-3.5 w-3.5" />
-            ) : (
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* ═══ Scroll area ═══ */}
+      {/* ═══ Scroll area (nav list) ═══ */}
       <div
         className={
           mobile
@@ -174,12 +148,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
 
             return (
               <div key={section.title}>
-                {/* Divider between sections when collapsed */}
                 {showDivider && (
                   <div aria-hidden="true" className="mx-3 mb-1 h-px bg-white/[0.06]" />
                 )}
 
-                {/* Section title — visible only when expanded */}
                 {!mobile && !isCollapsed && (
                   <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
                     {section.title}
@@ -246,6 +218,34 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
           })}
         </div>
       </div>
+
+      {/* ═══ Bottom bar: label + toggle ═══ */}
+      {!mobile && (
+        <div
+          className={`flex h-11 shrink-0 items-center border-t border-white/[0.06] ${
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+          }`}
+        >
+          {!isCollapsed && (
+            <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
+              Navigation
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!isCollapsed}
+            className="grid h-7 w-7 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-3.5 w-3.5" />
+            ) : (
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+      )}
     </nav>
   );
 }
