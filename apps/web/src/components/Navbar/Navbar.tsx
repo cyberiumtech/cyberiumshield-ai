@@ -28,15 +28,15 @@ export function Navbar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0B1120]/85 backdrop-blur-xl shadow-lg transition-colors duration-200">
-      <div className="mx-auto flex h-16 w-full min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0B1120]/90 backdrop-blur-xl shadow-xl transition-colors duration-200">
+      <div className="mx-auto flex h-[72px] w-full min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
         
-        {/* Left Section: Navigation Toggle + Brand + Breadcrumbs */}
+        {/* Left Section: Drawer Toggle + Logo + Breadcrumbs */}
         <div className="flex min-w-0 items-center gap-3 lg:gap-5">
-          {/* Mobile Drawer Button */}
+          {/* Mobile Drawer Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/40 text-slate-300 transition-all hover:border-cyan-500/40 hover:bg-slate-800 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-800/50 text-slate-300 transition-all hover:border-cyan-500/50 hover:bg-slate-800 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 lg:hidden"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -47,7 +47,7 @@ export function Navbar() {
             to="/dashboard"
             className="group flex shrink-0 items-center gap-3 focus:outline-none"
           >
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900/80 p-1.5 shadow-md shadow-cyan-950/20 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:shadow-cyan-500/20">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900/80 p-2 shadow-md shadow-cyan-950/30 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:shadow-cyan-500/20">
               <img
                 src={logoUrl}
                 alt="CyberShield-AI Logo"
@@ -55,11 +55,14 @@ export function Navbar() {
               />
             </div>
             <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-slate-100">
-                <span>CYBERSHIELD</span>
+              <div className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-slate-100">
+                <span>CyberShield</span>
+                <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wide text-cyan-400">
+                  AI
+                </span>
               </div>
               <p className="text-[11px] font-medium text-slate-400">
-                Admin Control Portal
+                Security Operations Center
               </p>
             </div>
           </Link>
@@ -81,7 +84,7 @@ export function Navbar() {
                 const isLast = index === breadcrumbs.length - 1;
                 return (
                   <React.Fragment key={crumb.path}>
-                    <ChevronRight className="h-3 w-3 shrink-0 text-slate-600" />
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-600" />
                     <Link
                       to={crumb.path}
                       className={`truncate max-w-[150px] transition-colors ${
@@ -100,29 +103,29 @@ export function Navbar() {
         </div>
 
         {/* Center Section: Global Command Search */}
-        <div className="hidden flex-1 max-w-xl lg:block px-2">
+        <div className="hidden flex-1 max-w-xl lg:block px-3">
           <GlobalSearch />
         </div>
 
-        {/* Right Section: Action Controls & User Profile */}
+        {/* Right Section: Action Controls & Profile Avatar Container */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {/* Mobile Search */}
           <div className="lg:hidden">
             <GlobalSearch />
           </div>
 
-          {/* Quick Actions (Higher Z-Index to prevent dropdown overlay bugs) */}
+          {/* Quick Actions Dropdown */}
           <div className="relative z-30">
             <QuickActionsMenu />
           </div>
 
-          {/* Notifications */}
+          {/* Notifications Dropdown */}
           <div className="relative z-30">
             <NotificationDropdown />
           </div>
 
-          {/* Profile Menu */}
-          <div className="relative z-30 border-l border-slate-800/80 pl-2 sm:pl-3">
+          {/* Prominent Profile Section */}
+          <div className="relative z-30 flex items-center border-l border-slate-800/80 pl-2.5 sm:pl-4 min-h-[44px]">
             <ProfileDropdown />
           </div>
         </div>
@@ -138,7 +141,7 @@ export function Navbar() {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="border-t border-slate-800/80 bg-[#0B1120]/95 backdrop-blur-2xl lg:hidden"
           >
-            <div className="max-h-[calc(100vh-4rem)] space-y-4 overflow-y-auto px-4 py-4">
+            <div className="max-h-[calc(100vh-4.5rem)] space-y-4 overflow-y-auto px-4 py-4">
               <Sidebar activePath={location.pathname} mobile />
 
               <div className="border-t border-slate-800/80 pt-3">
