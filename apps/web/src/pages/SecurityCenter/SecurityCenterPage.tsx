@@ -3,7 +3,7 @@ import {
   AlertTriangle, Archive, CheckCircle2, ChevronLeft, ChevronRight, ChevronsLeft,
   ChevronsRight, Database, Download, FileCheck2, FileText, Filter,
   RefreshCw, Search, ShieldCheck, SlidersHorizontal, Activity, Lock, Eye, Zap,
-  BarChart3, Globe, Server, Shield, XCircle, Wifi, WifiOff, Info, Minus,
+  BarChart3, Globe, Server, Info, Wifi, WifiOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSecurityDashboard, type SourceKey } from '../../hooks/useSecurityDashboard';
@@ -13,6 +13,15 @@ import {
   type ReportSource,
   type SecurityReportData,
 } from '../../components/modals/ReportModal';
+
+/* ─────────────────────────────────────────────────────────────
+   FONT STACK
+   Swap `FONT_SANS` / `FONT_MONO` to change the whole page.
+   Load via <link> in index.html, or Next.js next/font, or the
+   @import approach shown at the top of this file's notes.
+   ───────────────────────────────────────────────────────────── */
+const FONT_SANS = "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
+const FONT_MONO = "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace";
 
 /* ─────────────────────────────────────────────────────────────
    SOURCE METADATA
@@ -66,8 +75,6 @@ function severityLabel(sev: string) {
 /* ─────────────────────────────────────────────────────────────
    PRIMITIVES
    ───────────────────────────────────────────────────────────── */
-
-/** Flat card — solid surface, single-pixel border, no effects. */
 function Panel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <section className={`rounded-md border border-slate-800 bg-slate-900 ${className}`}>
@@ -82,7 +89,7 @@ function SectionHeader({ kicker, title, hint, right }: {
   return (
     <div className="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{kicker}</p>
+        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">{kicker}</p>
         <h2 className="mt-1 text-base font-semibold text-slate-100">{title}</h2>
         {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
       </div>
@@ -91,7 +98,6 @@ function SectionHeader({ kicker, title, hint, right }: {
   );
 }
 
-/** Flat status dot — no pulse, no glow. */
 function StatusDot({ status }: { status: 'loading' | 'online' | 'error' }) {
   const tone = status === 'online' ? 'bg-emerald-500' : status === 'loading' ? 'bg-amber-500' : 'bg-rose-500';
   return <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${tone}`} aria-hidden="true" />;
@@ -109,7 +115,7 @@ function SeverityPill({ severity }: { severity: string }) {
           ? 'border-emerald-900 bg-emerald-950/60 text-emerald-300'
           : 'border-slate-700 bg-slate-800/60 text-slate-300';
   return (
-    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${tone}`}>
+    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${tone}`}>
       {severityLabel(severity)}
     </span>
   );
@@ -130,7 +136,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   HEALTH GAUGE (flat ring, no glow)
+   HEALTH GAUGE — flat ring
    ───────────────────────────────────────────────────────────── */
 function HealthGauge({ score, tone }: { score: number | null; tone: 'emerald' | 'amber' | 'rose' | 'slate' }) {
   const stroke = {
@@ -298,9 +304,9 @@ export function SecurityCenterPage() {
 
   /* ── Readiness ───────────────────────────────────────────── */
   const readiness = [
-    { label: 'Detection tools',  detail: 'Email, phishing, malware',   ready: ['email', 'phishing', 'malware'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 3 },
-    { label: 'Infrastructure',   detail: 'Network, vulnerabilities',   ready: ['network', 'vulnerability'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 2 },
-    { label: 'Threat intel',     detail: 'External CISA feed',          ready: data.sources.intel.status === 'online' ? 1 : 0, total: 1 },
+    { label: 'Detection tools', detail: 'Email, phishing, malware', ready: ['email', 'phishing', 'malware'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 3 },
+    { label: 'Infrastructure',  detail: 'Network, vulnerabilities', ready: ['network', 'vulnerability'].filter(k => data.sources[k as SourceKey].status === 'online').length, total: 2 },
+    { label: 'Threat intel',    detail: 'External CISA feed',        ready: data.sources.intel.status === 'online' ? 1 : 0, total: 1 },
   ];
 
   /* ── Report data ─────────────────────────────────────────── */
@@ -328,9 +334,11 @@ export function SecurityCenterPage() {
 
   /* ── RENDER ───────────────────────────────────────────────── */
   return (
-    <div className="relative mx-auto min-w-0 max-w-[1400px] pb-12 font-sans text-slate-100">
-
-      {/* Subtle grid backdrop — flat, no glow */}
+    <div
+      style={{ fontFamily: FONT_SANS }}
+      className="relative mx-auto min-w-0 max-w-[1400px] pb-12 text-slate-100"
+    >
+      {/* Subtle grid backdrop */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgba(148,163,184,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.04)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
       {/* ═══════════════ HEADER ═══════════════ */}
@@ -340,7 +348,7 @@ export function SecurityCenterPage() {
             <ShieldCheck className="h-5 w-5 text-cyan-500" />
           </div>
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Security Operations</p>
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">Security Operations</p>
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">Security Center</h1>
           </div>
         </div>
@@ -371,11 +379,10 @@ export function SecurityCenterPage() {
       <Panel className="overflow-hidden">
         <div className="grid gap-0 lg:grid-cols-[280px_1fr]">
 
-          {/* Health summary */}
           <div className="flex items-center gap-4 border-b border-slate-800 p-5 lg:border-b-0 lg:border-r">
             <HealthGauge score={postureScore} tone={tone} />
             <div className="flex min-w-0 flex-col gap-1">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-slate-500">System status</p>
+              <p className="font-mono text-[10px] font-medium uppercase tracking-widest text-slate-500">System status</p>
               <p className={`text-lg font-semibold ${statusTone}`}>{statusLabel}</p>
               <p className="text-[11px] leading-relaxed text-slate-500">
                 {onlineCount}/6 sources online · {riskyFindings} open risk{riskyFindings === 1 ? '' : 's'}
@@ -383,7 +390,6 @@ export function SecurityCenterPage() {
             </div>
           </div>
 
-          {/* Metrics grid */}
           <div className="grid grid-cols-2 divide-slate-800 sm:grid-cols-4 sm:divide-x">
             <MetricCell
               icon={<Activity className="h-3.5 w-3.5" />}
@@ -421,7 +427,7 @@ export function SecurityCenterPage() {
       <section className="mt-5">
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Live data sources</p>
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">Live data sources</p>
             <h2 className="mt-1 text-base font-semibold text-slate-100">Connected security tools</h2>
           </div>
           <span className="hidden font-mono text-[10px] text-slate-500 sm:block">
@@ -487,7 +493,7 @@ export function SecurityCenterPage() {
       <Panel className="mt-5">
         <div className="flex flex-col gap-4 border-b border-slate-800 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Recent findings</p>
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">Recent findings</p>
             <h2 className="mt-1 text-base font-semibold text-slate-100">Security events</h2>
             <p className="mt-0.5 text-xs text-slate-500">Sorted by severity. Use filters to narrow the list.</p>
           </div>
@@ -522,7 +528,6 @@ export function SecurityCenterPage() {
           </div>
         </div>
 
-        {/* Table body */}
         {data.summary.loading === 6 ? (
           <div className="grid min-h-56 place-items-center p-8 text-center">
             <div>
@@ -587,7 +592,6 @@ export function SecurityCenterPage() {
           </div>
         )}
 
-        {/* Pagination */}
         <div className="flex flex-col gap-3 border-t border-slate-800 bg-slate-950/40 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-[11px] text-slate-500">
             Showing <span className="text-slate-300">{filteredFindings.length ? (currentPage - 1) * pageSize + 1 : 0}</span>
