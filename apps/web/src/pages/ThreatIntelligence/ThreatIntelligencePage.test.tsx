@@ -183,8 +183,11 @@ describe('ThreatIntelligencePage', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findAllByText('inconclusive')).not.toHaveLength(0);
-    expect(screen.getByText('Coverage: inconclusive / none')).toBeInTheDocument();
+    expect(await screen.findAllByText('example.com')).not.toHaveLength(0);
+    expect(screen.getAllByText('inconclusive')).not.toHaveLength(0);
+    expect(
+      screen.getAllByLabelText('Evidence coverage inconclusive, confidence none')
+    ).not.toHaveLength(0);
     expect(await screen.findByText('Live / 1,400')).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/[ÃÂâ]/u);
 

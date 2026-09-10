@@ -957,6 +957,7 @@ function InvestigationHistory({
                       <td className="px-4 py-3">
                         <span
                           className={`border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${coverage.className}`}
+                          aria-label={`Evidence coverage ${record.coverage.status}, confidence ${record.coverage.confidence}`}
                         >
                           {record.coverage.status} / {record.coverage.confidence}
                         </span>
@@ -1002,6 +1003,7 @@ function InvestigationHistory({
                   </span>
                   <span
                     className={`mt-2 inline-flex border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${coverage.className}`}
+                    aria-label={`Evidence coverage ${record.coverage.status}, confidence ${record.coverage.confidence}`}
                   >
                     Coverage: {record.coverage.status} / {record.coverage.confidence}
                   </span>
