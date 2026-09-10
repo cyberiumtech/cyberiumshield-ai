@@ -161,6 +161,15 @@ describe('threat intelligence service', () => {
           evidence: { cisa_kev: true },
           details: {},
           providerErrors: [],
+          coverage: {
+            status: 'supported',
+            confidence: 'high',
+            meaningfulEvidence: true,
+            sourcesQueried: 2,
+            sourcesExpected: 2,
+            summary: 'All applicable reputation providers completed the lookup.',
+            providers: [],
+          },
           model: { loaded: true, used: false },
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -245,6 +254,11 @@ describe('threat intelligence service', () => {
     expect(result.riskScore).toBe(100);
     expect(result.verdict).toBe('high');
     expect(result.evidence).toEqual({ ml_high_risk: true });
+    expect(result.coverage).toMatchObject({
+      status: 'partial',
+      confidence: 'low',
+      meaningfulEvidence: true,
+    });
 
     vi.stubGlobal(
       'fetch',

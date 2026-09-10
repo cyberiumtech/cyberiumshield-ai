@@ -182,7 +182,6 @@ function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#07101e_0%,transparent_18%,transparent_82%,#07101e_100%)]" />
       <div className="absolute bottom-4 left-4 right-4 min-w-0 border-l border-cyan-300/40 bg-[#07101e]/90 px-3 py-2 text-xs leading-relaxed text-slate-300 backdrop-blur-sm sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-sm">
         <span className="font-medium uppercase tracking-[0.16em] text-cyan-200">Illustrative activity layer</span>
-        <span>Markers show ambient global context, not live geolocation. Quantitative panels use connected sources.</span>
       </div>
     </div>
   );

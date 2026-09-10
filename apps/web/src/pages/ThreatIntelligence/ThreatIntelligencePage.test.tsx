@@ -11,7 +11,8 @@ import {
 } from '../../services/threat-intelligence.service';
 
 vi.mock('../../services/threat-intelligence.service', async importOriginal => {
-  const actual = await importOriginal<typeof import('../../services/threat-intelligence.service')>();
+  const actual =
+    await importOriginal<typeof import('../../services/threat-intelligence.service')>();
   return {
     ...actual,
     checkThreatIndicator: vi.fn(),
@@ -32,6 +33,22 @@ const result = {
   evidence: { cisa_kev: true },
   details: {},
   providerErrors: [],
+  coverage: {
+    status: 'supported' as const,
+    confidence: 'high' as const,
+    meaningfulEvidence: true,
+    sourcesQueried: 2,
+    sourcesExpected: 2,
+    summary: 'All applicable reputation providers completed the lookup.',
+    providers: [
+      {
+        name: 'CISA KEV',
+        category: 'reputation' as const,
+        status: 'contributed' as const,
+        detail: 'Known exploited record matched.',
+      },
+    ],
+  },
   model: { loaded: true, used: false },
 };
 
@@ -84,8 +101,57 @@ describe('ThreatIntelligencePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'CVE-2024-3094' })).toBeInTheDocument();
     expect(screen.getByText('critical risk')).toBeInTheDocument();
-    expect(screen.getByText('CISA lists this CVE as a Known Exploited Vulnerability.')).toBeInTheDocument();
+    expect(screen.getByText('Supported coverage')).toBeInTheDocument();
+    expect(screen.getByText('high confidence')).toBeInTheDocument();
+    expect(
+      screen.getByText('CISA lists this CVE as a Known Exploited Vulnerability.')
+    ).toBeInTheDocument();
     expect(checkThreatIndicator).toHaveBeenCalledWith('CVE-2024-3094', expect.any(AbortSignal));
     expect(screen.getByRole('button', { name: 'CISA KEV catalog' })).toBeInTheDocument();
+  });
+
+  it('renders missing reputation evidence as inconclusive instead of safe', async () => {
+    vi.mocked(checkThreatIndicator).mockResolvedValue({
+      ...result,
+      indicator: '203.0.113.10',
+      indicatorType: 'ip',
+      riskScore: 0,
+      verdict: 'inconclusive',
+      reasons: ['No reputation provider completed the lookup; the verdict is inconclusive.'],
+      evidence: {},
+      coverage: {
+        status: 'inconclusive',
+        confidence: 'none',
+        meaningfulEvidence: false,
+        sourcesQueried: 0,
+        sourcesExpected: 1,
+        summary:
+          'No reputation provider completed this lookup. A zero score must not be interpreted as safe.',
+        providers: [
+          {
+            name: 'ThreatFox',
+            category: 'reputation',
+            status: 'not_configured',
+            detail: 'Auth key is not configured.',
+          },
+        ],
+      },
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <ThreatIntelligencePage />
+      </QueryClientProvider>
+    );
+
+    fireEvent.change(screen.getByLabelText('Indicator value'), {
+      target: { value: '203.0.113.10' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Run investigation' }));
+
+    expect(await screen.findByText('inconclusive verdict')).toBeInTheDocument();
+    expect(screen.getByText('Inconclusive evidence')).toBeInTheDocument();
+    expect(screen.getByText('none confidence')).toBeInTheDocument();
+    expect(screen.queryByText('low risk')).not.toBeInTheDocument();
   });
 });

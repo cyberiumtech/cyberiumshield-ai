@@ -10,9 +10,18 @@ This is an operational threat-intelligence backend, not a dashboard that merely 
 - Queries ThreatFox when `THREATFOX_AUTH_KEY` is configured.
 - Resolves domains and records current DNS results.
 - Performs URL feature extraction and can use a trained Random Forest model when a real labeled dataset is supplied.
-- Produces a transparent 0-100 risk score with evidence and reasons.
+- Produces a transparent 0-100 signal score with evidence, reasons, provider coverage, and confidence.
 - Stores every check in SQLite so your UI can show history instead of fake static cards.
 - Continues using last-known-good CISA data if an upstream refresh fails.
+
+## Verdict and evidence coverage
+
+The numeric score is deterministic and includes only signals that were actually observed. Coverage
+is reported separately as `supported`, `partial`, `degraded`, or `inconclusive`, with per-provider
+status and a confidence level. A provider query that completes with no match counts as checked, but
+does not prove an indicator is safe. If no applicable reputation provider completes a lookup, the
+API returns the `inconclusive` verdict even when the numeric score is zero. Local DNS and URL feature
+analysis remain visible as context, but do not substitute for reputation evidence.
 
 ## Important truth about the ML model
 
@@ -83,4 +92,6 @@ GET  /api/health
 GET  /api/feeds
 ```
 
-Do not hard-code threat records into the frontend. The frontend should render the API response, including evidence, provider errors, model status and risk reasons.
+Do not hard-code threat records into the frontend. The frontend should render the API response,
+including evidence coverage, confidence, per-provider status, provider errors, model status, and
+risk reasons.

@@ -6,7 +6,8 @@
 - [ ] Implement TopNav + Sidebar + DashboardShell
 - [ ] Implement core reusable components (cards, tables, charts wrappers, dialogs, forms, badges)
 - [ ] Implement mock data layer
-- [ ] Implement pages (Dashboard, Security Center, Threat Detection, Network, Vulnerability, Threat Intelligence, Malware, Phishing, Logs, Incidents, Reports, Analytics, AI Assistant, Users, Roles, Profile, Settings)
+- [x] Implement and integrate the Threat Intelligence analyst workspace
+- [ ] Complete remaining page-specific implementation and verification work
 - [ ] Implement AI assistant chat UI
 - [ ] Ensure build + dev server works
 

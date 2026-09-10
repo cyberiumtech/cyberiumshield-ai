@@ -349,12 +349,14 @@ function normalizeEvidenceCoverage(
           ) {
             return [];
           }
-          return [{
-            name,
-            category: rawCategory as CoverageProvider['category'],
-            status: rawProviderStatus as CoverageProviderStatus,
-            detail: readString(provider.detail),
-          }];
+          return [
+            {
+              name,
+              category: rawCategory as CoverageProvider['category'],
+              status: rawProviderStatus as CoverageProviderStatus,
+              detail: readString(provider.detail),
+            },
+          ];
         })
       : [];
     return {
@@ -410,7 +412,9 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
     ? (rawType as IndicatorType)
     : 'unknown';
   const rawVerdict = readString(expanded.verdict).toLowerCase();
-  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low', 'inconclusive'].includes(rawVerdict)
+  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low', 'inconclusive'].includes(
+    rawVerdict
+  )
     ? (rawVerdict as ThreatVerdict)
     : 'low';
   const rawDetails = isRecord(expanded.details) ? expanded.details : {};
@@ -418,8 +422,8 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
   const rawDns = isRecord(rawDetails.dns) ? rawDetails.dns : undefined;
   const rawEvidence = isRecord(expanded.evidence) ? expanded.evidence : {};
   const evidence = Object.fromEntries(
-    Object.entries(rawEvidence).filter(([, item]) =>
-      ['string', 'number', 'boolean'].includes(typeof item) || item === null
+    Object.entries(rawEvidence).filter(
+      ([, item]) => ['string', 'number', 'boolean'].includes(typeof item) || item === null
     )
   ) as Record<string, ThreatEvidenceValue>;
   const rawModel = isRecord(expanded.model) ? expanded.model : {};
@@ -430,7 +434,10 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
     ...(Number.isFinite(id) ? { id } : {}),
     indicator,
     indicatorType,
-    riskScore: Math.max(0, Math.min(100, Math.round(readNumber(expanded.riskScore ?? expanded.score)))),
+    riskScore: Math.max(
+      0,
+      Math.min(100, Math.round(readNumber(expanded.riskScore ?? expanded.score)))
+    ),
     verdict,
     reasons: readStringArray(expanded.reasons),
     checkedAt: readString(expanded.checkedAt || expanded.created_at),
@@ -462,8 +469,8 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
       ...(isRecord(rawDetails.urlFeatures)
         ? {
             urlFeatures: Object.fromEntries(
-              Object.entries(rawDetails.urlFeatures).filter(([, item]) =>
-                ['string', 'number', 'boolean'].includes(typeof item) || item === null
+              Object.entries(rawDetails.urlFeatures).filter(
+                ([, item]) => ['string', 'number', 'boolean'].includes(typeof item) || item === null
               )
             ) as Record<string, ThreatEvidenceValue>,
           }
@@ -515,7 +522,8 @@ export async function fetchThreatIntelligenceHealth(
   signal?: AbortSignal
 ): Promise<ThreatIntelligenceHealth> {
   const payload = await requestJson('/api/health', {}, signal, 8_000);
-  if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid health data.');
+  if (!isRecord(payload))
+    throw new ThreatIntelligenceError('The service returned invalid health data.');
   const providers = isRecord(payload.providers) ? payload.providers : {};
   return {
     status: readString(payload.status) || 'unknown',
@@ -535,7 +543,8 @@ export async function fetchThreatIntelligenceHealth(
 
 export async function fetchThreatFeedStatus(signal?: AbortSignal): Promise<ThreatFeedStatus> {
   const payload = await requestJson('/api/feeds', {}, signal, 8_000);
-  if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid feed data.');
+  if (!isRecord(payload))
+    throw new ThreatIntelligenceError('The service returned invalid feed data.');
   const cisa = isRecord(payload.cisaKEV) ? payload.cisaKEV : {};
   const nvd = isRecord(payload.nvd) ? payload.nvd : {};
   const threatFox = isRecord(payload.threatFox) ? payload.threatFox : {};
