@@ -84,6 +84,7 @@ const STORAGE_KEY = 'sidebar:collapsed';
 const COLLAPSED_WIDTH = 72;
 const EXPANDED_WIDTH = 272;
 const HEADER_HEIGHT = 72;
+const BOTTOM_BAR_HEIGHT = 56;
 
 /* ─────────────────────────────────────────────────────────────
    SIDEBAR
@@ -121,20 +122,24 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       style={{
         width: mobile ? '100%' : isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
         top: mobile ? undefined : HEADER_HEIGHT,
-        height: mobile ? 'auto' : `calc(100vh - ${HEADER_HEIGHT}px)`,
+        height: mobile ? 'auto' : `calc(100dvh - ${HEADER_HEIGHT}px)`,
       }}
       className={
         mobile
           ? 'px-2 py-2'
-          : 'sticky flex flex-col overflow-visible border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
+          : 'sticky flex flex-col border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
       }
     >
-      {/* ═══ Scroll area (nav list) ═══ */}
+      {/* ═══ Scroll area — flex-1 + min-h-0 so it never pushes the bar off-screen ═══ */}
       <div
         className={
           mobile
             ? 'space-y-3'
-            : `flex-1 ${isCollapsed ? 'overflow-visible py-3' : 'overflow-y-auto overflow-x-hidden py-4'}`
+            : `min-h-0 flex-1 ${
+                isCollapsed
+                  ? 'overflow-visible py-3'
+                  : 'overflow-y-auto overflow-x-hidden py-4'
+              }`
         }
       >
         <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-5'}>
@@ -156,10 +161,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                     <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
                       {section.title}
                     </span>
-                    <span
-                      aria-hidden="true"
-                      className="h-px flex-1 bg-white/[0.06]"
-                    />
+                    <span aria-hidden="true" className="h-px flex-1 bg-white/[0.06]" />
                   </div>
                 )}
 
@@ -223,12 +225,13 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         </div>
       </div>
 
-      {/* ═══ Bottom bar: label + toggle ═══ */}
+      {/* ═══ Fixed bottom bar — shrink-0 so it always reserves its height ═══ */}
       {!mobile && (
         <div
-          className={`flex h-12 shrink-0 items-center border-t border-white/[0.06] ${
+          className={`flex shrink-0 items-center border-t border-white/[0.06] bg-[#070b12] ${
             isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
           }`}
+          style={{ height: BOTTOM_BAR_HEIGHT }}
         >
           {!isCollapsed && (
             <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
@@ -240,7 +243,8 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             onClick={toggle}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!isCollapsed}
-            className="grid h-8 w-8 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded text-slate-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
           >
             {isCollapsed ? (
               <PanelLeftOpen className="h-[18px] w-[18px]" />
