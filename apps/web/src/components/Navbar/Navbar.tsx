@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Slash } from 'lucide-react';
+import { Menu, X, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationDropdown } from './NotificationDropdown';
 import { QuickActionsMenu } from './QuickActionsMenu';
@@ -13,12 +13,13 @@ export function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Dynamic breadcrumb generation
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(Boolean);
     return paths.map((path, index) => ({
       label: path
         .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' '),
       path: '/' + paths.slice(0, index + 1).join('/'),
     }));
@@ -27,113 +28,124 @@ export function Navbar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-cyan-500/15 bg-[#030712]/90 backdrop-blur-md shadow-[0_10px_30px_-15px_rgba(0,0,0,0.85)]">
-      <div className="flex h-16 min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0B1120]/85 backdrop-blur-xl shadow-lg transition-colors duration-200">
+      <div className="mx-auto flex h-16 w-full min-w-0 items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
         
-        {/* Left Section: Brand & Breadcrumbs */}
-        <div className="flex min-w-0 shrink items-center gap-3 lg:gap-4">
-          {/* Mobile Menu Toggle */}
+        {/* Left Section: Navigation Toggle + Brand + Breadcrumbs */}
+        <div className="flex min-w-0 items-center gap-3 lg:gap-5">
+          {/* Mobile Drawer Button */}
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 transition hover:border-cyan-400/50 hover:bg-cyan-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 lg:hidden"
-            aria-label="Toggle mobile menu"
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/40 text-slate-300 transition-all hover:border-cyan-500/40 hover:bg-slate-800 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 lg:hidden"
+            aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {/* Brand Logo & Title */}
+          {/* Logo & Brand Identity */}
           <Link
             to="/dashboard"
-            className="group flex items-center gap-3 transition-transform hover:opacity-95"
+            className="group flex shrink-0 items-center gap-3 focus:outline-none"
           >
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-500/30 bg-[#060b18] p-1 shadow-[0_0_15px_rgba(6,182,212,0.15)] transition group-hover:border-cyan-400 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900/80 p-1.5 shadow-md shadow-cyan-950/20 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:shadow-cyan-500/20">
               <img
                 src={logoUrl}
-                alt="CyberShield-AI"
-                className="h-full w-full rounded object-contain"
+                alt="CyberShield-AI Logo"
+                className="h-full w-full object-contain"
               />
             </div>
             <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-white">
+              <div className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-slate-100">
                 <span>CYBERSHIELD</span>
               </div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-[11px] font-medium text-slate-400">
                 Admin Control Portal
-              </div>
+              </p>
             </div>
           </Link>
 
-          {/* Breadcrumbs Navigation */}
+          {/* Interactive Breadcrumb Path */}
           {breadcrumbs.length > 0 && (
-            <div className="hidden xl:flex items-center gap-1.5 border-l border-cyan-500/15 pl-4 text-xs font-medium">
+            <nav
+              aria-label="Breadcrumb"
+              className="hidden xl:flex items-center gap-1.5 border-l border-slate-800/80 pl-4 text-xs font-medium"
+            >
               <Link
                 to="/dashboard"
-                className="text-slate-400 transition hover:text-slate-200"
+                className="flex items-center gap-1 text-slate-400 transition-colors hover:text-slate-200"
               >
-                Admin
+                <LayoutDashboard className="h-3.5 w-3.5 text-slate-500" />
+                <span>Portal</span>
               </Link>
-              {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.path}>
-                  <Slash className="h-3 w-3 shrink-0 text-slate-600" />
-                  <Link
-                    to={crumb.path}
-                    className={`transition ${
-                      index === breadcrumbs.length - 1
-                        ? 'font-semibold text-cyan-400'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {crumb.label}
-                  </Link>
-                </React.Fragment>
-              ))}
-            </div>
+              {breadcrumbs.map((crumb, index) => {
+                const isLast = index === breadcrumbs.length - 1;
+                return (
+                  <React.Fragment key={crumb.path}>
+                    <ChevronRight className="h-3 w-3 shrink-0 text-slate-600" />
+                    <Link
+                      to={crumb.path}
+                      className={`truncate max-w-[150px] transition-colors ${
+                        isLast
+                          ? 'font-semibold text-cyan-400'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {crumb.label}
+                    </Link>
+                  </React.Fragment>
+                );
+              })}
+            </nav>
           )}
         </div>
 
         {/* Center Section: Global Command Search */}
-        <div className="hidden flex-1 max-w-xl lg:block px-4">
+        <div className="hidden flex-1 max-w-xl lg:block px-2">
           <GlobalSearch />
         </div>
 
-        {/* Right Section: Action Controls & Profile */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {/* Mobile Search Trigger */}
+        {/* Right Section: Action Controls & User Profile */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* Mobile Search */}
           <div className="lg:hidden">
             <GlobalSearch />
           </div>
 
-          {/* Quick Actions Menu */}
-          <div className="hidden sm:block">
+          {/* Quick Actions (Higher Z-Index to prevent dropdown overlay bugs) */}
+          <div className="relative z-30">
             <QuickActionsMenu />
           </div>
 
-          {/* Notifications Dropdown */}
-          <NotificationDropdown />
+          {/* Notifications */}
+          <div className="relative z-30">
+            <NotificationDropdown />
+          </div>
 
-          {/* User Profile Menu */}
-          <div className="border-l border-cyan-500/15 pl-1.5 sm:pl-2">
+          {/* Profile Menu */}
+          <div className="relative z-30 border-l border-slate-800/80 pl-2 sm:pl-3">
             <ProfileDropdown />
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Menu Drawer */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-cyan-500/15 bg-[#030712]/95 backdrop-blur-xl lg:hidden"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="border-t border-slate-800/80 bg-[#0B1120]/95 backdrop-blur-2xl lg:hidden"
           >
-            <div className="space-y-4 px-4 py-4">
+            <div className="max-h-[calc(100vh-4rem)] space-y-4 overflow-y-auto px-4 py-4">
               <Sidebar activePath={location.pathname} mobile />
 
-              <div className="space-y-3 border-t border-cyan-500/15 pt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Quick Tools</span>
+              <div className="border-t border-slate-800/80 pt-3">
+                <div className="flex items-center justify-between px-2 py-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Quick Operations
+                  </span>
                   <QuickActionsMenu />
                 </div>
               </div>
