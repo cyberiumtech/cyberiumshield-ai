@@ -351,6 +351,7 @@ def check_indicator():
 
     evidence = {}
     provider_errors = []
+    coverage_providers = []
     details = {}
     if indicator_type == 'cve':
         try:
@@ -358,8 +359,18 @@ def check_indicator():
             details['nvd'] = nvd
             if nvd:
                 evidence['cvss_score'] = nvd.get('cvssScore')
+                coverage_providers.append(_coverage_provider(
+                    'NVD', 'reputation', 'contributed', 'CVE record returned.',
+                ))
+            else:
+                coverage_providers.append(_coverage_provider(
+                    'NVD', 'reputation', 'no_match', 'Query completed; no CVE record was returned.',
+                ))
         except Exception as error:
             provider_errors.append(f'NVD: {error}')
+            coverage_providers.append(_coverage_provider(
+                'NVD', 'reputation', 'error', 'Provider query failed.',
+            ))
         try:
             kev = _catalog_entry(indicator)
             if kev:
@@ -368,25 +379,67 @@ def check_indicator():
                     kev.get('knownRansomwareCampaignUse', '').lower() == 'known'
                 )
                 details['cisaKEV'] = kev
+                coverage_providers.append(_coverage_provider(
+                    'CISA KEV', 'reputation', 'contributed', 'Known exploited record matched.',
+                ))
+            else:
+                coverage_providers.append(_coverage_provider(
+                    'CISA KEV', 'reputation', 'no_match', 'Catalog checked; no matching KEV record.',
+                ))
         except FeedError as error:
             provider_errors.append(f'CISA KEV: {error}')
+            coverage_providers.append(_coverage_provider(
+                'CISA KEV', 'reputation', 'error', 'Catalog lookup failed.',
+            ))
     if indicator_type in {'ip', 'domain', 'url', 'hash'}:
         try:
             threat_fox = threatfox_search(indicator)
             details['threatFox'] = threat_fox
-            evidence['threatfox_matches'] = len(threat_fox.get('matches', []))
+            matches = threat_fox.get('matches', [])
+            if threat_fox.get('configured'):
+                evidence['threatfox_matches'] = len(matches)
+                coverage_providers.append(_coverage_provider(
+                    'ThreatFox',
+                    'reputation',
+                    'contributed' if matches else 'no_match',
+                    f'{len(matches)} matching IOC record(s) returned.' if matches
+                    else 'Query completed; no matching IOC record.',
+                ))
+            else:
+                coverage_providers.append(_coverage_provider(
+                    'ThreatFox', 'reputation', 'not_configured', 'Auth key is not configured.',
+                ))
         except Exception as error:
             provider_errors.append(f'ThreatFox: {error}')
+            coverage_providers.append(_coverage_provider(
+                'ThreatFox', 'reputation', 'error', 'Provider query failed.',
+            ))
     if indicator_type == 'domain':
         addresses = resolve_domain(indicator)
         details['dns'] = {'resolves': bool(addresses), 'addresses': addresses}
         evidence['dns_resolves'] = bool(addresses)
+        coverage_providers.append(_coverage_provider(
+            'DNS resolver',
+            'context',
+            'contributed' if addresses else 'no_match',
+            f'{len(addresses)} address(es) returned.' if addresses else 'No DNS answer returned.',
+        ))
     if indicator_type == 'url':
         features = url_features(indicator)
         details['urlFeatures'] = features
         details['mlProbability'] = model.score_url(features)
+        coverage_providers.append(_coverage_provider(
+            'Local URL analysis', 'analysis', 'contributed', 'Deterministic URL features extracted.',
+        ))
         if details['mlProbability'] is not None and details['mlProbability'] >= .8:
             evidence['ml_high_risk'] = True
+        coverage_providers.append(_coverage_provider(
+            'URL risk model',
+            'analysis',
+            'contributed' if details['mlProbability'] is not None else 'not_configured',
+            'Probability calculated.' if details['mlProbability'] is not None
+            else 'No trained model is loaded.',
+        ))
 
     score, verdict, reasons = deterministic_risk(indicator_type, indicator, evidence)
     if evidence.get('ml_high_risk'):
@@ -394,6 +447,10 @@ def check_indicator():
         reasons.append(
             f"The trained URL model estimated {details['mlProbability'] * 100:.1f}% malicious probability."
         )
+    coverage = summarize_coverage(coverage_providers)
+    if not coverage['meaningfulEvidence']:
+        verdict = 'inconclusive'
+        reasons.append('No reputation provider completed the lookup; the verdict is inconclusive.')
     result = {
         'indicator': indicator,
         'indicatorType': indicator_type,
@@ -404,6 +461,7 @@ def check_indicator():
         'evidence': evidence,
         'details': details,
         'providerErrors': provider_errors,
+        'coverage': coverage,
         'model': {'loaded': bool(model.model), 'used': details.get('mlProbability') is not None},
     }
     save_observation(result)

@@ -49,7 +49,28 @@ export interface ThreatIntelligenceHealth {
 }
 
 export type IndicatorType = 'cve' | 'ip' | 'domain' | 'url' | 'hash' | 'unknown';
-export type ThreatVerdict = 'critical' | 'high' | 'medium' | 'low';
+export type ThreatVerdict = 'critical' | 'high' | 'medium' | 'low' | 'inconclusive';
+
+export type EvidenceCoverageStatus = 'supported' | 'partial' | 'degraded' | 'inconclusive';
+export type EvidenceConfidence = 'high' | 'moderate' | 'low' | 'none';
+export type CoverageProviderStatus = 'contributed' | 'no_match' | 'not_configured' | 'error';
+
+export interface CoverageProvider {
+  name: string;
+  category: 'reputation' | 'context' | 'analysis';
+  status: CoverageProviderStatus;
+  detail: string;
+}
+
+export interface EvidenceCoverage {
+  status: EvidenceCoverageStatus;
+  confidence: EvidenceConfidence;
+  meaningfulEvidence: boolean;
+  sourcesQueried: number;
+  sourcesExpected: number;
+  summary: string;
+  providers: CoverageProvider[];
+}
 
 export type ThreatEvidenceValue = string | number | boolean | null;
 
@@ -90,6 +111,7 @@ export interface IndicatorResult {
   evidence: Record<string, ThreatEvidenceValue>;
   details: IndicatorDetails;
   providerErrors: string[];
+  coverage: EvidenceCoverage;
   model: { loaded: boolean; used: boolean };
 }
 
@@ -294,6 +316,74 @@ function normalizeNvdDetail(value: unknown): NvdDetail | null {
   };
 }
 
+function normalizeEvidenceCoverage(
+  value: unknown,
+  evidence: Record<string, ThreatEvidenceValue>
+): EvidenceCoverage {
+  if (isRecord(value)) {
+    const rawStatus = readString(value.status).toLowerCase();
+    const status: EvidenceCoverageStatus = [
+      'supported',
+      'partial',
+      'degraded',
+      'inconclusive',
+    ].includes(rawStatus)
+      ? (rawStatus as EvidenceCoverageStatus)
+      : 'inconclusive';
+    const rawConfidence = readString(value.confidence).toLowerCase();
+    const confidence: EvidenceConfidence = ['high', 'moderate', 'low', 'none'].includes(
+      rawConfidence
+    )
+      ? (rawConfidence as EvidenceConfidence)
+      : 'none';
+    const providers: CoverageProvider[] = Array.isArray(value.providers)
+      ? value.providers.flatMap(provider => {
+          if (!isRecord(provider)) return [];
+          const name = readString(provider.name);
+          const rawCategory = readString(provider.category).toLowerCase();
+          const rawProviderStatus = readString(provider.status).toLowerCase();
+          if (
+            !name ||
+            !['reputation', 'context', 'analysis'].includes(rawCategory) ||
+            !['contributed', 'no_match', 'not_configured', 'error'].includes(rawProviderStatus)
+          ) {
+            return [];
+          }
+          return [{
+            name,
+            category: rawCategory as CoverageProvider['category'],
+            status: rawProviderStatus as CoverageProviderStatus,
+            detail: readString(provider.detail),
+          }];
+        })
+      : [];
+    return {
+      status,
+      confidence,
+      meaningfulEvidence: readBoolean(value.meaningfulEvidence),
+      sourcesQueried: Math.max(0, Math.trunc(readNumber(value.sourcesQueried))),
+      sourcesExpected: Math.max(0, Math.trunc(readNumber(value.sourcesExpected))),
+      summary:
+        readString(value.summary) ||
+        'The service did not provide an evidence coverage explanation.',
+      providers,
+    };
+  }
+
+  const hasLegacyEvidence = Object.keys(evidence).length > 0;
+  return {
+    status: hasLegacyEvidence ? 'partial' : 'inconclusive',
+    confidence: hasLegacyEvidence ? 'low' : 'none',
+    meaningfulEvidence: hasLegacyEvidence,
+    sourcesQueried: 0,
+    sourcesExpected: 0,
+    summary: hasLegacyEvidence
+      ? 'This stored result predates provider coverage reporting; review its evidence directly.'
+      : 'No provider coverage was recorded. Do not interpret the score as proof of safety.',
+    providers: [],
+  };
+}
+
 export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
   if (!isRecord(payload)) {
     throw new ThreatIntelligenceError('The service returned an invalid indicator result.');
@@ -320,7 +410,7 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
     ? (rawType as IndicatorType)
     : 'unknown';
   const rawVerdict = readString(expanded.verdict).toLowerCase();
-  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low'].includes(rawVerdict)
+  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low', 'inconclusive'].includes(rawVerdict)
     ? (rawVerdict as ThreatVerdict)
     : 'low';
   const rawDetails = isRecord(expanded.details) ? expanded.details : {};
@@ -383,6 +473,7 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
         : {}),
     },
     providerErrors: readStringArray(expanded.providerErrors || expanded.provider_errors),
+    coverage: normalizeEvidenceCoverage(expanded.coverage, evidence),
     model: { loaded: readBoolean(rawModel.loaded), used: readBoolean(rawModel.used) },
   };
 }

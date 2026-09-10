@@ -69,6 +69,29 @@ class ThreatIntelligenceTests(unittest.TestCase):
         self.assertEqual(response.get_json()['sourceStatus'], 'stale')
         self.assertIn('last-known-good', response.get_json()['warning'])
 
+    @patch('app.time.monotonic', return_value=250.0)
+    @patch('app.fetch_upstream_catalog')
+    def test_not_modified_refreshes_freshness_and_clears_prior_error(self, fetch, _monotonic):
+        catalog = threat_app.normalize_catalog({'count': 1, 'vulnerabilities': [RECORD]})
+        catalog['fetchedAt'] = '2026-09-01T00:00:00+00:00'
+        with threat_app._cache_lock:
+            threat_app._cache.update(
+                catalog=catalog,
+                fetched_monotonic=100.0,
+                etag='"old-etag"',
+                last_modified='Tue, 01 Sep 2026 00:00:00 GMT',
+                last_error='temporary upstream failure',
+            )
+        fetch.return_value = (None, '"old-etag"', 'Tue, 01 Sep 2026 00:00:00 GMT')
+
+        result = threat_app.get_catalog(force=True)
+
+        self.assertEqual(result['sourceStatus'], 'live')
+        self.assertEqual(result['cacheAgeSeconds'], 0)
+        with threat_app._cache_lock:
+            self.assertEqual(threat_app._cache['fetched_monotonic'], 250.0)
+            self.assertEqual(threat_app._cache['last_error'], '')
+
     @patch('app.fetch_upstream_catalog', side_effect=threat_app.FeedError('offline'))
     def test_api_returns_502_without_cached_data(self, _fetch):
         response = self.client.get('/api/kev')
@@ -103,6 +126,9 @@ class ThreatIntelligenceTests(unittest.TestCase):
         self.assertTrue(result['evidence']['cisa_kev'])
         self.assertTrue(result['evidence']['ransomware_use'])
         self.assertEqual(result['evidence']['cvss_score'], 9.8)
+        self.assertEqual(result['coverage']['status'], 'supported')
+        self.assertEqual(result['coverage']['confidence'], 'high')
+        self.assertTrue(result['coverage']['meaningfulEvidence'])
         save.assert_called_once()
 
     @patch('app.save_observation')
@@ -113,8 +139,36 @@ class ThreatIntelligenceTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         result = response.get_json()
         self.assertEqual(result['riskScore'], 0)
-        self.assertEqual(result['verdict'], 'low')
+        self.assertEqual(result['verdict'], 'inconclusive')
+        self.assertEqual(result['coverage']['status'], 'inconclusive')
+        self.assertFalse(result['coverage']['meaningfulEvidence'])
         self.assertIn('ThreatFox: provider unavailable', result['providerErrors'])
+        save.assert_called_once()
+
+    @patch('app.save_observation')
+    @patch('app.threatfox_search', return_value={'configured': False, 'matches': []})
+    def test_unconfigured_provider_is_not_reported_as_safe(self, _threatfox, save):
+        response = self.client.post('/api/indicator/check', json={'indicator': '203.0.113.10'})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result['riskScore'], 0)
+        self.assertEqual(result['verdict'], 'inconclusive')
+        self.assertEqual(result['coverage']['confidence'], 'none')
+        self.assertEqual(result['coverage']['providers'][0]['status'], 'not_configured')
+        save.assert_called_once()
+
+    @patch('app.save_observation')
+    @patch('app.threatfox_search', return_value={'configured': True, 'matches': [], 'status': 'ok'})
+    def test_completed_no_match_lookup_has_supported_moderate_coverage(self, _threatfox, save):
+        response = self.client.post('/api/indicator/check', json={'indicator': '203.0.113.10'})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertEqual(result['verdict'], 'low')
+        self.assertEqual(result['coverage']['status'], 'supported')
+        self.assertEqual(result['coverage']['confidence'], 'moderate')
+        self.assertEqual(result['coverage']['providers'][0]['status'], 'no_match')
         save.assert_called_once()
 
     def test_indicator_check_validates_supported_input(self):
