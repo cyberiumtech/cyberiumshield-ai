@@ -26,6 +26,13 @@
   --color-tint-3: 30 41 59;
   --color-chart-tooltip: 11 20 36;
   --color-chart-grid: 51 65 85;
+  --color-accent-cyan: 34 211 238;
+  --color-accent-emerald: 52 211 153;
+  --color-accent-amber: 251 191 36;
+  --color-accent-rose: 251 113 133;
+  --color-accent-red: 248 113 113;
+  --color-accent-violet: 167 139 250;
+  --color-accent-blue: 96 165 250;
   --bg-primary: rgb(var(--color-canvas));
   --bg-secondary: rgb(var(--color-surface));
   --bg-tertiary: rgb(var(--color-tint-3));
@@ -60,6 +67,13 @@
   --color-tint-3: 226 232 240;
   --color-chart-tooltip: 255 255 255;
   --color-chart-grid: 203 213 225;
+  --color-accent-cyan: 14 116 144;
+  --color-accent-emerald: 4 120 87;
+  --color-accent-amber: 180 83 9;
+  --color-accent-rose: 190 18 60;
+  --color-accent-red: 185 28 28;
+  --color-accent-violet: 109 40 217;
+  --color-accent-blue: 29 78 216;
   --bg-primary: rgb(var(--color-canvas));
   --bg-secondary: rgb(var(--color-panel));
   --bg-tertiary: rgb(var(--color-field));
@@ -118,30 +132,30 @@ body {
    deliberately neutral: accent and severity utilities are left untouched. */
 .light [class~='bg-[#0B1120]'],
 .light [class~='bg-[#05080d]'] {
-  background-color: rgb(var(--color-canvas)) !important;
+  background-color: rgb(var(--color-canvas));
 }
 
 .light [class~='bg-[#0F1729]'],
 .light [class~='bg-[#0b1424]'],
 .light [class~='bg-[#0d1219]'],
 .light [class~='bg-[#07101a]'] {
-  background-color: rgb(var(--color-panel)) !important;
+  background-color: rgb(var(--color-panel));
 }
 
 .light [class~='bg-[#07101e]'],
 .light [class~='bg-[#08131e]'] {
-  background-color: rgb(var(--color-field)) !important;
+  background-color: rgb(var(--color-field));
 }
 
 .light [class~='bg-[#0b0e14]'],
 .light [class~='bg-[#070b12]'],
 .light [class~='bg-[#030609]'] {
-  background-color: rgb(var(--color-chrome)) !important;
+  background-color: rgb(var(--color-chrome));
 }
 
 .light [class~='bg-[#0F1729]/50'],
 .light [class~='bg-[#0b1424]/50'] {
-  background-color: rgb(var(--color-panel) / 0.72) !important;
+  background-color: rgb(var(--color-panel) / 0.72);
 }
 
 .light [class~='bg-[#0F1729]/80'],
@@ -150,12 +164,12 @@ body {
 .light [class~='bg-[#05080d]/90'],
 .light [class~='bg-[#0B1120]/95'],
 .light [class~='bg-[#0F1729]/95'] {
-  background-color: rgb(var(--color-panel) / 0.95) !important;
+  background-color: rgb(var(--color-panel) / 0.95);
 }
 
 .light .bg-slate-950,
 .light .bg-slate-900 {
-  background-color: rgb(var(--color-panel)) !important;
+  background-color: rgb(var(--color-panel));
 }
 
 .light .bg-slate-800,
@@ -166,47 +180,47 @@ body {
 .light [class~='bg-slate-800/40'],
 .light [class~='bg-slate-800/30'],
 .light [class~='bg-slate-800/20'] {
-  background-color: rgb(var(--color-field)) !important;
+  background-color: rgb(var(--color-field));
 }
 
 .light .bg-slate-700,
 .light .bg-slate-600,
 .light [class~='bg-slate-500/20'] {
-  background-color: rgb(var(--color-tint-3)) !important;
+  background-color: rgb(var(--color-tint-3));
 }
 
 .light [class~='bg-slate-950/75'],
 .light [class~='bg-slate-950/60'],
 .light [class~='bg-slate-950/40'] {
-  background-color: rgb(var(--color-panel) / 0.9) !important;
+  background-color: rgb(var(--color-panel) / 0.9);
 }
 
 .light .text-slate-100,
 .light .text-slate-200 {
-  color: rgb(var(--color-fg)) !important;
+  color: rgb(var(--color-fg));
 }
 
 .light .text-slate-300 {
-  color: rgb(var(--color-fg-2)) !important;
+  color: rgb(var(--color-fg-2));
 }
 
 .light .text-slate-400 {
-  color: rgb(var(--color-fg-4)) !important;
+  color: rgb(var(--color-fg-4));
 }
 
 .light .text-slate-500,
 .light .text-slate-600,
 .light .text-slate-700 {
-  color: rgb(var(--color-fg-5)) !important;
+  color: rgb(var(--color-fg-5));
 }
 
 .light [class~='placeholder:text-slate-600']::placeholder,
 .light [class~='placeholder:text-slate-500']::placeholder {
-  color: rgb(var(--color-fg-5)) !important;
+  color: rgb(var(--color-fg-5));
 }
 
 .light [class~='hover:text-white']:hover {
-  color: rgb(var(--color-fg)) !important;
+  color: rgb(var(--color-fg));
 }
 
 .light .border-slate-500,
@@ -215,7 +229,7 @@ body {
 .light [class~='border-slate-700/60'],
 .light .border-slate-800,
 .light [class~='border-slate-800/80'] {
-  border-color: rgb(var(--color-line-2)) !important;
+  border-color: rgb(var(--color-line-2));
 }
 
 .light [class~='border-white/5'],
@@ -229,14 +243,14 @@ body {
 .light [class~='border-white/[0.15]'],
 .light [class~='border-white/[0.16]'],
 .light [class~='border-white/[0.2]'] {
-  border-color: rgb(var(--color-line-2)) !important;
+  border-color: rgb(var(--color-line-2));
 }
 
 .light [class~='hover:border-white/[0.12]']:hover,
 .light [class~='hover:border-white/[0.14]']:hover,
 .light [class~='hover:border-white/[0.15]']:hover,
 .light [class~='hover:border-white/[0.16]']:hover {
-  border-color: rgb(var(--color-line-3)) !important;
+  border-color: rgb(var(--color-line-3));
 }
 
 .light [class~='bg-white/[0.01]'],
@@ -245,7 +259,7 @@ body {
 .light [class~='bg-white/[0.025]'],
 .light [class~='bg-white/[0.03]'],
 .light [class~='bg-white/5'] {
-  background-color: rgb(var(--color-tint)) !important;
+  background-color: rgb(var(--color-tint));
 }
 
 .light [class~='bg-white/[0.04]'],
@@ -253,11 +267,11 @@ body {
 .light [class~='bg-white/[0.06]'],
 .light [class~='bg-white/[0.08]'],
 .light [class~='bg-white/10'] {
-  background-color: rgb(var(--color-tint-2)) !important;
+  background-color: rgb(var(--color-tint-2));
 }
 
 .light [class~='bg-white/[0.16]'] {
-  background-color: rgb(var(--color-tint-3)) !important;
+  background-color: rgb(var(--color-tint-3));
 }
 
 .light [class~='hover:bg-white/[0.02]']:hover,
@@ -269,14 +283,14 @@ body {
 .light [class~='hover:bg-white/5']:hover,
 .light [class~='hover:bg-white/10']:hover,
 .light [class~='focus:bg-white/[0.03]']:focus {
-  background-color: rgb(var(--color-tint-2)) !important;
+  background-color: rgb(var(--color-tint-2));
 }
 
 .light [class~='divide-white/[0.04]'] > :not([hidden]) ~ :not([hidden]),
 .light [class~='divide-white/[0.05]'] > :not([hidden]) ~ :not([hidden]),
 .light [class~='divide-white/[0.06]'] > :not([hidden]) ~ :not([hidden]),
 .light [class~='divide-white/[0.08]'] > :not([hidden]) ~ :not([hidden]) {
-  border-color: rgb(var(--color-line)) !important;
+  border-color: rgb(var(--color-line));
 }
 
 /* The public landing page shares the persisted theme but uses its own exact
@@ -288,7 +302,7 @@ body {
 .light .text-\[\#d8e8ef\],
 .light .text-\[\#d7e7ee\],
 .light .text-\[\#c6d8e0\] {
-  color: rgb(var(--color-fg)) !important;
+  color: rgb(var(--color-fg));
 }
 
 .light .text-\[\#a9bcc8\],
@@ -301,14 +315,14 @@ body {
 .light .text-\[\#6f8794\],
 .light .text-\[\#5f7c8d\],
 .light .text-\[\#506a78\] {
-  color: rgb(var(--color-fg-4)) !important;
+  color: rgb(var(--color-fg-4));
 }
 
 .light [class~='border-[#8eb0c4]/15'],
 .light [class~='border-[#8eb0c4]/20'],
 .light [class~='border-[#8eb0c4]/25'],
 .light [class~='border-[#8eb0c4]/30'] {
-  border-color: rgb(var(--color-line-2)) !important;
+  border-color: rgb(var(--color-line-2));
 }
 
 /* Backdrop filter support */

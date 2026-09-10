@@ -33,6 +33,13 @@ export default {
         'tint-3': 'rgb(var(--color-tint-3) / <alpha-value>)',
         'chart-tooltip': 'rgb(var(--color-chart-tooltip) / <alpha-value>)',
         'chart-grid': 'rgb(var(--color-chart-grid) / <alpha-value>)',
+        'accent-cyan': 'rgb(var(--color-accent-cyan) / <alpha-value>)',
+        'accent-emerald': 'rgb(var(--color-accent-emerald) / <alpha-value>)',
+        'accent-amber': 'rgb(var(--color-accent-amber) / <alpha-value>)',
+        'accent-rose': 'rgb(var(--color-accent-rose) / <alpha-value>)',
+        'accent-red': 'rgb(var(--color-accent-red) / <alpha-value>)',
+        'accent-violet': 'rgb(var(--color-accent-violet) / <alpha-value>)',
+        'accent-blue': 'rgb(var(--color-accent-blue) / <alpha-value>)',
       },
       backdropBlur: {
         xs: '2px',
