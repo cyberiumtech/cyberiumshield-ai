@@ -32,14 +32,14 @@ const user: User = {
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
-function renderAccount() {
+function renderAccount(initialEntry = '/profile') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AccountPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -92,5 +92,32 @@ describe('AccountPage organization name', () => {
     expect(mocks.toastError).toHaveBeenCalledWith('Organization name is required.');
     expect(localStorage.getItem('cybershield_user')).toBeNull();
     expect(screen.getByLabelText('Organization name')).toBeEnabled();
+  });
+
+  it('saves an uploaded avatar to local storage and the user query cache', async () => {
+    const queryClient = renderAccount();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    const file = new File(['avatar-bytes'], 'profile.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText(/Choose file/), { target: { files: [file] } });
+
+    const avatarImages = await screen.findAllByAltText('Morgan Lee avatar');
+    const expectedAvatar = avatarImages[0].getAttribute('src');
+    expect(expectedAvatar).toMatch(/^data:image\/png;base64,/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    const persistedUser = JSON.parse(localStorage.getItem('cybershield_user') ?? '{}') as User;
+    expect(persistedUser.avatar).toBe(expectedAvatar);
+    expect(queryClient.getQueryData<User>(['user'])?.avatar).toBe(expectedAvatar);
+  });
+
+  it('provides a stable appearance anchor for profile hash navigation', () => {
+    renderAccount('/profile#appearance');
+
+    expect(screen.getByRole('heading', { name: 'Appearance' }).closest('section')).toHaveAttribute(
+      'id',
+      'appearance',
+    );
   });
 });

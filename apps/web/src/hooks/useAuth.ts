@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import authService, { getAuthenticatedHomePath, LoginCredentials, RegisterData, User } from '../services/auth.service';
+import authService, {
+  getAuthenticatedHomePath,
+  LoginCredentials,
+  mergeCachedUser,
+  RegisterData,
+  User,
+} from '../services/auth.service';
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -14,7 +20,10 @@ export function useAuth() {
         const token = localStorage.getItem('cybershield_token');
         if (!token) return null;
 
-        return await authService.getCurrentUser();
+        const freshUser = await authService.getCurrentUser();
+        const user = mergeCachedUser(freshUser, localStorage.getItem('cybershield_user'));
+        localStorage.setItem('cybershield_user', JSON.stringify(user));
+        return user;
       } catch {
         return null;
       }

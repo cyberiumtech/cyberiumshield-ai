@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme, Theme } from '../../contexts/ThemeContext';
@@ -87,6 +87,7 @@ export function AccountPage() {
   const { user, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
@@ -119,6 +120,11 @@ export function AccountPage() {
     setAvatar(profile.avatar);
     setSavedProfile(profile);
   }, [user]);
+
+  useEffect(() => {
+    if (!user || location.hash !== '#appearance') return;
+    document.getElementById('appearance')?.scrollIntoView?.({ block: 'start' });
+  }, [location.hash, user]);
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -410,7 +416,7 @@ export function AccountPage() {
           </section>
 
           {/* ═══════ APPEARANCE ═══════ */}
-          <section className={PANEL}>
+          <section id="appearance" className={`${PANEL} scroll-mt-24`}>
             <header className="border-b border-line px-6 py-4">
               <h2 className="text-[15px] font-semibold text-fg">Appearance</h2>
               <p className="mt-0.5 text-[12px] text-fg-4">

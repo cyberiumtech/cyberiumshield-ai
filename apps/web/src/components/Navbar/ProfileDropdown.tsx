@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { User as UserIcon, Settings, Key, Shield, LogOut, ChevronDown } from 'lucide-react';
+import { User as UserIcon, Palette, LogOut, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { isAdminRole } from '../AdminRoute/AdminRoute';
 
 export function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,33 +21,15 @@ export function ProfileDropdown() {
         setIsOpen(false);
       },
     },
-    ...(isAdminRole(user.role) ? [{
-      id: 'settings',
-      label: 'Organization settings',
-      icon: <Settings className="h-4 w-4" />,
+    {
+      id: 'appearance',
+      label: 'Appearance',
+      icon: <Palette className="h-4 w-4" />,
       onClick: () => {
-        navigate('/settings');
+        navigate('/profile#appearance');
         setIsOpen(false);
       },
     },
-    {
-      id: 'api-keys',
-      label: 'API Keys',
-      icon: <Key className="h-4 w-4" />,
-      onClick: () => {
-        navigate('/settings');
-        setIsOpen(false);
-      },
-    },
-    {
-      id: 'security',
-      label: 'Security',
-      icon: <Shield className="h-4 w-4" />,
-      onClick: () => {
-        navigate('/settings');
-        setIsOpen(false);
-      },
-    }] : []),
   ];
 
   const handleLogout = () => {

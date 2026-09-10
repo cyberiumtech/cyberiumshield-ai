@@ -47,6 +47,58 @@ export interface AuthResponse {
   expires_at?: string;
 }
 
+type CachedProfileFields = Pick<User, 'name' | 'email' | 'organization_name' | 'avatar'>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Rehydrates browser-local profile edits that the backend user payload does not
+ * currently support. Cached data is only trusted after it is tied to the same
+ * account by id or email, and immutable authentication fields always come from
+ * the freshly fetched user.
+ */
+export function mergeCachedUser(freshUser: User, serializedUser: string | null): User {
+  if (!serializedUser) return freshUser;
+
+  let cachedUser: unknown;
+  try {
+    cachedUser = JSON.parse(serializedUser);
+  } catch {
+    return freshUser;
+  }
+
+  if (!isRecord(cachedUser)) return freshUser;
+
+  const cachedId =
+    typeof cachedUser.id === 'string' || typeof cachedUser.id === 'number'
+      ? String(cachedUser.id)
+      : '';
+  const cachedEmail = typeof cachedUser.email === 'string' ? cachedUser.email.trim() : '';
+  const sameId = cachedId.length > 0 && cachedId === freshUser.id;
+  const sameEmail =
+    cachedEmail.length > 0 && cachedEmail.toLowerCase() === freshUser.email.trim().toLowerCase();
+
+  if (!sameId && !sameEmail) return freshUser;
+
+  const editableFields: Partial<CachedProfileFields> = {};
+  if (typeof cachedUser.name === 'string' && cachedUser.name.trim()) {
+    editableFields.name = cachedUser.name;
+  }
+  if (typeof cachedUser.email === 'string' && cachedUser.email.trim()) {
+    editableFields.email = cachedUser.email;
+  }
+  if (typeof cachedUser.organization_name === 'string' && cachedUser.organization_name.trim()) {
+    editableFields.organization_name = cachedUser.organization_name;
+  }
+  if (typeof cachedUser.avatar === 'string') {
+    editableFields.avatar = cachedUser.avatar;
+  }
+
+  return { ...freshUser, ...editableFields };
+}
+
 interface BackendUser {
   id: number;
   email: string;
