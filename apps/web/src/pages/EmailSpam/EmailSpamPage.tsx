@@ -180,12 +180,6 @@ const toCount = (value: unknown): number => {
   return Math.max(0, Math.trunc(numeric));
 };
 
-const createId = (): string => {
-  const cryptoApi = typeof crypto !== 'undefined' ? crypto : undefined;
-  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') return cryptoApi.randomUUID();
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-};
-
 function normaliseAnalysis(analysis: EmailSpamAnalysis): EmailSpamAnalysis {
   return {
     ...analysis,
@@ -195,32 +189,6 @@ function normaliseAnalysis(analysis: EmailSpamAnalysis): EmailSpamAnalysis {
     linkCount: toCount(analysis.linkCount),
     signals: Array.isArray(analysis.signals) ? analysis.signals.filter(Boolean) : [],
   };
-}
-
-function isStoredLog(value: unknown): value is ScanLog {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<ScanLog>;
-  return (
-    typeof candidate.id === 'string' &&
-    isVerdict(candidate.verdict) &&
-    Number.isFinite(Number(candidate.score))
-  );
-}
-
-function readLogs(): ScanLog[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter(isStoredLog)
-      .map(log => ({ ...normaliseAnalysis(log), id: log.id }))
-      .slice(0, MAX_LOGS);
-  } catch {
-    return [];
-  }
 }
 
 function formatRelative(value: unknown): string {
@@ -755,7 +723,7 @@ export function EmailSpamPage() {
 
   const clearHistory = useCallback(() => {
     try {
-      window.localStorage.removeItem(STORAGE_KEY);
+      void clearDetectorHistory('email-spam');
     } catch {
       /* storage unavailable — state reset is still applied below */
     }
