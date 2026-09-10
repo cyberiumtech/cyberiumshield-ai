@@ -291,19 +291,14 @@ function normalizeIncident(value: unknown, index: number): CommunityIncident | n
   };
 }
 
-function storageAvailable() {
-  return typeof window !== 'undefined' && Boolean(window.localStorage);
-}
+let incidentCache: CommunityIncident[] = [];
+let loading: Promise<CommunityIncident[]> | null = null;
 
-function persist(incidents: CommunityIncident[], announce = true) {
-  if (!storageAvailable()) return;
-  try {
-    window.localStorage.setItem(INCIDENT_STORAGE_KEY, JSON.stringify({ version: STORE_VERSION, incidents } satisfies IncidentStore));
-    lastNotice = null;
-    if (announce) window.dispatchEvent(new CustomEvent(STORE_EVENT));
-  } catch {
-    lastNotice = 'Browser storage is unavailable. Changes may not survive a reload.';
-  }
+function publishCache(incidents: CommunityIncident[]) {
+  incidentCache = incidents.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  lastNotice = null;
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(STORE_EVENT));
+  return incidentCache;
 }
 
 export function getStorageNotice() {
@@ -311,36 +306,32 @@ export function getStorageNotice() {
 }
 
 export function getIncidents(): CommunityIncident[] {
-  if (!storageAvailable()) return cloneSeeds();
-  const raw = window.localStorage.getItem(INCIDENT_STORAGE_KEY);
-  if (raw === null) {
-    const seeds = cloneSeeds();
-    persist(seeds, false);
-    return seeds;
-  }
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || parsed.version !== STORE_VERSION || !Array.isArray(parsed.incidents)) {
-      throw new Error('Unsupported incident store');
-    }
-    const incidents = parsed.incidents
-      .map((incident, index) => normalizeIncident(incident, index))
-      .filter((incident): incident is CommunityIncident => Boolean(incident));
-    if (incidents.length !== parsed.incidents.length) {
-      lastNotice = 'Some invalid saved community records were skipped.';
-      persist(incidents, false);
-    }
-    return incidents.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-  } catch {
-    const seeds = cloneSeeds();
-    lastNotice = 'Saved community data was unreadable and demo records were restored.';
+  return incidentCache;
+}
+
+export async function loadIncidents(): Promise<CommunityIncident[]> {
+  if (loading) return loading;
+  loading = (async () => {
     try {
-      window.localStorage.setItem(INCIDENT_STORAGE_KEY, JSON.stringify({ version: STORE_VERSION, incidents: seeds } satisfies IncidentStore));
-    } catch {
-      lastNotice = 'Browser storage is unavailable. Demo records are shown for this session only.';
+      let response = await api.get<CommunityIncident[]>('/v1/storage/incidents');
+      if (response.data.length === 0) {
+        for (const incident of cloneSeeds()) {
+          await api.post('/v1/storage/incidents', incident);
+          for (const solution of incident.solutions) {
+            await api.post(`/v1/storage/incidents/${incident.id}/solutions`, solution);
+          }
+        }
+        response = await api.get<CommunityIncident[]>('/v1/storage/incidents');
+      }
+      return publishCache(response.data);
+    } catch (error) {
+      lastNotice = 'The shared incident database is unavailable.';
+      throw error;
+    } finally {
+      loading = null;
     }
-    return seeds;
-  }
+  })();
+  return loading;
 }
 
 function uniqueId(prefix: 'INC' | 'SOL') {
@@ -353,7 +344,7 @@ function cleanList(values: string[]) {
   return [...new Set(values.map(value => value.trim()).filter(Boolean))];
 }
 
-export function publishIncident(input: PublishIncidentInput): CommunityIncident {
+export async function publishIncident(input: PublishIncidentInput): Promise<CommunityIncident> {
   const title = input.title.trim();
   const description = input.description.trim();
   const author = input.author.trim();
@@ -373,28 +364,18 @@ export function publishIncident(input: PublishIncidentInput): CommunityIncident 
     updatedAt: now,
     solutions: [],
   };
-  persist([incident, ...getIncidents()]);
-  return incident;
+  const response = await api.post<CommunityIncident>('/v1/storage/incidents', incident);
+  publishCache([response.data, ...incidentCache]);
+  return response.data;
 }
 
-export function updateIncident(id: string, patch: Partial<Pick<CommunityIncident, 'status' | 'severity' | 'tags' | 'affectedSystems'>>): CommunityIncident | null {
-  let updated: CommunityIncident | null = null;
-  const next = getIncidents().map(incident => {
-    if (incident.id !== id) return incident;
-    updated = {
-      ...incident,
-      ...patch,
-      tags: patch.tags ? cleanList(patch.tags) : incident.tags,
-      affectedSystems: patch.affectedSystems ? cleanList(patch.affectedSystems) : incident.affectedSystems,
-      updatedAt: new Date().toISOString(),
-    };
-    return updated;
-  });
-  if (updated) persist(next);
-  return updated;
+export async function updateIncident(id: string, patch: Partial<Pick<CommunityIncident, 'status' | 'severity' | 'tags' | 'affectedSystems'>>): Promise<CommunityIncident> {
+  const response = await api.patch<CommunityIncident>(`/v1/storage/incidents/${id}`, patch);
+  publishCache(incidentCache.map(item => item.id === id ? response.data : item));
+  return response.data;
 }
 
-export function addSolution(incidentId: string, input: { author: string; body: string }): IncidentSolution {
+export async function addSolution(incidentId: string, input: { author: string; body: string }): Promise<IncidentSolution> {
   const author = input.author.trim();
   const body = input.body.trim();
   if (!author || !body) throw new Error('Solution and author are required.');
@@ -406,30 +387,28 @@ export function addSolution(incidentId: string, input: { author: string; body: s
     helpfulCount: 0,
     helpfulByBrowser: false,
   };
-  let found = false;
-  const next = getIncidents().map(incident => {
-    if (incident.id !== incidentId) return incident;
-    found = true;
-    return { ...incident, updatedAt: solution.createdAt, solutions: [...incident.solutions, solution] };
-  });
-  if (!found) throw new Error('Incident not found.');
-  persist(next);
-  return solution;
+  const response = await api.post<IncidentSolution>(`/v1/storage/incidents/${incidentId}/solutions`, solution);
+  publishCache(incidentCache.map(incident => incident.id === incidentId
+    ? { ...incident, updatedAt: response.data.createdAt, solutions: [...incident.solutions, response.data] }
+    : incident));
+  return response.data;
 }
 
-export function markSolutionHelpful(incidentId: string, solutionId: string): boolean {
-  let changed = false;
-  const next = getIncidents().map(incident => {
-    if (incident.id !== incidentId) return incident;
-    const solutions = incident.solutions.map(solution => {
-      if (solution.id !== solutionId || solution.helpfulByBrowser) return solution;
-      changed = true;
-      return { ...solution, helpfulCount: solution.helpfulCount + 1, helpfulByBrowser: true };
+export async function markSolutionHelpful(incidentId: string, solutionId: string): Promise<boolean> {
+  const incident = incidentCache.find(item => item.id === incidentId);
+  const current = incident?.solutions.find(item => item.id === solutionId);
+  if (!current || current.helpfulByBrowser) return false;
+  const response = await api.post<{ helpfulCount: number }>(`/v1/storage/incidents/${incidentId}/solutions/${solutionId}/helpful`);
+  const next = incidentCache.map(item => {
+    if (item.id !== incidentId) return item;
+    const solutions = item.solutions.map(solution => {
+      if (solution.id !== solutionId) return solution;
+      return { ...solution, helpfulCount: response.data.helpfulCount, helpfulByBrowser: true };
     });
-    return changed ? { ...incident, solutions, updatedAt: new Date().toISOString() } : incident;
+    return { ...item, solutions, updatedAt: new Date().toISOString() };
   });
-  if (changed) persist(next);
-  return changed;
+  publishCache(next);
+  return true;
 }
 
 export function filterIncidents(incidents: CommunityIncident[], filters: IncidentFilters) {
@@ -499,13 +478,9 @@ export function deriveIncidentAnalytics(incidents: CommunityIncident[]): Inciden
 
 export function subscribeToIncidents(listener: () => void) {
   if (typeof window === 'undefined') return () => undefined;
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === INCIDENT_STORAGE_KEY) listener();
-  };
   window.addEventListener(STORE_EVENT, listener);
-  window.addEventListener('storage', handleStorage);
   return () => {
     window.removeEventListener(STORE_EVENT, listener);
-    window.removeEventListener('storage', handleStorage);
   };
 }
+import api from './api';

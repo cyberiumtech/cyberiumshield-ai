@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,7 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { scanEmailSpam } from '../../services/api';
+import { clearDetectorHistory, getDetectorHistory, scanEmailSpam } from '../../services/api';
 import type { EmailSpamAnalysis } from '../../services/api';
 
 interface ScanLog extends EmailSpamAnalysis {
@@ -58,22 +58,18 @@ const verdictStyles: Record<
   },
 };
 
-function readLogs(): ScanLog[] {
-  try {
-    return JSON.parse(localStorage.getItem('email_spam_scan_logs') || '[]') as ScanLog[];
-  } catch {
-    return [];
-  }
-}
-
 export function EmailSpamPage() {
   const [sender, setSender] = useState('');
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [result, setResult] = useState<EmailSpamAnalysis | null>(null);
-  const [logs, setLogs] = useState<ScanLog[]>(readLogs);
+  const [logs, setLogs] = useState<ScanLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    void getDetectorHistory<ScanLog>('email-spam').then(setLogs).catch(() => setError('Unable to load scan history from MySQL.'));
+  }, []);
 
   const loadSample = (sample: typeof SPAM_SAMPLE) => {
     setSender(sample.sender);
@@ -106,11 +102,8 @@ export function EmailSpamPage() {
     setError(null);
     try {
       const analysis = await scanEmailSpam({ sender, subject, content });
-      const log = { ...analysis, id: `${Date.now()}-${analysis.subject}` };
-      const nextLogs = [log, ...logs].slice(0, 25);
-      localStorage.setItem('email_spam_scan_logs', JSON.stringify(nextLogs));
       window.dispatchEvent(new Event('cyber:scan-history-updated'));
-      setLogs(nextLogs);
+      setLogs(await getDetectorHistory<ScanLog>('email-spam'));
       setResult(analysis);
       toast.success(
         analysis.verdict === 'spam' ? 'Spam indicators detected.' : 'Email analysis complete.'
@@ -371,9 +364,8 @@ export function EmailSpamPage() {
             <button
               type="button"
               onClick={() => {
-                localStorage.removeItem('email_spam_scan_logs');
+                void clearDetectorHistory('email-spam').then(() => setLogs([]));
                 window.dispatchEvent(new Event('cyber:scan-history-updated'));
-                setLogs([]);
               }}
               className="flex items-center gap-2 text-xs text-slate-500 transition hover:text-red-300"
             >

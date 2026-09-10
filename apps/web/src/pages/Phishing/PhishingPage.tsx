@@ -34,7 +34,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PhishingScanResult, scanPhishingUrl } from '../../services/api';
+import { clearDetectorHistory, getDetectorHistory, PhishingScanResult, scanPhishingUrl } from '../../services/api';
 
 /* ─────────────────────────────────────────────────────────────
    FONT STACK
@@ -737,16 +737,14 @@ interface ScanLog extends PhishingScanResult {
 export function PhishingPage() {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState<PhishingScanResult | null>(null);
-  const [logs, setLogs] = useState<ScanLog[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('phishing_scan_logs') || '[]') as ScanLog[];
-    } catch {
-      return [];
-    }
-  });
+  const [logs, setLogs] = useState<ScanLog[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanningUrl, setScanningUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getDetectorHistory<ScanLog>('phishing').then(setLogs).catch(() => setError('Unable to load scan history from MySQL.'));
+  }, []);
 
   const runScan = useCallback(
     async (rawUrl: string) => {
@@ -767,15 +765,8 @@ export function PhishingPage() {
 
       try {
         const scan = await scanPhishingUrl(normalizedUrl);
-        const log: ScanLog = {
-          ...scan,
-          id: `${Date.now()}-${scan.url}`,
-          scannedAt: new Date().toISOString(),
-        };
-        const nextLogs = [log, ...logs].slice(0, 25);
         setResult(scan);
-        setLogs(nextLogs);
-        localStorage.setItem('phishing_scan_logs', JSON.stringify(nextLogs));
+        setLogs(await getDetectorHistory<ScanLog>('phishing'));
         window.dispatchEvent(new Event('cyber:scan-history-updated'));
 
         if (scan.prediction === 'phishing') {
@@ -795,7 +786,7 @@ export function PhishingPage() {
         setScanningUrl('');
       }
     },
-    [logs]
+    []
   );
 
   const handleSubmit = async (event: FormEvent) => {
@@ -803,8 +794,8 @@ export function PhishingPage() {
     await runScan(url);
   };
 
-  const clearLogs = () => {
-    localStorage.removeItem('phishing_scan_logs');
+  const clearLogs = async () => {
+    await clearDetectorHistory('phishing');
     window.dispatchEvent(new Event('cyber:scan-history-updated'));
     setLogs([]);
   };

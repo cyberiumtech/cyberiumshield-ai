@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { EmailSpamAnalysis, MalwareScanResult, PhishingScanResult } from '../services/api';
+import { getDetectorHistory, type EmailSpamAnalysis, type MalwareScanResult, type PhishingScanResult } from '../services/api';
 import { getNetworkStatus, type NetworkStatus } from '../services/network-monitor.service';
 import {
   getVulnerabilityDashboard,
@@ -27,34 +27,7 @@ const initialSources: Record<SourceKey, SourceState> = {
   intel: { status: 'loading', updatedAt: null },
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readHistory<T>(key: string, validate: (item: Record<string, unknown>) => boolean): T[] {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(key) || '[]');
-    return Array.isArray(value)
-      ? value.filter((item): item is T => isRecord(item) && validate(item))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function getHistories() {
-  return {
-    email: readHistory<EmailLog>('email_spam_scan_logs', item =>
-      typeof item.verdict === 'string' && typeof item.scannedAt === 'string'
-    ),
-    phishing: readHistory<PhishingLog>('phishing_scan_logs', item =>
-      typeof item.prediction === 'string' && typeof item.url === 'string'
-    ),
-    malware: readHistory<MalwareLog>('malware_scan_logs', item =>
-      typeof item.classification === 'string' && typeof item.filename === 'string'
-    ),
-  };
-}
+const emptyHistories = { email: [] as EmailLog[], phishing: [] as PhishingLog[], malware: [] as MalwareLog[] };
 
 async function checkHealth(url: string, signal?: AbortSignal) {
   const response = await fetch(url, { cache: 'no-store', signal, headers: { Accept: 'application/json' } });
@@ -63,7 +36,7 @@ async function checkHealth(url: string, signal?: AbortSignal) {
 }
 
 export function useSecurityDashboard() {
-  const [histories, setHistories] = useState(getHistories);
+  const [histories, setHistories] = useState(emptyHistories);
   const [network, setNetwork] = useState<NetworkStatus | null>(null);
   const [vulnerability, setVulnerability] = useState<VulnerabilityDashboard | null>(null);
   const [intel, setIntel] = useState<KevCatalog | null>(null);
@@ -76,7 +49,14 @@ export function useSecurityDashboard() {
     if (mounted.current) setSources(previous => ({ ...previous, [key]: next }));
   }, []);
 
-  const refreshHistories = useCallback(() => setHistories(getHistories()), []);
+  const refreshHistories = useCallback(async () => {
+    const [email, phishing, malware] = await Promise.all([
+      getDetectorHistory<EmailLog>('email-spam'),
+      getDetectorHistory<PhishingLog>('phishing'),
+      getDetectorHistory<MalwareLog>('malware'),
+    ]);
+    if (mounted.current) setHistories({ email, phishing, malware });
+  }, []);
 
   const loadNetwork = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -132,8 +112,7 @@ export function useSecurityDashboard() {
 
   const refreshAll = useCallback(async () => {
     setIsRefreshing(true);
-    refreshHistories();
-    await Promise.allSettled([loadNetwork(), loadVulnerability(), loadIntel(), loadDetectorHealth()]);
+    await Promise.allSettled([refreshHistories(), loadNetwork(), loadVulnerability(), loadIntel(), loadDetectorHealth()]);
     if (mounted.current) {
       setLastSync(new Date().toISOString());
       setIsRefreshing(false);
@@ -148,6 +127,7 @@ export function useSecurityDashboard() {
       loadVulnerability(initialController.signal),
       loadIntel(initialController.signal),
       loadDetectorHealth(initialController.signal),
+      refreshHistories(),
     ]).then(() => mounted.current && setLastSync(new Date().toISOString()));
 
     const networkTimer = window.setInterval(() => {
@@ -159,9 +139,8 @@ export function useSecurityDashboard() {
     const vulnerabilityTimer = window.setInterval(() => void loadVulnerability(), 30_000);
     const detectorTimer = window.setInterval(() => void loadDetectorHealth(), 30_000);
     const intelTimer = window.setInterval(() => void loadIntel(), 15 * 60_000);
-    const historyTimer = window.setInterval(refreshHistories, 5_000);
-    const onHistoryChange = () => refreshHistories();
-    window.addEventListener('storage', onHistoryChange);
+    const historyTimer = window.setInterval(() => void refreshHistories(), 5_000);
+    const onHistoryChange = () => void refreshHistories();
     window.addEventListener('cyber:scan-history-updated', onHistoryChange);
 
     return () => {
@@ -169,7 +148,6 @@ export function useSecurityDashboard() {
       initialController.abort();
       [networkTimer, backgroundNetworkTimer, vulnerabilityTimer, detectorTimer, intelTimer, historyTimer]
         .forEach(window.clearInterval);
-      window.removeEventListener('storage', onHistoryChange);
       window.removeEventListener('cyber:scan-history-updated', onHistoryChange);
     };
   }, [loadDetectorHealth, loadIntel, loadNetwork, loadVulnerability, refreshHistories]);
