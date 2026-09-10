@@ -269,7 +269,7 @@ class ThreatIntelligenceObservation(Base):
     __tablename__ = 'threat_intelligence_observations'
 
     id = Column(Integer, primary_key=True)
-    indicator = Column(String(2048), nullable=False, index=True)
+    indicator = Column(String(2048), nullable=False)
     indicator_type = Column(String(50), nullable=False, index=True)
     risk_score = Column(Integer, nullable=False)
     verdict = Column(String(30), nullable=False, index=True)
