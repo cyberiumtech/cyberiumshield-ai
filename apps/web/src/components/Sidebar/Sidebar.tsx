@@ -86,6 +86,16 @@ const EXPANDED_WIDTH = 272;
 const HEADER_HEIGHT = 72;
 const BOTTOM_BAR_HEIGHT = 56;
 
+/* Thin scrollbar utility — WebKit + Firefox */
+const THIN_SCROLLBAR =
+  '[scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.15)_transparent] ' +
+  '[&::-webkit-scrollbar]:w-1 ' +
+  '[&::-webkit-scrollbar]:h-1 ' +
+  '[&::-webkit-scrollbar-track]:bg-transparent ' +
+  '[&::-webkit-scrollbar-thumb]:rounded-full ' +
+  '[&::-webkit-scrollbar-thumb]:bg-white/[0.08] ' +
+  'hover:[&::-webkit-scrollbar-thumb]:bg-white/[0.16]';
+
 /* ─────────────────────────────────────────────────────────────
    SIDEBAR
    ───────────────────────────────────────────────────────────── */
@@ -130,9 +140,9 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
           : 'sticky flex flex-col border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
       }
     >
-      {/* ═══ Scroll area — always scrollable, bottom bar stays pinned ═══ */}
+      {/* ═══ Scroll area — thin scrollbar, bottom bar stays pinned ═══ */}
       <div
-        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${
+        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${THIN_SCROLLBAR} ${
           isCollapsed ? 'py-3' : 'py-4'
         }`}
       >

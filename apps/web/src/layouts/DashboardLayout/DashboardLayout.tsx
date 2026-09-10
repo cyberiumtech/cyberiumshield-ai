@@ -10,7 +10,7 @@ export function DashboardLayout() {
     <div className="min-h-screen min-w-0 overflow-x-clip bg-[#0B1120] text-slate-200">
       <Navbar />
       <div className="flex min-w-0 w-full">
-        <aside className="w-72 hidden lg:block shrink-0">
+        <aside className="hidden lg:block shrink-0">
           <Sidebar activePath={location.pathname} />
         </aside>
         <main className="min-w-0 flex-1 p-4 md:p-6">
