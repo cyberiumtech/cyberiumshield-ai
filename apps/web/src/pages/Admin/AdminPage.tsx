@@ -18,6 +18,7 @@ import {
   Download,
   FileClock,
   FilterX,
+  Fingerprint,
   KeyRound,
   LockKeyhole,
   MoreHorizontal,
@@ -198,6 +199,21 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
+function downloadCsv(filename: string, rows: Array<Array<string | number | null>>) {
+  const csv = rows
+    .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Admin Page                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -224,6 +240,8 @@ export function AdminPage() {
     }),
     [authUser]
   );
+
+  const tenantName = authUser?.organization_name?.trim() || 'CyberShield AI demo';
 
   const refresh = () => {
     setState(adminRepository.getState());
@@ -262,24 +280,54 @@ export function AdminPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-[28px]">
-                Administration workspace
+                Identity Control Plane
               </h1>
 
               <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
                 <LockKeyhole className="h-3 w-3" />
-                Admin controls
+                Zero-trust admin
               </span>
             </div>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Manage people, access policies, and administrative activity for this demo workspace.
+              Govern workforce identities, access policy, and administrative evidence.
             </p>
           </div>
 
-          <button type="button" className={primaryButton} onClick={() => setUserModal('new')}>
-            <UserPlus className="h-4 w-4" />
-            Add user
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <dl className="grid grid-cols-2 gap-x-5 gap-y-1 border-l border-slate-700 pl-4 text-xs">
+              <div>
+                <dt className="font-mono text-[9px] uppercase tracking-[.14em] text-slate-600">
+                  Operator
+                </dt>
+                <dd className="mt-1 max-w-40 truncate text-slate-300" title={actor.email}>
+                  {actor.name}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-mono text-[9px] uppercase tracking-[.14em] text-slate-600">
+                  Tenant scope
+                </dt>
+                <dd className="mt-1 max-w-40 truncate text-slate-300" title={tenantName}>
+                  {tenantName}
+                </dd>
+              </div>
+              <div className="col-span-2 mt-1 flex items-center gap-2 border-t border-slate-800 pt-2 text-emerald-300">
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                  <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-wider">
+                  Local persistence live
+                </span>
+              </div>
+            </dl>
+
+            <button type="button" className={primaryButton} onClick={() => setUserModal('new')}>
+              <UserPlus className="h-4 w-4" />
+              Add user
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -354,7 +402,9 @@ export function AdminPage() {
             <RolesSection state={state} actor={actor} mutate={mutate} setConfirm={setConfirm} />
           )}
 
-          {section === 'audit' && <AuditSection entries={state.audit} />}
+          {section === 'audit' && (
+            <AuditSection entries={state.audit} actor={actor} refresh={refresh} />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -433,44 +483,75 @@ function Overview({
 
   const suspended = state.users.filter(user => user.status === 'suspended').length;
 
-  const elevated = state.roles.filter(
-    role => role.permissions.includes('users.manage') || role.permissions.includes('roles.manage')
+  const privilegedRoleIds = new Set(
+    state.roles
+      .filter(role =>
+        role.permissions.some(permission =>
+          ['users.manage', 'roles.manage', 'settings.manage'].includes(permission)
+        )
+      )
+      .map(role => role.id)
+  );
+
+  const privileged = state.users.filter(
+    user => user.status === 'active' && privilegedRoleIds.has(user.roleId)
   ).length;
 
   const userTotal = state.users.length;
 
   const activePercentage = userTotal > 0 ? Math.round((active / userTotal) * 100) : 0;
 
-  const metrics = [
+  const permissionCount = permissionCatalog.reduce(
+    (total, group) => total + group.permissions.length,
+    0
+  );
+
+  const grantedPermissionCount = state.roles.reduce(
+    (total, role) => total + role.permissions.length,
+    0
+  );
+
+  const permissionCoverage = state.roles.length
+    ? Math.round((grantedPermissionCount / (state.roles.length * permissionCount)) * 100)
+    : 0;
+
+  const perimeterSignals = [
     {
-      label: 'Total users',
-      value: state.users.length,
-      detail: 'Across this workspace',
-      icon: Users,
-      color: 'text-cyan-300',
-    },
-    {
-      label: 'Active users',
+      label: 'Active identities',
       value: active,
-      detail: `${activePercentage}% enabled`,
+      detail: `${activePercentage}% of ${userTotal}`,
       icon: UserCheck,
-      color: 'text-emerald-300',
+      tone: 'emerald',
     },
     {
-      label: 'Pending invites',
+      label: 'Privileged admins',
+      value: privileged,
+      detail: `${privilegedRoleIds.size} elevated roles`,
+      icon: Fingerprint,
+      tone: 'cyan',
+    },
+    {
+      label: 'Unresolved invites',
       value: invited,
-      detail: invited ? 'Awaiting first sign-in' : 'No invitations pending',
+      detail: invited ? 'Require onboarding' : 'Perimeter clear',
       icon: UserPlus,
-      color: 'text-amber-300',
+      tone: 'amber',
     },
     {
-      label: 'Access roles',
-      value: state.roles.length,
-      detail: `${state.roles.filter(role => !role.system).length} custom`,
-      icon: KeyRound,
-      color: 'text-violet-300',
+      label: 'Suspended identities',
+      value: suspended,
+      detail: suspended ? 'Access isolated' : 'None isolated',
+      icon: LockKeyhole,
+      tone: 'rose',
     },
-  ];
+    {
+      label: 'Permission coverage',
+      value: `${permissionCoverage}%`,
+      detail: `${grantedPermissionCount}/${state.roles.length * permissionCount} grants`,
+      icon: ShieldCheck,
+      tone: 'slate',
+    },
+  ] as const;
 
   const roleCounts = state.roles.map(role => ({
     ...role,
@@ -484,41 +565,69 @@ function Overview({
 
   return (
     <div className="space-y-5">
-      {/* Metrics */}
-      <section aria-label="Workspace summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((metric, index) => (
-          <motion.article
-            key={metric.label}
-            initial={{
-              opacity: 0,
-              y: 8,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: index * 0.035,
-            }}
-            className={`${panel} relative overflow-hidden rounded-[12px] p-4`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-slate-500">{metric.label}</p>
-
-                <p className="mt-2 text-3xl font-semibold tracking-tight text-white">
-                  {metric.value}
-                </p>
-              </div>
-
-              <metric.icon className={`h-5 w-5 ${metric.color}`} />
+      {/* Identity perimeter */}
+      <section
+        aria-labelledby="identity-perimeter-title"
+        className={`${panel} overflow-hidden rounded-[14px]`}
+      >
+        <div className="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center border border-cyan-400/25 bg-cyan-400/10 text-cyan-300">
+              <Fingerprint className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-400">
+                Trust surface / live state
+              </p>
+              <h2 id="identity-perimeter-title" className="mt-0.5 text-base font-semibold text-white">
+                Identity perimeter
+              </h2>
             </div>
+          </div>
+          <p className="max-w-xl text-xs leading-5 text-slate-500">
+            Browser-local posture computed from current identities, role assignments, and permission
+            grants.
+          </p>
+        </div>
 
-            <p className="mt-3 border-t border-slate-800 pt-3 text-xs text-slate-500">
-              {metric.detail}
-            </p>
-          </motion.article>
-        ))}
+        <div className="grid sm:grid-cols-2 xl:grid-cols-5">
+          {perimeterSignals.map((signal, index) => {
+            const tones = {
+              emerald: 'border-emerald-400 bg-emerald-400/10 text-emerald-300',
+              cyan: 'border-cyan-400 bg-cyan-400/10 text-cyan-300',
+              amber: 'border-amber-400 bg-amber-400/10 text-amber-300',
+              rose: 'border-rose-400 bg-rose-400/10 text-rose-300',
+              slate: 'border-slate-400 bg-slate-400/10 text-slate-300',
+            } as const;
+
+            return (
+              <motion.article
+                key={signal.label}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+                className="relative min-h-32 border-b border-slate-800 p-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0"
+              >
+                <span
+                  className={`absolute inset-y-4 left-0 w-0.5 border-l ${tones[signal.tone].split(' ')[0]}`}
+                  aria-hidden="true"
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[.13em] text-slate-500">
+                    0{index + 1} / {signal.label}
+                  </p>
+                  <span className={`grid h-7 w-7 place-items-center ${tones[signal.tone]}`}>
+                    <signal.icon className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                  {signal.value}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{signal.detail}</p>
+              </motion.article>
+            );
+          })}
+        </div>
       </section>
 
       {/* Access Map */}
@@ -632,8 +741,8 @@ function Overview({
 
             <PostureItem
               color="cyan"
-              value={elevated}
-              label="Roles with admin access"
+              value={privileged}
+              label="Active privileged identities"
               action={() => navigate('/admin/roles')}
             />
           </div>

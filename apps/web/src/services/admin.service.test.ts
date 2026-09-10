@@ -79,8 +79,10 @@ describe('AdminRepository', () => {
 
   it('keeps user changes and exports in distinct audit groups', () => {
     repository.recordExport(actor, 4);
+    repository.recordAuditExport(actor, 2);
     const entries = repository.getState().audit;
     expect(filterAdminAudit(entries, '', 'export').map(entry => entry.action)).toEqual([
+      'audit.exported',
       'users.exported',
     ]);
     expect(

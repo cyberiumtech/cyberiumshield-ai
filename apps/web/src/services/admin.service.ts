@@ -26,7 +26,8 @@ export type AuditAction =
   | 'role.created'
   | 'role.updated'
   | 'role.deleted'
-  | 'users.exported';
+  | 'users.exported'
+  | 'audit.exported';
 
 export interface AuditEntry {
   id: string;
@@ -150,7 +151,7 @@ export function filterAdminAudit(entries: AuditEntry[], search: string, group: A
       group === 'all' ||
       (group === 'user' && entry.action.startsWith('user.')) ||
       (group === 'role' && entry.action.startsWith('role.')) ||
-      (group === 'export' && entry.action === 'users.exported');
+      (group === 'export' && entry.action.endsWith('.exported'));
     return matchesSearch && matchesGroup;
   });
 }
@@ -524,6 +525,18 @@ export class AdminRepository {
       'users.exported',
       'User directory',
       `${count} filtered records exported`
+    );
+    this.save(state);
+  }
+
+  recordAuditExport(actor: AdminActor, count: number) {
+    const state = this.getState();
+    this.audit(
+      state,
+      actor,
+      'audit.exported',
+      'Audit activity',
+      `${count} filtered events exported`
     );
     this.save(state);
   }
