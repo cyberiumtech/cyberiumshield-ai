@@ -130,19 +130,13 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
           : 'sticky flex flex-col border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
       }
     >
-      {/* ═══ Scroll area — flex-1 + min-h-0 so it never pushes the bar off-screen ═══ */}
+      {/* ═══ Scroll area — always scrollable, bottom bar stays pinned ═══ */}
       <div
-        className={
-          mobile
-            ? 'space-y-3'
-            : `min-h-0 flex-1 ${
-                isCollapsed
-                  ? 'overflow-visible py-3'
-                  : 'overflow-y-auto overflow-x-hidden py-4'
-              }`
-        }
+        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${
+          isCollapsed ? 'py-3' : 'py-4'
+        }`}
       >
-        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-5'}>
+        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-2' : 'space-y-5'}>
           {sections.map((section, sectionIndex) => {
             const items = section.items.filter(it => !it.adminOnly || isAdmin);
             if (!items.length) return null;
@@ -152,10 +146,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             return (
               <div key={section.title}>
                 {showDivider && (
-                  <div aria-hidden="true" className="mx-3 mb-1.5 h-px bg-white/[0.06]" />
+                  <div aria-hidden="true" className="mx-4 my-2 h-px bg-white/[0.06]" />
                 )}
 
-                {/* ── Section label with horizontal line ── */}
+                {/* ── Section label with horizontal line (expanded only) ── */}
                 {!mobile && !isCollapsed && (
                   <div className="mb-2 flex items-center gap-3 px-4">
                     <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
@@ -165,7 +159,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                   </div>
                 )}
 
-                <ul className="space-y-0.5">
+                <ul className={isCollapsed ? 'space-y-1.5' : 'space-y-0.5'}>
                   {items.map(it => {
                     const Icon = it.icon;
                     const active =
@@ -178,10 +172,11 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                         <Link
                           to={it.path}
                           aria-current={active ? 'page' : undefined}
-                          aria-label={isCollapsed ? it.label : undefined}
+                          aria-label={it.label}
+                          title={isCollapsed ? it.label : undefined}
                           className={`group relative flex items-center rounded text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
                             isCollapsed
-                              ? 'mx-2 justify-center py-3'
+                              ? 'mx-2 h-11 justify-center'
                               : 'mx-3 gap-3 px-3 py-2.5'
                           } ${
                             active
@@ -205,15 +200,6 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           />
 
                           {!isCollapsed && <span className="truncate">{it.label}</span>}
-
-                          {isCollapsed && (
-                            <span
-                              role="tooltip"
-                              className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded border border-white/[0.08] bg-[#0d1219] px-2.5 py-1.5 text-[11px] font-medium text-slate-200 opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100"
-                            >
-                              {it.label}
-                            </span>
-                          )}
                         </Link>
                       </li>
                     );
@@ -225,7 +211,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         </div>
       </div>
 
-      {/* ═══ Fixed bottom bar — shrink-0 so it always reserves its height ═══ */}
+      {/* ═══ Fixed bottom bar — shrink-0 so it stays pinned ═══ */}
       {!mobile && (
         <div
           className={`flex shrink-0 items-center border-t border-white/[0.06] bg-[#070b12] ${
