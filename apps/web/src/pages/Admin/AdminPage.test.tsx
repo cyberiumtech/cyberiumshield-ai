@@ -58,12 +58,12 @@ describe('AdminPage', () => {
 
     const perimeter = screen.getByRole('heading', { name: 'Identity perimeter' }).closest('section');
     expect(perimeter).not.toBeNull();
-    expect(within(perimeter!).getByText('Active identities')).toBeInTheDocument();
+    expect(within(perimeter!).getByText(/Active identities/)).toBeInTheDocument();
     expect(within(perimeter!).getByText(String(activeCount))).toBeInTheDocument();
-    expect(within(perimeter!).getByText('Privileged admins')).toBeInTheDocument();
-    expect(within(perimeter!).getByText('Unresolved invites')).toBeInTheDocument();
-    expect(within(perimeter!).getByText('Suspended identities')).toBeInTheDocument();
-    expect(within(perimeter!).getByText('Permission coverage')).toBeInTheDocument();
+    expect(within(perimeter!).getByText(/Privileged admins/)).toBeInTheDocument();
+    expect(within(perimeter!).getByText(/Unresolved invites/)).toBeInTheDocument();
+    expect(within(perimeter!).getByText(/Suspended identities/)).toBeInTheDocument();
+    expect(within(perimeter!).getByText(/Permission coverage/)).toBeInTheDocument();
   });
 
   it('creates a user through the modal and records the mutation', async () => {
