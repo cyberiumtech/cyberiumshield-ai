@@ -328,26 +328,25 @@ export function ReportModal({
     <AnimatePresence>
       {isOpen && (
         <>
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
-          <motion.button
-            type="button"
-            aria-label="Close report builder"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => !isGenerating && onClose()}
-            className="absolute inset-0 cursor-default bg-slate-950/75 backdrop-blur-sm"
-          />
-          </div>
-          <motion.section
-            initial={{ opacity: 0, scale: 0.98, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 12 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="report-builder-title"
-            className="
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+            <motion.button
+              type="button"
+              aria-label="Close report builder"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isGenerating && onClose()}
+              className="absolute inset-0 cursor-default bg-slate-950/75 backdrop-blur-sm"
+            />
+            <motion.section
+              initial={{ opacity: 0, scale: 0.98, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 12 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="report-builder-title"
+              className="
                         relative
                         z-[61]
                         max-h-[calc(100vh-2rem)]
@@ -359,147 +358,150 @@ export function ReportModal({
                         bg-[var(--bg-secondary)]
                         shadow-2xl
                         "
-          >
-            <header className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-500">
-                  Audit-ready export
-                </p>
-                <h2
-                  id="report-builder-title"
-                  className="mt-1 text-xl font-semibold tracking-tight text-[var(--text-primary)]"
-                >
-                  Build evidence report
-                </h2>
-                <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Export only the records currently available to Security Center.
-                </p>
-              </div>
-              <button
-                ref={closeButtonRef}
-                type="button"
-                onClick={onClose}
-                disabled={isGenerating}
-                aria-label="Close report dialog"
-                className="p-2 text-[var(--text-secondary)] transition hover:bg-white/5 hover:text-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </header>
-            <form onSubmit={handleGenerate} className="p-5 sm:p-7">
-              <fieldset>
-                <legend className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
-                  Report scope
-                </legend>
-                <div className="mt-3 grid gap-2">
-                  {Object.entries(reportTypes).map(([key, item]) => (
-                    <label
-                      key={key}
-                      className={`cursor-pointer border p-4 transition ${reportType === key ? 'border-cyan-400/60 bg-cyan-400/[0.07]' : 'border-[var(--border-color)] hover:border-cyan-400/30'}`}
-                    >
-                      <input
-                        type="radio"
-                        name="report-type"
-                        value={key}
-                        checked={reportType === key}
-                        onChange={() => setReportType(key as ReportType)}
-                        className="sr-only"
-                      />
-                      <span className="flex items-start gap-3">
-                        <span
-                          className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center border ${reportType === key ? 'border-cyan-400 bg-cyan-400' : 'border-slate-500'}`}
-                        >
-                          {reportType === key && (
-                            <CheckCircle2 className="h-3 w-3 text-slate-950" />
-                          )}
-                        </span>
-                        <span>
-                          <span className="block text-sm font-semibold text-[var(--text-primary)]">
-                            {item.label}
-                          </span>
-                          <span className="mt-1 block text-xs leading-relaxed text-[var(--text-secondary)]">
-                            {item.description}
-                          </span>
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
-                  Date range
-                  <select
-                    value={dateRange}
-                    onChange={event => setDateRange(event.target.value as DateRange)}
-                    className="mt-2 w-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-3 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+            >
+              <header className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-500">
+                    Audit-ready export
+                  </p>
+                  <h2
+                    id="report-builder-title"
+                    className="mt-1 text-xl font-semibold tracking-tight text-[var(--text-primary)]"
                   >
-                    {Object.entries(ranges).map(([key, range]) => (
-                      <option key={key} value={key}>
-                        {range.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    Build evidence report
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    Export only the records currently available to Security Center.
+                  </p>
+                </div>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  onClick={onClose}
+                  disabled={isGenerating}
+                  aria-label="Close report dialog"
+                  className="p-2 text-[var(--text-secondary)] transition hover:bg-white/5 hover:text-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </header>
+              <form onSubmit={handleGenerate} className="p-5 sm:p-7">
                 <fieldset>
                   <legend className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
-                    File format
+                    Report scope
                   </legend>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {(
-                      [
-                        { key: 'pdf', Icon: FileText },
-                        { key: 'csv', Icon: FileSpreadsheet },
-                        { key: 'json', Icon: FileJson },
-                      ] as const
-                    ).map(({ key, Icon }) => (
+                  <div className="mt-3 grid gap-2">
+                    {Object.entries(reportTypes).map(([key, item]) => (
                       <label
                         key={key}
-                        className={`cursor-pointer border px-2 py-2.5 text-center text-xs font-semibold uppercase transition ${format === key ? 'border-cyan-400/60 bg-cyan-400/[0.08] text-cyan-400' : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-cyan-400/30'}`}
+                        className={`cursor-pointer border p-4 transition ${reportType === key ? 'border-cyan-400/60 bg-cyan-400/[0.07]' : 'border-[var(--border-color)] hover:border-cyan-400/30'}`}
                       >
                         <input
-                          className="sr-only"
                           type="radio"
-                          name="format"
+                          name="report-type"
                           value={key}
-                          checked={format === key}
-                          onChange={() => setFormat(key)}
+                          checked={reportType === key}
+                          onChange={() => setReportType(key as ReportType)}
+                          className="sr-only"
                         />
-                        <Icon className="mx-auto mb-1 h-4 w-4" />
-                        {key}
+                        <span className="flex items-start gap-3">
+                          <span
+                            className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center border ${reportType === key ? 'border-cyan-400 bg-cyan-400' : 'border-slate-500'}`}
+                          >
+                            {reportType === key && (
+                              <CheckCircle2 className="h-3 w-3 text-slate-950" />
+                            )}
+                          </span>
+                          <span>
+                            <span className="block text-sm font-semibold text-[var(--text-primary)]">
+                              {item.label}
+                            </span>
+                            <span className="mt-1 block text-xs leading-relaxed text-[var(--text-secondary)]">
+                              {item.description}
+                            </span>
+                          </span>
+                        </span>
                       </label>
                     ))}
                   </div>
                 </fieldset>
-              </div>
-              <div className="mt-6 border-l-2 border-cyan-400 bg-cyan-400/[0.05] px-4 py-3">
-                <p className="text-xs font-semibold text-[var(--text-primary)]">Export contents</p>
-                <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {included}. Missing values remain explicitly unavailable; no estimates are
-                  inserted.
-                </p>
-              </div>
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border-color)] pt-5 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isGenerating}
-                  className="min-h-11 border border-[var(--border-color)] px-5 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isGenerating}
-                  aria-busy={isGenerating}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 bg-cyan-400 px-5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-wait disabled:opacity-60"
-                >
-                  <Download className={`h-4 w-4 ${isGenerating ? 'animate-bounce' : ''}`} />
-                  {isGenerating ? 'Preparing export…' : `Download ${format.toUpperCase()}`}
-                </button>
-              </div>
-            </form>
-          </motion.section>
+                <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                    Date range
+                    <select
+                      value={dateRange}
+                      onChange={event => setDateRange(event.target.value as DateRange)}
+                      className="mt-2 w-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-3 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                    >
+                      {Object.entries(ranges).map(([key, range]) => (
+                        <option key={key} value={key}>
+                          {range.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <fieldset>
+                    <legend className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                      File format
+                    </legend>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          { key: 'pdf', Icon: FileText },
+                          { key: 'csv', Icon: FileSpreadsheet },
+                          { key: 'json', Icon: FileJson },
+                        ] as const
+                      ).map(({ key, Icon }) => (
+                        <label
+                          key={key}
+                          className={`cursor-pointer border px-2 py-2.5 text-center text-xs font-semibold uppercase transition ${format === key ? 'border-cyan-400/60 bg-cyan-400/[0.08] text-cyan-400' : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-cyan-400/30'}`}
+                        >
+                          <input
+                            className="sr-only"
+                            type="radio"
+                            name="format"
+                            value={key}
+                            checked={format === key}
+                            onChange={() => setFormat(key)}
+                          />
+                          <Icon className="mx-auto mb-1 h-4 w-4" />
+                          {key}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+                <div className="mt-6 border-l-2 border-cyan-400 bg-cyan-400/[0.05] px-4 py-3">
+                  <p className="text-xs font-semibold text-[var(--text-primary)]">
+                    Export contents
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
+                    {included}. Missing values remain explicitly unavailable; no estimates are
+                    inserted.
+                  </p>
+                </div>
+                <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border-color)] pt-5 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isGenerating}
+                    className="min-h-11 border border-[var(--border-color)] px-5 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    aria-busy={isGenerating}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 bg-cyan-400 px-5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <Download className={`h-4 w-4 ${isGenerating ? 'animate-bounce' : ''}`} />
+                    {isGenerating ? 'Preparing export…' : `Download ${format.toUpperCase()}`}
+                  </button>
+                </div>
+              </form>
+            </motion.section>
+          </div>
         </>
       )}
     </AnimatePresence>
