@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import authService, { LoginCredentials, RegisterData, User } from '../services/auth.service';
+import { useLocation, useNavigate } from 'react-router-dom';
+import authService, { getAuthenticatedHomePath, LoginCredentials, RegisterData, User } from '../services/auth.service';
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ['user'],
@@ -30,7 +31,14 @@ export function useAuth() {
       queryClient.setQueryData(['user'], data.user);
 
       if (data.user.email_verified_at) {
-        navigate('/dashboard');
+        const requestedLocation = (location.state as {
+          from?: { pathname?: string; search?: string; hash?: string };
+        } | null)?.from;
+        const requestedPath = requestedLocation?.pathname
+          ? `${requestedLocation.pathname}${requestedLocation.search ?? ''}${requestedLocation.hash ?? ''}`
+          : null;
+
+        navigate(requestedPath ?? getAuthenticatedHomePath(data.user), { replace: true });
       } else {
         navigate('/auth/verify-email');
       }

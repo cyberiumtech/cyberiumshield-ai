@@ -47,6 +47,11 @@ export interface AuthResponse {
   expires_at?: string;
 }
 
+export function getAuthenticatedHomePath(user?: Pick<User, 'role'> | null): string {
+  const role = (user?.role ?? '').trim().toLowerCase().replace(/[_-]+/g, ' ');
+  return role === 'admin' || role === 'administrator' ? '/admin' : '/dashboard';
+}
+
 class AuthService {
   async getCsrfCookie(): Promise<void> {
     // TODO: Implement CSRF cookie endpoint when backend is ready
