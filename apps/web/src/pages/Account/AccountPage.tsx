@@ -73,8 +73,14 @@ export function AccountPage() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [avatar, setAvatar] = useState<string | undefined>();
-  const [savedProfile, setSavedProfile] = useState({ name: '', email: '', avatar: undefined as string | undefined });
+  const [savedProfile, setSavedProfile] = useState({
+    name: '',
+    email: '',
+    organizationName: '',
+    avatar: undefined as string | undefined,
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -83,9 +89,15 @@ export function AccountPage() {
 
   useEffect(() => {
     if (!user) return;
-    const profile = { name: user.name, email: user.email, avatar: user.avatar };
+    const profile = {
+      name: user.name,
+      email: user.email,
+      organizationName: user.organization_name,
+      avatar: user.avatar,
+    };
     setName(profile.name);
     setEmail(profile.email);
+    setOrganizationName(profile.organizationName);
     setAvatar(profile.avatar);
     setSavedProfile(profile);
   }, [user]);
@@ -120,6 +132,7 @@ export function AccountPage() {
   const handleCancel = () => {
     setName(savedProfile.name);
     setEmail(savedProfile.email);
+    setOrganizationName(savedProfile.organizationName);
     setAvatar(savedProfile.avatar);
     setEditing(false);
   };
@@ -128,11 +141,27 @@ export function AccountPage() {
     event.preventDefault();
     if (!name.trim()) return toast.error('Full name is required.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.error('Enter a valid email address.');
+    if (!organizationName.trim()) return toast.error('Organization name is required.');
 
-    const profile = { name: name.trim(), email: email.trim(), avatar };
-    const updatedUser: User = { ...user, ...profile, updated_at: new Date().toISOString() };
+    const profile = {
+      name: name.trim(),
+      email: email.trim(),
+      organizationName: organizationName.trim(),
+      avatar,
+    };
+    const updatedUser: User = {
+      ...user,
+      name: profile.name,
+      email: profile.email,
+      organization_name: profile.organizationName,
+      avatar: profile.avatar,
+      updated_at: new Date().toISOString(),
+    };
     localStorage.setItem('cybershield_user', JSON.stringify(updatedUser));
     queryClient.setQueryData(['user'], updatedUser);
+    setName(profile.name);
+    setEmail(profile.email);
+    setOrganizationName(profile.organizationName);
     setSavedProfile(profile);
     setEditing(false);
     toast.success('Profile updated.');
@@ -179,6 +208,7 @@ export function AccountPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Full name" value={name} onChange={setName} disabled={!editing} />
                 <Field label="Email address" value={email} onChange={setEmail} type="email" disabled={!editing} />
+                <Field label="Organization name" value={organizationName} onChange={setOrganizationName} disabled={!editing} />
               </div>
               {editing && <div className="flex justify-end gap-2 border-t border-zinc-800 pt-4"><button type="button" onClick={handleCancel} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:text-white"><X className="h-4 w-4" /> Cancel</button><button type="submit" className="flex items-center gap-2 rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-400"><Save className="h-4 w-4" /> Save changes</button></div>}
             </form>

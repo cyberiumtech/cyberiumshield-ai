@@ -55,10 +55,7 @@ export function Navbar() {
             </div>
             <div className="hidden sm:block">
               <div className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-white">
-                <span>CyberShield</span>
-                <span className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1 py-0.2 text-[10px] font-mono font-semibold uppercase tracking-wider text-cyan-400">
-                  AI
-                </span>
+                <span>CYBERSHIELD</span>
               </div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Admin Control Portal
