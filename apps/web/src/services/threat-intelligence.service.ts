@@ -235,7 +235,9 @@ async function requestJson(
     return (await response.json()) as unknown;
   } catch (error) {
     if (error instanceof ThreatIntelligenceError) throw error;
-    if (signal?.aborted) throw error;
+    if (signal?.aborted) {
+      throw new ThreatIntelligenceError('The threat intelligence request was cancelled.');
+    }
     if (controller.signal.aborted) {
       throw new ThreatIntelligenceError(
         `The threat intelligence request timed out after ${Math.round(timeoutMs / 1000)} seconds.`
