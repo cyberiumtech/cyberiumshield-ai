@@ -183,7 +183,7 @@ describe('ThreatIntelligencePage', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findAllByText('example.com')).not.toHaveLength(0);
+    expect(await screen.findAllByTitle('example.com')).not.toHaveLength(0);
     expect(screen.getAllByText('inconclusive')).not.toHaveLength(0);
     expect(
       screen.getAllByLabelText('Evidence coverage inconclusive, confidence none')
