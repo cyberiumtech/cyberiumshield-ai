@@ -88,7 +88,7 @@ await send('Runtime.enable');
 await send('Log.enable');
 await send('Network.enable');
 await send('Page.navigate', { url: pageUrl });
-await waitForText('Threat intelligence');
+await waitForText('Threat Intelligence');
 await evaluate('document.fonts.ready');
 await sleep(1200);
 
