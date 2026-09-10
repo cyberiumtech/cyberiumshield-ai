@@ -3,10 +3,16 @@ import json
 import os
 from datetime import datetime, timezone
 
-import pymysql
+try:
+    import pymysql
+except ImportError:
+    pymysql = None
+from urllib.request import Request, urlopen
 
 
 def conn():
+    if pymysql is None:
+        raise RuntimeError('PyMySQL is not installed')
     return pymysql.connect(
         host=os.getenv('CYBERSHIELD_DB_HOST', '127.0.0.1'),
         port=int(os.getenv('CYBERSHIELD_DB_PORT', '3306')),
@@ -18,6 +24,8 @@ def conn():
 
 
 def init_db():
+    if pymysql is None:
+        return
     with conn() as database:
         with database.cursor() as cursor:
             cursor.execute('''CREATE TABLE IF NOT EXISTS threat_intelligence_observations (
@@ -32,6 +40,13 @@ def init_db():
 
 
 def save_observation(result):
+    if pymysql is None:
+        request = Request(
+            os.getenv('CYBERSHIELD_API_URL', 'http://127.0.0.1:8000/api/v1') + '/storage/threat-intelligence',
+            data=json.dumps(result).encode('utf-8'), headers={'Content-Type': 'application/json'}, method='POST')
+        with urlopen(request, timeout=10):
+            pass
+        return
     with conn() as database:
         with database.cursor() as cursor:
             cursor.execute(
@@ -46,6 +61,10 @@ def save_observation(result):
 
 def recent(limit=50):
     safe_limit = min(max(int(limit), 1), 200)
+    if pymysql is None:
+        url = os.getenv('CYBERSHIELD_API_URL', 'http://127.0.0.1:8000/api/v1') + f'/storage/threat-intelligence?limit={safe_limit}'
+        with urlopen(url, timeout=10) as response:
+            return json.loads(response.read().decode('utf-8'))
     with conn() as database:
         with database.cursor() as cursor:
             cursor.execute('SELECT * FROM threat_intelligence_observations ORDER BY id DESC LIMIT %s', (safe_limit,))

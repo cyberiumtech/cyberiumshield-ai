@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.dependencies.auth import get_optional_user
 from app.db.models import (
     EmailSpamScan, IncidentAnalyticsSnapshot, IncidentFieldNote, IncidentSolution,
-    MalwareScan, NetworkMonitoringRecord, PhishingScan, SecurityEvent, User,
+    MalwareScan, NetworkMonitoringRecord, PhishingScan, SecurityEvent,
+    ThreatIntelligenceObservation, User,
 )
 from app.db.session import get_db
 
@@ -158,6 +159,26 @@ def create_network_record(body: NetworkRecordInput, db: Session = Depends(get_db
         payload=body.payload, observed_at=body.observed_at or datetime.utcnow())
     db.add(row); db.commit(); db.refresh(row)
     return {'id': row.id, 'observed_at': row.observed_at}
+
+
+@router.get('/threat-intelligence')
+def list_threat_observations(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)):
+    rows = db.query(ThreatIntelligenceObservation).order_by(ThreatIntelligenceObservation.id.desc()).limit(limit).all()
+    output = []
+    for row in rows:
+        result = dict(row.result or {})
+        result['id'] = row.id
+        output.append(result)
+    return output
+
+
+@router.post('/threat-intelligence', status_code=status.HTTP_201_CREATED)
+def create_threat_observation(body: dict[str, Any], db: Session = Depends(get_db)):
+    row = ThreatIntelligenceObservation(indicator=str(body.get('indicator') or '')[:2048],
+        indicator_type=str(body.get('indicatorType') or 'unknown')[:50], risk_score=int(body.get('riskScore') or 0),
+        verdict=str(body.get('verdict') or 'unknown')[:30], result=body, created_at=_dt(body.get('checkedAt')))
+    db.add(row); db.commit(); db.refresh(row)
+    return {'id': row.id}
 
 
 def _solution(row: IncidentSolution) -> dict[str, Any]:
