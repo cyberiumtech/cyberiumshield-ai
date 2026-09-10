@@ -108,6 +108,17 @@ export async function scanEmailSpam(input: {
   return response.data;
 }
 
+export type DetectorStorageKind = 'malware' | 'phishing' | 'email-spam';
+
+export async function getDetectorHistory<T>(kind: DetectorStorageKind, limit = 25): Promise<T[]> {
+  const response = await api.get<T[]>(`/v1/storage/scans/${kind}`, { params: { limit } });
+  return response.data;
+}
+
+export async function clearDetectorHistory(kind: DetectorStorageKind): Promise<void> {
+  await api.delete(`/v1/storage/scans/${kind}`);
+}
+
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('cybershield_token');

@@ -47,15 +47,13 @@ def add_security_headers(response):
 
 @app.get("/api/health")
 def health():
-    result = {
+    return jsonify({
         "status": "ok",
         "model": METADATA["model_name"],
         "model_version": METADATA["model_version"],
         "dataset_size": METADATA["dataset"]["messages"],
         "test_metrics": METADATA["test_metrics"],
-    }
-    save_scan(result)
-    return jsonify(result)
+    })
 
 
 @app.route("/api/predict", methods=["POST", "OPTIONS"])
@@ -87,7 +85,7 @@ def predict():
     signals, link_count = explain_email(parsed)
 
     logger.info("prediction verdict=%s score=%d", verdict, round(spam_probability * 100))
-    return jsonify({
+    result = {
         "verdict": verdict,
         "score": round(spam_probability * 100),
         "spam_probability": round(spam_probability, 6),
@@ -99,7 +97,9 @@ def predict():
         "model": METADATA["model_name"],
         "model_version": METADATA["model_version"],
         "scannedAt": datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    save_scan(result)
+    return jsonify(result)
 
 
 @app.errorhandler(413)
