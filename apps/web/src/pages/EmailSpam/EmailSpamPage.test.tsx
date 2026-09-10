@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { EmailSpamPage } from './EmailSpamPage';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('../../services/api', () => ({
+  getDetectorHistory: vi.fn().mockResolvedValue([]),
+  clearDetectorHistory: vi.fn().mockResolvedValue(undefined),
   scanEmailSpam: vi.fn().mockResolvedValue({
     verdict: 'spam',
     score: 98,

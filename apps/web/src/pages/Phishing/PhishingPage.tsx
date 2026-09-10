@@ -1034,7 +1034,7 @@ export function PhishingPage() {
           kicker="Recent activity"
           kickerTone="slate"
           title="Scan logs"
-          hint="Your last 25 URL scans on this device. Stored locally in the browser."
+          hint="Your last 25 URL scans from the shared MySQL database."
           right={
             logs.length > 0 ? (
               <button

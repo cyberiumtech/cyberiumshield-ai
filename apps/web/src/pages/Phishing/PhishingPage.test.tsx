@@ -9,6 +9,8 @@ vi.mock('sonner', () => ({
 
 vi.mock('../../services/api', () => ({
   scanPhishingUrl: vi.fn(),
+  getDetectorHistory: vi.fn().mockResolvedValue([]),
+  clearDetectorHistory: vi.fn().mockResolvedValue(undefined),
 }));
 
 const scanPhishingUrlMock = vi.mocked(scanPhishingUrl);

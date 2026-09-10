@@ -279,7 +279,7 @@ function PublishIncidentDialog({
             </h2>
             <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-slate-500">
               Share operational facts without credentials, personal data, or active exploit
-              details. This post is saved in this browser.
+              details. This post is saved in the shared MySQL database.
             </p>
           </div>
           <button
@@ -841,7 +841,7 @@ export function IncidentsPage() {
               Storage
             </p>
             <p className="mt-0.5 text-[11px] text-slate-400">
-              Saved in this browser only
+              Shared MySQL database
             </p>
           </div>
           <button type="button" onClick={() => setPublishOpen(true)} className={BTN_PRIMARY}>
