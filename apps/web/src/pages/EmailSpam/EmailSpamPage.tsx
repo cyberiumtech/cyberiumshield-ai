@@ -8,7 +8,6 @@ import {
   Clock,
   Copy,
   History,
-  Link2,
   Loader2,
   MailSearch,
   RotateCcw,
@@ -20,6 +19,23 @@ import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { scanEmailSpam } from '../../services/api';
 import type { EmailSpamAnalysis } from '../../services/api';
+
+/* ------------------------------------------------------------------ */
+/* Typography — single source of truth                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Brand font for the whole page.
+ * Loaded via <link> in index.html. Change this ONE string to swap fonts.
+ * Example alternatives: '"Inter", sans-serif', '"Space Grotesk", sans-serif',
+ * '"DM Sans", sans-serif', '"Manrope", sans-serif'.
+ */
+export const FONT_SANS =
+  '"Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+/** Monospace font for the raw email textarea and code-like fields. */
+export const FONT_MONO =
+  '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -147,7 +163,6 @@ const createId = (): string => {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-/** Guarantees the shape the UI depends on, whatever the API returns. */
 function normaliseAnalysis(analysis: EmailSpamAnalysis): EmailSpamAnalysis {
   return {
     ...analysis,
@@ -230,7 +245,6 @@ export function EmailSpamPage() {
 
   /* ----------------------------- effects ---------------------------- */
 
-  // Keep history in sync when another tab clears or writes scans.
   useEffect(() => {
     const sync = () => setLogs(readLogs());
     window.addEventListener('storage', sync);
@@ -407,7 +421,10 @@ export function EmailSpamPage() {
   /* ------------------------------ view ------------------------------ */
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div
+      className="mx-auto max-w-6xl space-y-6 antialiased"
+      style={{ fontFamily: FONT_SANS }}
+    >
       {/* ------------------------------ header ------------------------------ */}
       <header className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#121D35] via-[#0F1729] to-[#0B1220] p-6 sm:p-7">
         <div
@@ -421,11 +438,11 @@ export function EmailSpamPage() {
 
         <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-cyan-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
               <MailSearch className="h-3.5 w-3.5" aria-hidden />
               Message intelligence
             </span>
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
+            <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-50 sm:text-3xl">
               Email Spam Detector
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">
@@ -438,7 +455,7 @@ export function EmailSpamPage() {
             <button
               type="button"
               onClick={() => loadSample(SAFE_SAMPLE)}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-medium text-slate-300 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.07] hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.07] hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/30"
             >
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
               Safe sample
@@ -446,7 +463,7 @@ export function EmailSpamPage() {
             <button
               type="button"
               onClick={() => loadSample(SPAM_SAMPLE)}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3.5 py-2 text-xs font-medium text-amber-300 transition hover:border-amber-400/40 hover:bg-amber-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/30"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3.5 py-2 text-xs font-semibold text-amber-300 transition hover:border-amber-400/40 hover:bg-amber-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/30"
             >
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
               Spam sample
@@ -464,7 +481,7 @@ export function EmailSpamPage() {
               <MailSearch className="h-[18px] w-[18px]" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-slate-100">Analyze an email</h2>
+              <h2 className="text-sm font-bold text-slate-100">Analyze an email</h2>
               <p className="truncate text-xs text-slate-500">
                 Raw headers are supported — paste them straight into the message field.
               </p>
@@ -474,8 +491,8 @@ export function EmailSpamPage() {
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-6" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1.5">
-                <span className="text-xs font-medium text-slate-400">
-                  Sender <span className="text-slate-600">(optional)</span>
+                <span className="text-xs font-semibold text-slate-400">
+                  Sender <span className="font-normal text-slate-600">(optional)</span>
                 </span>
                 <input
                   type="text"
@@ -492,8 +509,8 @@ export function EmailSpamPage() {
               </label>
 
               <label className="block space-y-1.5">
-                <span className="text-xs font-medium text-slate-400">
-                  Subject <span className="text-slate-600">(optional)</span>
+                <span className="text-xs font-semibold text-slate-400">
+                  Subject <span className="font-normal text-slate-600">(optional)</span>
                 </span>
                 <input
                   type="text"
@@ -510,16 +527,17 @@ export function EmailSpamPage() {
             </div>
 
             <label className="block space-y-1.5">
-              <span className="flex items-center justify-between gap-3 text-xs font-medium text-slate-400">
+              <span className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-400">
                 <span>
-                  Message or raw email <span className="text-slate-600">(required)</span>
+                  Message or raw email <span className="font-normal text-slate-600">(required)</span>
                 </span>
                 <span
                   className={
                     isOverLimit
-                      ? 'font-mono text-[11px] text-rose-300'
-                      : 'font-mono text-[11px] text-slate-600'
+                      ? 'font-mono text-[11px] font-normal text-rose-300'
+                      : 'font-mono text-[11px] font-normal text-slate-600'
                   }
+                  style={{ fontFamily: FONT_MONO }}
                 >
                   {characterCount.toLocaleString()} / {MAX_CONTENT_LENGTH.toLocaleString()}
                 </span>
@@ -536,7 +554,8 @@ export function EmailSpamPage() {
                 placeholder={
                   'Paste the email body here, or include raw headers such as From, Reply-To, Subject and Authentication-Results…'
                 }
-                className={`${INPUT_CLASS} resize-y font-mono leading-6 placeholder:font-sans`}
+                className={`${INPUT_CLASS} resize-y leading-6 placeholder:font-sans`}
+                style={{ fontFamily: FONT_MONO }}
               />
             </label>
 
@@ -561,7 +580,7 @@ export function EmailSpamPage() {
                   type="button"
                   onClick={reset}
                   disabled={isScanning}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-400 transition hover:border-white/20 hover:bg-white/[0.05] hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden />
                   Reset
@@ -570,7 +589,7 @@ export function EmailSpamPage() {
                 <button
                   type="submit"
                   disabled={isScanning}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/15 transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1729] disabled:cursor-wait disabled:opacity-60 disabled:shadow-none"
+                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/15 transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1729] disabled:cursor-wait disabled:opacity-60 disabled:shadow-none"
                 >
                   {isScanning ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -584,11 +603,17 @@ export function EmailSpamPage() {
 
             <p className="text-[11px] text-slate-600">
               Tip: press{' '}
-              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
+              <kbd
+                className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-400"
+                style={{ fontFamily: FONT_MONO }}
+              >
                 Ctrl
               </kbd>{' '}
               +{' '}
-              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
+              <kbd
+                className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-400"
+                style={{ fontFamily: FONT_MONO }}
+              >
                 Enter
               </kbd>{' '}
               to run the analysis.
@@ -636,7 +661,7 @@ export function EmailSpamPage() {
               <div className="grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-white/[0.03] text-slate-500">
                 <MailSearch className="h-7 w-7" aria-hidden />
               </div>
-              <h2 className="mt-5 text-sm font-semibold text-slate-200">
+              <h2 className="mt-5 text-sm font-bold text-slate-200">
                 Your result will appear here
               </h2>
               <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">
@@ -646,7 +671,6 @@ export function EmailSpamPage() {
             </div>
           ) : (
             <div className="flex flex-1 flex-col p-6">
-              {/* verdict header */}
               <div className="flex items-start justify-between gap-4">
                 <div className={`flex items-center gap-3 ${verdictMeta.text}`}>
                   <span
@@ -655,22 +679,23 @@ export function EmailSpamPage() {
                     <verdictMeta.Icon className="h-5 w-5" aria-hidden />
                   </span>
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Assessment
                     </p>
-                    <p className="text-lg font-bold leading-tight">{verdictMeta.label}</p>
+                    <p className="text-lg font-extrabold leading-tight">{verdictMeta.label}</p>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <p className={`text-4xl font-bold tabular-nums leading-none ${verdictMeta.text}`}>
+                  <p
+                    className={`text-4xl font-extrabold tabular-nums leading-none ${verdictMeta.text}`}
+                  >
                     {result.score}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-500">risk score / 100</p>
                 </div>
               </div>
 
-              {/* meter */}
               <div
                 className="mt-5 h-2 overflow-hidden rounded-full bg-black/30"
                 role="progressbar"
@@ -685,7 +710,6 @@ export function EmailSpamPage() {
                 />
               </div>
 
-              {/* metrics */}
               <div className="mt-5 grid grid-cols-3 gap-2">
                 {[
                   { label: 'Confidence', value: `${result.confidence}%` },
@@ -696,7 +720,7 @@ export function EmailSpamPage() {
                     key={metric.label}
                     className="rounded-xl border border-white/[0.06] bg-black/20 px-3 py-3 text-center"
                   >
-                    <p className="text-lg font-semibold tabular-nums text-slate-100">
+                    <p className="text-lg font-bold tabular-nums text-slate-100">
                       {metric.value}
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-500">{metric.label}</p>
@@ -704,9 +728,8 @@ export function EmailSpamPage() {
                 ))}
               </div>
 
-              {/* actions */}
               <div className="mt-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
                   What to do
                 </p>
                 <ul className="mt-3 space-y-2">
@@ -722,7 +745,6 @@ export function EmailSpamPage() {
                 </ul>
               </div>
 
-              {/* meta row */}
               <div className="mt-auto space-y-3 pt-6">
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-black/20 px-3.5 py-2.5">
                   <span className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
@@ -735,7 +757,7 @@ export function EmailSpamPage() {
                   <button
                     type="button"
                     onClick={copySummary}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.08] hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.08] hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30"
                   >
                     {copied ? (
                       <Check className="h-3.5 w-3.5" aria-hidden />
@@ -761,13 +783,13 @@ export function EmailSpamPage() {
         <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1729]/70 backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4 sm:px-6">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Explainable detection
               </p>
-              <h2 className="mt-1 text-sm font-semibold text-slate-100">Signal breakdown</h2>
+              <h2 className="mt-1 text-sm font-bold text-slate-100">Signal breakdown</h2>
             </div>
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${verdictMeta?.soft ?? ''} ${verdictMeta?.text ?? ''}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${verdictMeta?.soft ?? ''} ${verdictMeta?.text ?? ''}`}
             >
               {detectedSignals.length} of {result.signals.length} signals detected
             </span>
@@ -790,7 +812,7 @@ export function EmailSpamPage() {
                 >
                   <div className="min-w-0">
                     <p
-                      className={`text-sm font-medium ${
+                      className={`text-sm font-semibold ${
                         signal.detected ? 'text-amber-200' : 'text-slate-400'
                       }`}
                     >
@@ -800,7 +822,7 @@ export function EmailSpamPage() {
                   </div>
 
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                       signal.detected
                         ? 'bg-amber-400/10 text-amber-300'
                         : 'bg-white/[0.05] text-slate-500'
@@ -823,10 +845,10 @@ export function EmailSpamPage() {
               <History className="h-[18px] w-[18px]" aria-hidden />
             </span>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Recent activity
               </p>
-              <h2 className="mt-0.5 text-sm font-semibold text-slate-100">Email scan history</h2>
+              <h2 className="mt-0.5 text-sm font-bold text-slate-100">Email scan history</h2>
             </div>
           </div>
 
@@ -841,14 +863,14 @@ export function EmailSpamPage() {
                     type="button"
                     onClick={() => setHistoryFilter(key)}
                     aria-pressed={active}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30 ${
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30 ${
                       active
                         ? 'bg-white/[0.09] text-slate-100'
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
                     {label}
-                    <span className="ml-1 tabular-nums text-slate-600">
+                    <span className="ml-1 tabular-nums font-normal text-slate-600">
                       {historyCounts[key]}
                     </span>
                   </button>
@@ -860,7 +882,7 @@ export function EmailSpamPage() {
               <button
                 type="button"
                 onClick={clearHistory}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-medium text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden />
                 Clear
@@ -881,19 +903,19 @@ export function EmailSpamPage() {
               <caption className="sr-only">Previously analyzed emails</caption>
               <thead>
                 <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-slate-500">
-                  <th scope="col" className="px-5 py-3 font-medium sm:px-6">
+                  <th scope="col" className="px-5 py-3 font-semibold sm:px-6">
                     Subject
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
+                  <th scope="col" className="px-3 py-3 font-semibold">
                     Sender
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
+                  <th scope="col" className="px-3 py-3 font-semibold">
                     Verdict
                   </th>
-                  <th scope="col" className="px-3 py-3 font-medium">
+                  <th scope="col" className="px-3 py-3 font-semibold">
                     Score
                   </th>
-                  <th scope="col" className="px-5 py-3 font-medium sm:px-6">
+                  <th scope="col" className="px-5 py-3 font-semibold sm:px-6">
                     Analyzed
                   </th>
                 </tr>
@@ -923,7 +945,7 @@ export function EmailSpamPage() {
 
                       <td className="whitespace-nowrap px-3 py-3">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.soft} ${meta.text}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.soft} ${meta.text}`}
                         >
                           <meta.Icon className="h-3 w-3" aria-hidden />
                           {meta.label}

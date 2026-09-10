@@ -29,6 +29,7 @@ import {
 import {
   deriveIncidentAnalytics,
   getIncidents,
+  loadIncidents,
   subscribeToIncidents,
   type IncidentSeverity,
   type IncidentStatus,
@@ -69,7 +70,11 @@ const tooltipStyle = {
 
 export function AnalyticsPage() {
   const [incidents, setIncidents] = useState(() => getIncidents());
-  useEffect(() => subscribeToIncidents(() => setIncidents(getIncidents())), []);
+  useEffect(() => {
+    const unsubscribe = subscribeToIncidents(() => setIncidents([...getIncidents()]));
+    void loadIncidents().then(value => setIncidents([...value]));
+    return unsubscribe;
+  }, []);
   const analytics = useMemo(() => deriveIncidentAnalytics(incidents), [incidents]);
 
   if (!incidents.length) {
