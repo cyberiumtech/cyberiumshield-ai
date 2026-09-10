@@ -11,15 +11,9 @@ import {
 import { useSecurityDashboard, type SourceKey, type SourceState } from '../../hooks/useSecurityDashboard';
 import { formatDataRate } from '../../services/network-monitor.service';
 
-/* ─────────────────────────────────────────────────────────────
-   FONT STACK
-   ───────────────────────────────────────────────────────────── */
 const FONT_SANS = "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
 const FONT_MONO = "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace";
 
-/* ─────────────────────────────────────────────────────────────
-   CONSTANTS
-   ───────────────────────────────────────────────────────────── */
 const mapPoints = [
   { name: 'London',    coordinates: [-0.13, 51.5] as [number, number],    tone: '#22d3ee' },
   { name: 'São Paulo', coordinates: [-46.63, -23.55] as [number, number], tone: '#a78bfa' },
@@ -39,12 +33,6 @@ const sourceNames: Record<SourceKey, string> = {
   intel: 'CISA KEV feed',
 };
 
-/* Shared grid template so feed header + rows align perfectly */
-const FEED_GRID = 'grid grid-cols-[minmax(0,1fr)_120px_92px_14px] items-center gap-4';
-
-/* ─────────────────────────────────────────────────────────────
-   UTILITIES
-   ───────────────────────────────────────────────────────────── */
 function formatDate(value?: string | null, includeDate = false) {
   if (!value) return 'Not available';
   const date = new Date(value);
@@ -118,6 +106,21 @@ function SourceDot({ source, compact = false }: { source: SourceState; compact?:
     <span className={`inline-flex items-center ${compact ? 'gap-1.5' : 'gap-2'}`}>
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
       <span className={compact ? 'sr-only' : 'capitalize text-slate-300'}>{source.status}</span>
+    </span>
+  );
+}
+
+/* Severity pill — new component */
+function SeverityPill({ severity }: { severity: 'critical' | 'warning' | 'info' | 'ok' }) {
+  const map = {
+    critical: { label: 'Critical', cls: 'border-rose-500/40 bg-rose-500/[0.08] text-rose-400' },
+    warning:  { label: 'Warning',  cls: 'border-amber-500/40 bg-amber-500/[0.08] text-amber-400' },
+    info:     { label: 'Info',     cls: 'border-cyan-500/40 bg-cyan-500/[0.08] text-cyan-400' },
+    ok:       { label: 'Clean',    cls: 'border-emerald-500/40 bg-emerald-500/[0.08] text-emerald-400' },
+  }[severity];
+  return (
+    <span className={`inline-flex items-center justify-center border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${map.cls}`}>
+      {map.label}
     </span>
   );
 }
@@ -248,7 +251,6 @@ function GlobalThreatGlobe() {
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#07101e_0%,transparent_20%,transparent_80%,#07101e_100%)]" />
 
-      {/* Legend — flat chip */}
       <div className="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-auto sm:max-w-sm">
         <div className="flex items-center gap-2 border-l-2 border-cyan-500/70 bg-[#07101e] px-3 py-2">
           <Globe2 className="h-3.5 w-3.5 text-cyan-400" />
@@ -262,7 +264,7 @@ function GlobalThreatGlobe() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MODULE TILE
+   MODULE TILE — denser, horizontal header
    ───────────────────────────────────────────────────────────── */
 type ModuleProps = {
   title: string;
@@ -288,25 +290,32 @@ function ModuleTile({ title, eyebrow, value, detail, route, icon: Icon, source, 
   return (
     <Link
       to={route}
-      className="group relative flex min-h-[180px] flex-col border-t border-white/[0.08] bg-[#0b1424] px-5 py-4 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:border-l sm:border-t-0"
+      className="group relative flex min-h-[170px] flex-col border-t border-white/[0.08] bg-[#0b1424] px-4 py-4 transition hover:bg-white/[0.02] focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 sm:border-l sm:border-t-0"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">{eyebrow}</p>
-          <h3 className="mt-1.5 truncate text-sm font-semibold text-slate-100">{title}</h3>
-        </div>
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded border ${accentStyles[accent]}`}>
+      {/* Header row: icon + eyebrow + title */}
+      <div className="flex items-center gap-2.5">
+        <span className={`grid h-7 w-7 shrink-0 place-items-center border ${accentStyles[accent]}`}>
           <Icon className="h-3.5 w-3.5" />
         </span>
+        <div className="min-w-0">
+          <p className="truncate font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-slate-500">
+            {eyebrow}
+          </p>
+          <h3 className="truncate text-[13px] font-semibold leading-tight text-slate-100">{title}</h3>
+        </div>
       </div>
 
-      <div className="mt-4 font-mono text-2xl font-semibold tracking-tight text-white">{value}</div>
-      <p className="mt-1 truncate text-[11px] text-slate-500" title={detail}>{detail}</p>
+      {/* Value + detail */}
+      <div className="mt-4">
+        <p className="font-mono text-2xl font-semibold leading-none tracking-tight text-white">{value}</p>
+        <p className="mt-1.5 truncate text-[11px] text-slate-500" title={detail}>{detail}</p>
+      </div>
 
-      <div className="mt-auto flex items-end justify-between gap-3 pt-3">
-        <span className="flex min-w-0 items-center gap-2 text-[11px] text-slate-500">
+      {/* Footer */}
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+        <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-slate-500">
           <SourceDot source={source} compact />
-          <span className="truncate">{note}</span>
+          <span className="truncate font-mono uppercase tracking-wider">{note}</span>
         </span>
         <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
       </div>
@@ -437,46 +446,46 @@ export function DashboardPage() {
 
   const modules: ModuleProps[] = [
     {
-      title: 'Email Spam', eyebrow: 'Message intelligence',
+      title: 'Email Spam', eyebrow: 'Message intel',
       value: data.email.length ? String(data.email.length) : '—',
       detail: data.email.length ? `${data.email.filter(item => item.verdict === 'spam').length} spam · latest ${data.email[0].verdict}` : 'No scans yet',
       route: '/email-spam', icon: MailWarning, source: data.sources.email, accent: 'cyan',
-      note: data.sources.email.status === 'online' ? 'Detector ready' : 'Local history only',
+      note: data.sources.email.status === 'online' ? 'Ready' : 'Local only',
     },
     {
       title: 'Phishing', eyebrow: 'URL analysis',
       value: data.phishing.length ? String(data.phishing.length) : '—',
       detail: data.phishing.length ? `${data.phishing.filter(item => item.prediction === 'phishing').length} malicious · latest ${data.phishing[0].prediction}` : 'No scans yet',
       route: '/phishing', icon: FileWarning, source: data.sources.phishing, accent: 'amber',
-      note: data.sources.phishing.status === 'online' ? 'Engine ready' : 'Service unavailable',
+      note: data.sources.phishing.status === 'online' ? 'Ready' : 'Unavailable',
     },
     {
-      title: 'Malware Detection', eyebrow: 'File intelligence',
+      title: 'Malware Detection', eyebrow: 'File intel',
       value: data.malware.length ? String(data.malware.length) : '—',
       detail: data.malware.length ? `${data.malware.filter(item => item.classification === 'Malware').length} threats · latest ${data.malware[0].classification}` : 'No scans yet',
       route: '/malware', icon: Bug, source: data.sources.malware, accent: 'rose',
-      note: data.sources.malware.status === 'online' ? 'Scanner ready' : 'Service unavailable',
+      note: data.sources.malware.status === 'online' ? 'Ready' : 'Unavailable',
     },
     {
       title: 'Vulnerability Management', eyebrow: 'Exposure',
       value: data.vulnerability ? String(data.vulnerability.counts.total) : '—',
       detail: data.vulnerability ? `${data.vulnerability.counts.critical} critical · ${data.vulnerability.counts.high} high` : 'Inventory unavailable',
       route: '/vulnerability', icon: ScanSearch, source: data.sources.vulnerability, accent: 'violet',
-      note: data.vulnerability ? `${data.vulnerability.counts.assets} assets` : 'API unavailable',
+      note: data.vulnerability ? `${data.vulnerability.counts.assets} assets` : 'Unavailable',
     },
     {
       title: 'Network Monitoring', eyebrow: 'Traffic',
       value: data.network ? String(data.network.connection_count) : '—',
       detail: data.network ? `${data.network.established} established · ${data.network.interfaces.filter(item => item.is_up).length} interfaces up` : 'Telemetry unavailable',
       route: '/network', icon: Network, source: data.sources.network, accent: 'emerald',
-      note: data.network?.monitoring ? 'Monitoring active' : 'Monitor unavailable',
+      note: data.network?.monitoring ? 'Active' : 'Unavailable',
     },
     {
       title: 'Threat Intelligence', eyebrow: 'CISA KEV',
       value: data.intel ? String(data.intel.declaredCount ?? data.intel.vulnerabilities.length) : '—',
-      detail: data.intel ? `${recentKev ?? 0} catalog additions in 30 days` : 'Catalog unavailable',
+      detail: data.intel ? `${recentKev ?? 0} additions in 30 days` : 'Catalog unavailable',
       route: '/threat-intelligence', icon: Radar, source: data.sources.intel, accent: 'violet',
-      note: data.intel ? `Catalog ${data.intel.catalogVersion || 'current'}` : 'Feed unavailable',
+      note: data.intel ? `Catalog ${data.intel.catalogVersion || 'current'}` : 'Unavailable',
     },
   ];
 
@@ -487,7 +496,7 @@ export function DashboardPage() {
     >
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(rgba(148,163,184,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,.035)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
-      {/* ═══════════════ HEADER ═══════════════ */}
+      {/* HEADER */}
       <header className="mb-5 flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-5 xl:flex-row xl:items-center">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid h-10 w-10 place-items-center border border-white/[0.08] bg-[#0b1424]">
@@ -533,7 +542,7 @@ export function DashboardPage() {
         </div>
       </header>
 
-      {/* ═══════════════ GLOBE + POSTURE ═══════════════ */}
+      {/* GLOBE + POSTURE */}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(310px,.68fr)]">
         <Panel className="relative min-w-0 overflow-hidden bg-[#07101e]">
           <GlobalThreatGlobe />
@@ -607,7 +616,7 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      {/* ═══════════════ MODULE GRID ═══════════════ */}
+      {/* MODULE GRID */}
       <Panel className="mt-5 overflow-hidden">
         <PanelHeader
           kicker="Detection fabric"
@@ -624,10 +633,10 @@ export function DashboardPage() {
         </div>
       </Panel>
 
-      {/* ═══════════════ ACTIVITY + SIDEBAR ═══════════════ */}
+      {/* ACTIVITY + SIDEBAR */}
       <div className="mt-5 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
 
-        {/* Live attention feed — table structure, no gaps */}
+        {/* Live attention feed — real table */}
         <Panel className="overflow-hidden">
           <PanelHeader
             kicker="Prioritized queue"
@@ -637,44 +646,60 @@ export function DashboardPage() {
           />
 
           {activities.length ? (
-            <>
-              {/* Column header */}
-              <div className={`${FEED_GRID} border-b border-white/[0.08] bg-white/[0.015] px-5 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500`}>
-                <span>Event</span>
-                <span>Source</span>
-                <span>When</span>
-                <span aria-hidden="true" />
-              </div>
-
-              {/* Rows */}
-              <div className="divide-y divide-white/[0.05]">
-                {activities.map(item => {
-                  const barTone =
-                    item.severity === 'critical' ? 'border-l-rose-500'
-                    : item.severity === 'warning' ? 'border-l-amber-500'
-                    : item.severity === 'ok' ? 'border-l-emerald-500'
-                    : 'border-l-cyan-500';
-
-                  return (
-                    <Link
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-white/[0.08] bg-white/[0.015] font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
+                    <th className="w-[92px] px-5 py-2.5 font-medium">Severity</th>
+                    <th className="px-4 py-2.5 font-medium">Event</th>
+                    <th className="w-[150px] px-4 py-2.5 font-medium">Source</th>
+                    <th className="w-[110px] px-4 py-2.5 font-medium">When</th>
+                    <th className="w-[44px] px-5 py-2.5" aria-label="Open" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {activities.map(item => (
+                    <tr
                       key={item.id}
-                      to={item.route}
-                      className={`group ${FEED_GRID} border-l-2 ${barTone} py-3 pl-3 pr-5 transition hover:bg-white/[0.025] focus:outline-none focus-visible:bg-white/[0.03]`}
+                      className="group cursor-pointer transition hover:bg-white/[0.025]"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-200">{item.title}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
-                      </div>
-                      <span className="truncate font-mono text-[11px] text-slate-400">{item.source}</span>
-                      <span className="font-mono text-[11px] text-slate-500" title={formatDate(item.time, true)}>
-                        {relativeTime(item.time)}
-                      </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </>
+                      <td className="px-5 py-3 align-middle">
+                        <SeverityPill severity={item.severity} />
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <Link
+                          to={item.route}
+                          className="block min-w-0 focus:outline-none focus-visible:text-cyan-300"
+                        >
+                          <p className="truncate text-[13px] font-medium text-slate-200">{item.title}</p>
+                          <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <span className="block truncate font-mono text-[11px] text-slate-400">{item.source}</span>
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <span
+                          className="block truncate font-mono text-[11px] text-slate-500"
+                          title={formatDate(item.time, true)}
+                        >
+                          {relativeTime(item.time)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 align-middle text-right">
+                        <Link
+                          to={item.route}
+                          className="inline-grid place-items-center focus:outline-none"
+                          aria-label={`Open ${item.title}`}
+                        >
+                          <ArrowRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="grid min-h-72 place-items-center px-6 text-center">
               <div>
@@ -726,7 +751,7 @@ export function DashboardPage() {
                 return (
                   <div
                     key={key}
-                    className="flex min-w-0 flex-col items-start justify-between gap-1 px-5 py-3 text-xs sm:flex-row sm:items-center sm:gap-3"
+                    className="flex min-w-0 flex-col items-start justify-between gap-1 px-5 py-2.5 text-xs sm:flex-row sm:items-center sm:gap-3"
                   >
                     <span className="flex min-w-0 items-center gap-2 text-slate-200">
                       <SourceDot source={source} compact />
@@ -747,7 +772,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ═══════════════ FOOTER ═══════════════ */}
+      {/* FOOTER */}
       <footer className="mt-6 flex flex-col gap-2 border-t border-white/[0.08] pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <span className="flex items-center gap-2">
           <Server className="h-3.5 w-3.5" />
