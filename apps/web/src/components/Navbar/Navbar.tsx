@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AIStatusIndicator } from './AIStatusIndicator';
 import { EnvironmentBadge } from './EnvironmentBadge';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSelector } from './LanguageSelector';
@@ -11,14 +10,13 @@ import { QuickActionsMenu } from './QuickActionsMenu';
 import { ProfileDropdown } from './ProfileDropdown';
 import { GlobalSearch } from './GlobalSearch';
 import { Sidebar } from '../Sidebar/Sidebar';
-import type { AIStatus, Environment } from './types';
+import type { Environment } from './types';
 import logoUrl from '../../assets/images/Cybershield-AI.png';
 
 export function Navbar() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const aiStatus: AIStatus = 'online';
   const environment: Environment =
     import.meta.env.MODE === 'production' ? 'production' : 'development';
 
@@ -104,11 +102,6 @@ export function Navbar() {
             <GlobalSearch />
           </div>
 
-          {/* AI Status */}
-          <div className="hidden lg:block">
-            <AIStatusIndicator status={aiStatus} />
-          </div>
-
           {/* Environment Badge */}
           <div className="hidden lg:block">
             <EnvironmentBadge environment={environment} />
@@ -151,10 +144,7 @@ export function Navbar() {
               <Sidebar activePath={location.pathname} mobile />
 
               <div className="border-t border-white/10 pt-3">
-                <div className="flex items-center gap-3">
-                  <AIStatusIndicator status={aiStatus} />
-                  <EnvironmentBadge environment={environment} />
-                </div>
+                <EnvironmentBadge environment={environment} />
 
                 <div className="pt-3 border-t border-white/10">
                   <QuickActionsMenu />

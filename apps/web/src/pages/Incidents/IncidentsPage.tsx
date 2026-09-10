@@ -278,11 +278,18 @@ export function IncidentsPage() {
 
   useEffect(() => subscribeToIncidents(() => setIncidents(getIncidents())), []);
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('publish') === '1') {
-      setPublishOpen(true);
-      navigate('/incidents', { replace: true });
+    const params = new URLSearchParams(location.search);
+    const linkedIncidentId = params.get('incident');
+    if (linkedIncidentId && incidents.some(incident => incident.id === linkedIncidentId)) {
+      setSelectedId(linkedIncidentId);
     }
-  }, [location.search, navigate]);
+    if (params.get('publish') === '1') {
+      setPublishOpen(true);
+      params.delete('publish');
+      const nextSearch = params.toString();
+      navigate({ pathname: '/incidents', search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
+    }
+  }, [incidents, location.search, navigate]);
   useEffect(() => {
     if (incidents.length && !incidents.some(incident => incident.id === selectedId)) setSelectedId(incidents[0].id);
   }, [incidents, selectedId]);
@@ -297,6 +304,10 @@ export function IncidentsPage() {
   }), [incidents]);
   const filtersActive = Boolean(query || severity !== 'all' || status !== 'all' || category !== 'all');
   const clearFilters = () => { setQuery(''); setSeverity('all'); setStatus('all'); setCategory('all'); };
+  const selectIncident = (incidentId: string) => {
+    setSelectedId(incidentId);
+    navigate(`/incidents?incident=${encodeURIComponent(incidentId)}`);
+  };
   const notice = getStorageNotice();
 
   return (
@@ -344,12 +355,12 @@ export function IncidentsPage() {
         <Surface className="mt-5 grid min-h-[300px] place-items-center px-6 text-center"><div><Search className="mx-auto h-7 w-7 text-slate-600" /><h2 className="mt-3 text-lg font-semibold text-white">No matching field notes</h2><p className="mt-1 text-sm text-slate-400">Broaden the search or clear the current filters.</p><button type="button" onClick={clearFilters} className="mt-4 text-sm font-semibold text-cyan-300 hover:text-cyan-200">Clear filters</button></div></Surface>
       ) : (
         <div className="mt-5 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(330px,.72fr)_minmax(0,1.38fr)]">
-          <Surface className="min-w-0 overflow-hidden"><div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">Community feed</p><h2 className="mt-1 text-lg font-semibold text-white">Published field notes</h2></div><Clock3 className="h-5 w-5 text-slate-500" /></div><div className="divide-y divide-white/[0.06]">{visible.map(incident => <IncidentFeedCard key={incident.id} incident={incident} selected={selected?.id === incident.id} onSelect={() => setSelectedId(incident.id)} />)}</div></Surface>
+          <Surface className="min-w-0 overflow-hidden"><div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">Community feed</p><h2 className="mt-1 text-lg font-semibold text-white">Published field notes</h2></div><Clock3 className="h-5 w-5 text-slate-500" /></div><div className="divide-y divide-white/[0.06]">{visible.map(incident => <IncidentFeedCard key={incident.id} incident={incident} selected={selected?.id === incident.id} onSelect={() => selectIncident(incident.id)} />)}</div></Surface>
           {selected && <IncidentDossier incident={selected} />}
         </div>
       )}
 
-      <PublishIncidentDialog open={publishOpen} onClose={() => setPublishOpen(false)} onPublished={incident => setSelectedId(incident.id)} />
+      <PublishIncidentDialog open={publishOpen} onClose={() => setPublishOpen(false)} onPublished={incident => selectIncident(incident.id)} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { isAdminRole } from '../AdminRoute/AdminRoute';
+import { useAuth } from '../../hooks/useAuth'; // Adjust path as needed
+import { isAdminRole } from '../AdminRoute/AdminRoute'; // Adjust path as needed
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -16,7 +16,7 @@ import {
   Settings
 } from 'lucide-react';
 
-// Add the icon property to the interface
+// Define the structure for your sidebar items
 interface SidebarItem {
   label: string;
   path: string;
@@ -24,6 +24,7 @@ interface SidebarItem {
   icon: React.ElementType;
 }
 
+// Navigation configuration
 const items: SidebarItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Security Center', path: '/security-center', icon: ShieldCheck },
@@ -55,6 +56,8 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       <div className="space-y-1.5">
         {visibleItems.map(it => {
           const Icon = it.icon;
+          
+          // Exact match for dashboard, partial match for sub-routes
           const active = it.path === '/dashboard' 
             ? activePath === it.path 
             : activePath.startsWith(it.path);
@@ -74,10 +77,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             >
               {/* Active state subtle background glow effect */}
               {active && (
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-50 pointer-events-none" />
               )}
               
-              {/* Active Indicator Line */}
+              {/* Active Indicator Line on the left edge */}
               <div 
                 className={`
                   absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full bg-cyan-400 
@@ -95,7 +98,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                 `} 
               />
               
-              {/* Label */}
+              {/* Navigation Label */}
               <span className="relative z-10 truncate tracking-wide">
                 {it.label}
               </span>
