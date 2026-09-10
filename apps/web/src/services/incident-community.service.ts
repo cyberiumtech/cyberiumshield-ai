@@ -394,20 +394,19 @@ export async function addSolution(incidentId: string, input: { author: string; b
   return response.data;
 }
 
-export async function markSolutionHelpful(incidentId: string, solutionId: string): Promise<boolean> {
+export function markSolutionHelpful(incidentId: string, solutionId: string): boolean {
   const incident = incidentCache.find(item => item.id === incidentId);
   const current = incident?.solutions.find(item => item.id === solutionId);
   if (!current || current.helpfulByBrowser) return false;
-  const response = await api.post<{ helpfulCount: number }>(`/v1/storage/incidents/${incidentId}/solutions/${solutionId}/helpful`);
-  const next = incidentCache.map(item => {
-    if (item.id !== incidentId) return item;
-    const solutions = item.solutions.map(solution => {
-      if (solution.id !== solutionId) return solution;
-      return { ...solution, helpfulCount: response.data.helpfulCount, helpfulByBrowser: true };
-    });
-    return { ...item, solutions, updatedAt: new Date().toISOString() };
-  });
-  publishCache(next);
+  void api.post<{ helpfulCount: number }>(`/v1/storage/incidents/${incidentId}/solutions/${solutionId}/helpful`).then(response => {
+    publishCache(incidentCache.map(item => item.id !== incidentId ? item : {
+      ...item,
+      updatedAt: new Date().toISOString(),
+      solutions: item.solutions.map(solution => solution.id !== solutionId ? solution : {
+        ...solution, helpfulCount: response.data.helpfulCount, helpfulByBrowser: true,
+      }),
+    }));
+  }).catch(() => { lastNotice = 'Unable to update the solution in MySQL.'; });
   return true;
 }
 

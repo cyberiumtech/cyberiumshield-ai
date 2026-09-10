@@ -23,6 +23,7 @@ import {
   filterIncidents,
   getIncidents,
   getStorageNotice,
+  loadIncidents,
   markSolutionHelpful,
   publishIncident,
   subscribeToIncidents,
@@ -111,7 +112,7 @@ function PublishIncidentDialog({ open, onClose, onPublished }: { open: boolean; 
 
   if (!open) return null;
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     const tags = form.tags.split(',').map(value => value.trim()).filter(Boolean);
     const systems = form.affectedSystems.split(',').map(value => value.trim()).filter(Boolean);
@@ -120,10 +121,10 @@ function PublishIncidentDialog({ open, onClose, onPublished }: { open: boolean; 
       return;
     }
     try {
-      const incident = publishIncident({ ...form, tags, affectedSystems: systems });
+      const incident = await publishIncident({ ...form, tags, affectedSystems: systems });
       setForm(emptyPublishForm);
       setError('');
-      toast.success('Incident published to this browser');
+      toast.success('Incident published to MySQL');
       onPublished(incident);
       onClose();
     } catch (reason) {
@@ -198,14 +199,14 @@ function IncidentDossier({ incident }: { incident: CommunityIncident }) {
     setSolutionBody('');
   }, [incident.id]);
 
-  const submitSolution = (event: FormEvent) => {
+  const submitSolution = async (event: FormEvent) => {
     event.preventDefault();
     if (!solutionAuthor.trim() || !solutionBody.trim()) {
       setError('Add your display name and a practical remediation before publishing.');
       return;
     }
     try {
-      addSolution(incident.id, { author: solutionAuthor, body: solutionBody });
+      await addSolution(incident.id, { author: solutionAuthor, body: solutionBody });
       setSolutionBody('');
       setError('');
       toast.success('Solution published to this incident');
@@ -275,7 +276,14 @@ export function IncidentsPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => subscribeToIncidents(() => setIncidents(getIncidents())), []);
+  useEffect(() => {
+    const unsubscribe = subscribeToIncidents(() => setIncidents([...getIncidents()]));
+    void loadIncidents().then(value => {
+      setIncidents([...value]);
+      if (value.length) setSelectedId(current => current || value[0].id);
+    });
+    return unsubscribe;
+  }, []);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const linkedIncidentId = params.get('incident');
