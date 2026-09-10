@@ -126,9 +126,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       className={
         mobile
           ? 'px-2 py-2'
-          : `sticky flex flex-col border-r border-white/[0.06] bg-[#0b1424] transition-[width] duration-200 ease-out ${
-              isCollapsed ? 'overflow-visible' : 'overflow-visible'
-            }`
+          : 'sticky flex flex-col overflow-visible border-r border-white/[0.06] bg-[#0b1424] transition-[width] duration-200 ease-out'
       }
     >
       {/* ═══ Scroll area (nav list) ═══ */}
@@ -174,8 +172,8 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           aria-label={isCollapsed ? it.label : undefined}
                           className={`group relative flex items-center rounded text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
                             isCollapsed
-                              ? 'mx-1.5 justify-center py-2.5'
-                              : 'mx-2 gap-2.5 px-3 py-2'
+                              ? 'mx-1.5 justify-center py-3'
+                              : 'mx-2 gap-2.5 px-3 py-2.5'
                           } ${
                             active
                               ? 'bg-white/[0.06] text-white'
@@ -190,7 +188,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           )}
 
                           <Icon
-                            className={`h-4 w-4 shrink-0 transition-colors duration-150 ${
+                            className={`h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${
                               active
                                 ? 'text-cyan-400'
                                 : 'text-slate-500 group-hover:text-slate-400'
@@ -239,9 +237,9 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             className="grid h-7 w-7 place-items-center rounded text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="h-3.5 w-3.5" />
+              <PanelLeftOpen className="h-4 w-4" />
             ) : (
-              <PanelLeftClose className="h-3.5 w-3.5" />
+              <PanelLeftClose className="h-4 w-4" />
             )}
           </button>
         </div>
