@@ -1444,6 +1444,8 @@ export function ThreatIntelligencePage() {
           </aside>
         </>
       ) : null}
+        </div>
+      )}
 
       {selected && <DetailPanel item={selected} onClose={() => setSelected(null)} />}
     </div>
