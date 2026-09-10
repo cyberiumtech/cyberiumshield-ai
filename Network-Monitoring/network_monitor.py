@@ -2,6 +2,7 @@ import psutil
 import socket
 import threading
 import time
+from database import save_connections
 
 PROTO = {socket.SOCK_STREAM: "TCP", socket.SOCK_DGRAM: "UDP"}
 
@@ -16,6 +17,7 @@ class NetworkMonitor:
         except (psutil.Error, OSError):
             self._last_net = {}
         self._last_time = time.time()
+        self._last_persisted = 0.0
 
     def start(self):
         with self._lock:
@@ -113,6 +115,13 @@ class NetworkMonitor:
             return {**cached, "monitoring": False, "upload_bps": 0, "download_bps": 0}
 
         conns = self.connections()
+        if running and time.time() - self._last_persisted >= 10:
+            try:
+                save_connections(conns)
+                self._last_persisted = time.time()
+            except Exception:
+                # Monitoring stays available during a temporary database outage.
+                pass
         traffic = self._traffic()
         tcp = sum(x["protocol"] == "TCP" for x in conns)
         udp = sum(x["protocol"] == "UDP" for x in conns)
