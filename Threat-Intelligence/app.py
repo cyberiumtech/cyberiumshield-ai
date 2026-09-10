@@ -162,7 +162,12 @@ def get_catalog(force=False):
             if catalog is None:
                 if _cache['catalog'] is None:
                     raise FeedError('CISA returned not-modified without a cached catalog.')
-                _cache['fetched_monotonic'] = time.monotonic()
+                _cache.update(
+                    fetched_monotonic=time.monotonic(),
+                    etag=new_etag,
+                    last_modified=new_last_modified,
+                    last_error='',
+                )
                 _cache['catalog']['fetchedAt'] = fetched_at
                 result = copy.deepcopy(_cache['catalog'])
             else:
@@ -195,6 +200,60 @@ def get_catalog(force=False):
 def _catalog_entry(cve):
     catalog = get_catalog()
     return next((item for item in catalog['vulnerabilities'] if item['cveID'] == cve), None)
+
+
+def _coverage_provider(name, category, status, detail):
+    return {
+        'name': name,
+        'category': category,
+        'status': status,
+        'detail': detail,
+    }
+
+
+def summarize_coverage(providers):
+    """Describe lookup completeness without treating missing evidence as a safe signal."""
+    reputation = [item for item in providers if item['category'] == 'reputation']
+    completed = [item for item in reputation if item['status'] in {'contributed', 'no_match'}]
+    errors = [item for item in reputation if item['status'] == 'error']
+    unavailable = [item for item in reputation if item['status'] == 'not_configured']
+
+    if not completed:
+        return {
+            'status': 'inconclusive',
+            'confidence': 'none',
+            'meaningfulEvidence': False,
+            'sourcesQueried': 0,
+            'sourcesExpected': len(reputation),
+            'summary': (
+                'No reputation provider completed this lookup. '
+                'A zero score must not be interpreted as safe.'
+            ),
+            'providers': providers,
+        }
+
+    if errors:
+        status = 'degraded'
+        confidence = 'low'
+        summary = 'Some reputation providers failed; use the available evidence with caution.'
+    elif unavailable:
+        status = 'partial'
+        confidence = 'low'
+        summary = 'Some applicable providers were not configured; only returned evidence was scored.'
+    else:
+        status = 'supported'
+        confidence = 'high' if len(completed) > 1 else 'moderate'
+        summary = 'All applicable reputation providers completed the lookup.'
+
+    return {
+        'status': status,
+        'confidence': confidence,
+        'meaningfulEvidence': True,
+        'sourcesQueried': len(completed),
+        'sourcesExpected': len(reputation),
+        'summary': summary,
+        'providers': providers,
+    }
 
 
 def _refresh_loop():

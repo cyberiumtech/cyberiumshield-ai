@@ -97,8 +97,6 @@ def deterministic_risk(indicator_type, indicator, evidence):
     if evidence.get('threatfox_matches'):
         score += min(55, 25 + 5 * min(6, evidence['threatfox_matches']))
         reasons.append(f"ThreatFox returned {evidence['threatfox_matches']} matching IOC record(s).")
-    if evidence.get('urlhaus_match'):
-        score += 70; reasons.append('URLhaus identifies this URL as malicious/malware-related.')
     if evidence.get('dns_resolves') is False and indicator_type == 'domain':
         reasons.append('Domain currently does not resolve from this server.')
     if indicator_type == 'url':
