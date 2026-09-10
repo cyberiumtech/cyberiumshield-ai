@@ -36,10 +36,73 @@ export interface KevCatalog {
 
 export interface ThreatIntelligenceHealth {
   status: string;
+  service: string;
   source: string;
   cached: boolean;
   cache_age_seconds: number | null;
   time: string;
+  modelLoaded: boolean;
+  providers: {
+    NVD: boolean;
+    ThreatFox: boolean;
+  };
+}
+
+export type IndicatorType = 'cve' | 'ip' | 'domain' | 'url' | 'hash' | 'unknown';
+export type ThreatVerdict = 'critical' | 'high' | 'medium' | 'low';
+
+export type ThreatEvidenceValue = string | number | boolean | null;
+
+export interface NvdDetail {
+  id: string;
+  published: string;
+  lastModified: string;
+  description: string;
+  cvssScore: number | null;
+  severity: string;
+  vector: string;
+  references: string[];
+}
+
+export interface ThreatFoxDetail {
+  configured: boolean;
+  matches: Record<string, unknown>[];
+  status: string;
+}
+
+export interface IndicatorDetails {
+  cisaKEV?: KevVulnerability;
+  nvd?: NvdDetail | null;
+  threatFox?: ThreatFoxDetail;
+  dns?: { resolves: boolean; addresses: string[] };
+  urlFeatures?: Record<string, ThreatEvidenceValue>;
+  mlProbability?: number | null;
+}
+
+export interface IndicatorResult {
+  id?: number;
+  indicator: string;
+  indicatorType: IndicatorType;
+  riskScore: number;
+  verdict: ThreatVerdict;
+  reasons: string[];
+  checkedAt: string;
+  evidence: Record<string, ThreatEvidenceValue>;
+  details: IndicatorDetails;
+  providerErrors: string[];
+  model: { loaded: boolean; used: boolean };
+}
+
+export interface ThreatFeedStatus {
+  cisaKEV: {
+    status: 'live' | 'cache' | 'error' | 'not_loaded' | string;
+    count: number;
+    fetchedAt: string;
+    lastKnownGood: boolean;
+    error?: string;
+  };
+  nvd: { configured: boolean };
+  threatFox: { configured: boolean };
 }
 
 export type DueStatus = 'overdue' | 'due-soon' | 'scheduled';
@@ -60,6 +123,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function readNumber(value: unknown, fallback = 0) {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readBoolean(value: unknown) {
+  return value === true || value === 'true' || value === 1;
+}
+
+function readStringArray(value: unknown) {
+  return Array.isArray(value) ? value.map(readString).filter(Boolean) : [];
 }
 
 function normalizeVulnerability(value: unknown): KevVulnerability | null {
@@ -124,43 +200,45 @@ export function normalizeKevCatalog(
 
 async function readError(response: Response) {
   try {
-    const payload = (await response.json()) as { error?: string };
-    return payload.error || `Threat intelligence service returned HTTP ${response.status}.`;
+    const payload = (await response.json()) as { error?: unknown; message?: unknown };
+    return (
+      readString(payload.error) ||
+      readString(payload.message) ||
+      `Threat intelligence service returned HTTP ${response.status}.`
+    );
   } catch {
     return `Threat intelligence service returned HTTP ${response.status}.`;
   }
 }
 
-export async function fetchKevCatalog(
+async function requestJson(
+  path: string,
+  options: RequestInit = {},
   signal?: AbortSignal,
-  forceRefresh = false
-): Promise<KevCatalog> {
+  timeoutMs = 20_000
+) {
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort('timeout'), 20_000);
+  const timeout = globalThis.setTimeout(() => controller.abort('timeout'), timeoutMs);
   const abortFromCaller = () => controller.abort(signal?.reason);
   signal?.addEventListener('abort', abortFromCaller, { once: true });
 
   try {
-    const response = await fetch(
-      `${threatIntelligenceBaseUrl}/api/kev${forceRefresh ? '?refresh=1' : ''}`,
-      {
-        signal: controller.signal,
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      }
-    );
-
+    const response = await fetch(`${threatIntelligenceBaseUrl}${path}`, {
+      ...options,
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { Accept: 'application/json', ...options.headers },
+    });
     if (!response.ok) {
       throw new ThreatIntelligenceError(await readError(response), response.status);
     }
-
-    return normalizeKevCatalog(await response.json());
+    return (await response.json()) as unknown;
   } catch (error) {
     if (error instanceof ThreatIntelligenceError) throw error;
     if (signal?.aborted) throw error;
     if (controller.signal.aborted) {
       throw new ThreatIntelligenceError(
-        'The threat intelligence request timed out after 20 seconds.'
+        `The threat intelligence request timed out after ${Math.round(timeoutMs / 1000)} seconds.`
       );
     }
     throw new ThreatIntelligenceError(
@@ -172,14 +250,210 @@ export async function fetchKevCatalog(
   }
 }
 
-export async function fetchThreatIntelligenceHealth(signal?: AbortSignal) {
-  const response = await fetch(`${threatIntelligenceBaseUrl}/api/health`, {
-    signal,
-    cache: 'no-store',
-    headers: { Accept: 'application/json' },
+export async function fetchKevCatalog(
+  signal?: AbortSignal,
+  forceRefresh = false
+): Promise<KevCatalog> {
+  return normalizeKevCatalog(
+    await requestJson(`/api/kev${forceRefresh ? '?refresh=1' : ''}`, {}, signal)
+  );
+}
+
+export function normalizeIndicatorInput(value: string) {
+  const indicator = value.trim();
+  if (!indicator) throw new ThreatIntelligenceError('Enter an indicator to investigate.');
+  if (indicator.length > 4096) throw new ThreatIntelligenceError('Indicator is too long.');
+
+  if (/^CVE-\d{4}-\d{4,}$/i.test(indicator)) return indicator.toUpperCase();
+  if (/^(?:[a-f\d]{32}|[a-f\d]{40}|[a-f\d]{64})$/i.test(indicator)) {
+    return indicator.toLowerCase();
+  }
+  if (/^https?:\/\/[^\s]+$/i.test(indicator)) return indicator;
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(indicator) || indicator.includes(':')) return indicator;
+  if (/^(?=.{1,253}$)(?:[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?\.)+[a-z]{2,63}$/i.test(indicator)) {
+    return indicator.toLowerCase();
+  }
+  throw new ThreatIntelligenceError(
+    'Unsupported indicator. Use CVE, IPv4/IPv6, domain, URL, MD5, SHA-1 or SHA-256.'
+  );
+}
+
+function normalizeNvdDetail(value: unknown): NvdDetail | null {
+  if (!isRecord(value)) return null;
+  return {
+    id: readString(value.id),
+    published: readString(value.published),
+    lastModified: readString(value.lastModified),
+    description: readString(value.description),
+    cvssScore: value.cvssScore === null ? null : readNumber(value.cvssScore),
+    severity: readString(value.severity),
+    vector: readString(value.vector),
+    references: readStringArray(value.references),
+  };
+}
+
+export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
+  if (!isRecord(payload)) {
+    throw new ThreatIntelligenceError('The service returned an invalid indicator result.');
+  }
+
+  let expanded = payload;
+  if (typeof payload.result_json === 'string') {
+    try {
+      const decoded = JSON.parse(payload.result_json) as unknown;
+      if (isRecord(decoded)) expanded = { ...payload, ...decoded };
+    } catch {
+      // Keep the indexed row fields so history remains useful when stored JSON is damaged.
+    }
+  } else if (isRecord(payload.result_json)) {
+    expanded = { ...payload, ...payload.result_json };
+  }
+
+  const indicator = readString(expanded.indicator);
+  if (!indicator) {
+    throw new ThreatIntelligenceError('The service returned a result without an indicator.');
+  }
+  const rawType = readString(expanded.indicatorType || expanded.indicator_type).toLowerCase();
+  const indicatorType: IndicatorType = ['cve', 'ip', 'domain', 'url', 'hash'].includes(rawType)
+    ? (rawType as IndicatorType)
+    : 'unknown';
+  const rawVerdict = readString(expanded.verdict).toLowerCase();
+  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low'].includes(rawVerdict)
+    ? (rawVerdict as ThreatVerdict)
+    : 'low';
+  const rawDetails = isRecord(expanded.details) ? expanded.details : {};
+  const rawThreatFox = isRecord(rawDetails.threatFox) ? rawDetails.threatFox : undefined;
+  const rawDns = isRecord(rawDetails.dns) ? rawDetails.dns : undefined;
+  const rawEvidence = isRecord(expanded.evidence) ? expanded.evidence : {};
+  const evidence = Object.fromEntries(
+    Object.entries(rawEvidence).filter(([, item]) =>
+      ['string', 'number', 'boolean'].includes(typeof item) || item === null
+    )
+  ) as Record<string, ThreatEvidenceValue>;
+  const rawModel = isRecord(expanded.model) ? expanded.model : {};
+  const rawKev = isRecord(rawDetails.cisaKEV) ? normalizeVulnerability(rawDetails.cisaKEV) : null;
+  const id = readNumber(expanded.id, Number.NaN);
+
+  return {
+    ...(Number.isFinite(id) ? { id } : {}),
+    indicator,
+    indicatorType,
+    riskScore: Math.max(0, Math.min(100, Math.round(readNumber(expanded.riskScore ?? expanded.score)))),
+    verdict,
+    reasons: readStringArray(expanded.reasons),
+    checkedAt: readString(expanded.checkedAt || expanded.created_at),
+    evidence,
+    details: {
+      ...(rawKev ? { cisaKEV: rawKev } : {}),
+      ...(Object.prototype.hasOwnProperty.call(rawDetails, 'nvd')
+        ? { nvd: normalizeNvdDetail(rawDetails.nvd) }
+        : {}),
+      ...(rawThreatFox
+        ? {
+            threatFox: {
+              configured: readBoolean(rawThreatFox.configured),
+              matches: Array.isArray(rawThreatFox.matches)
+                ? rawThreatFox.matches.filter(isRecord)
+                : [],
+              status: readString(rawThreatFox.status),
+            },
+          }
+        : {}),
+      ...(rawDns
+        ? {
+            dns: {
+              resolves: readBoolean(rawDns.resolves),
+              addresses: readStringArray(rawDns.addresses),
+            },
+          }
+        : {}),
+      ...(isRecord(rawDetails.urlFeatures)
+        ? {
+            urlFeatures: Object.fromEntries(
+              Object.entries(rawDetails.urlFeatures).filter(([, item]) =>
+                ['string', 'number', 'boolean'].includes(typeof item) || item === null
+              )
+            ) as Record<string, ThreatEvidenceValue>,
+          }
+        : {}),
+      ...(typeof rawDetails.mlProbability === 'number'
+        ? { mlProbability: rawDetails.mlProbability }
+        : {}),
+    },
+    providerErrors: readStringArray(expanded.providerErrors || expanded.provider_errors),
+    model: { loaded: readBoolean(rawModel.loaded), used: readBoolean(rawModel.used) },
+  };
+}
+
+export async function checkThreatIndicator(indicator: string, signal?: AbortSignal) {
+  const normalized = normalizeIndicatorInput(indicator);
+  const payload = await requestJson(
+    '/api/indicator/check',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ indicator: normalized }),
+    },
+    signal
+  );
+  return normalizeIndicatorResult(payload);
+}
+
+export async function fetchThreatHistory(limit = 25, signal?: AbortSignal) {
+  const boundedLimit = Math.max(1, Math.min(200, Math.trunc(limit) || 25));
+  const payload = await requestJson(`/api/history?limit=${boundedLimit}`, {}, signal);
+  const values = Array.isArray(payload)
+    ? payload
+    : isRecord(payload) && Array.isArray(payload.observations)
+      ? payload.observations
+      : null;
+  if (!values) throw new ThreatIntelligenceError('The service returned an invalid history list.');
+  return values.flatMap(value => {
+    try {
+      return [normalizeIndicatorResult(value)];
+    } catch {
+      return [];
+    }
   });
-  if (!response.ok) throw new ThreatIntelligenceError(await readError(response), response.status);
-  return response.json() as Promise<ThreatIntelligenceHealth>;
+}
+
+export async function fetchThreatIntelligenceHealth(signal?: AbortSignal) {
+  const payload = await requestJson('/api/health', {}, signal, 8_000);
+  if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid health data.');
+  const providers = isRecord(payload.providers) ? payload.providers : {};
+  return {
+    status: readString(payload.status) || 'unknown',
+    service: readString(payload.service),
+    source: readString(payload.source),
+    cached: readBoolean(payload.cached),
+    cache_age_seconds:
+      payload.cache_age_seconds === null ? null : readNumber(payload.cache_age_seconds),
+    time: readString(payload.time),
+    modelLoaded: readBoolean(payload.modelLoaded),
+    providers: {
+      NVD: readBoolean(providers.NVD),
+      ThreatFox: readBoolean(providers.ThreatFox),
+    },
+  } satisfies ThreatIntelligenceHealth;
+}
+
+export async function fetchThreatFeedStatus(signal?: AbortSignal) {
+  const payload = await requestJson('/api/feeds', {}, signal, 8_000);
+  if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid feed data.');
+  const cisa = isRecord(payload.cisaKEV) ? payload.cisaKEV : {};
+  const nvd = isRecord(payload.nvd) ? payload.nvd : {};
+  const threatFox = isRecord(payload.threatFox) ? payload.threatFox : {};
+  return {
+    cisaKEV: {
+      status: readString(cisa.status) || 'not_loaded',
+      count: Math.max(0, readNumber(cisa.count)),
+      fetchedAt: readString(cisa.fetchedAt),
+      lastKnownGood: readBoolean(cisa.lastKnownGood),
+      error: readString(cisa.error) || undefined,
+    },
+    nvd: { configured: readBoolean(nvd.configured) },
+    threatFox: { configured: readBoolean(threatFox.configured) },
+  } satisfies ThreatFeedStatus;
 }
 
 export function isKnownRansomwareUse(value: string) {

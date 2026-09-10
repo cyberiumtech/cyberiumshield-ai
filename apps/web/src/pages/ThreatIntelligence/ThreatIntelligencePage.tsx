@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  Activity,
   ArrowDownUp,
+  Ban,
+  BrainCircuit,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
@@ -10,9 +13,16 @@ import {
   ExternalLink,
   FileWarning,
   Filter,
+  Globe2,
+  History,
+  ListChecks,
+  Network,
+  Radar,
   RefreshCw,
   Search,
+  Server,
   ShieldAlert,
+  ShieldCheck,
   Siren,
   Clock3,
   X,
@@ -29,18 +39,26 @@ import {
 import {
   CISA_KEV_INFORMATION_URL,
   CISA_KEV_SOURCE_URL,
+  checkThreatIndicator,
   DueStatus,
   extractHttpLinks,
+  fetchThreatFeedStatus,
+  fetchThreatHistory,
+  fetchThreatIntelligenceHealth,
   fetchKevCatalog,
   getDueStatus,
+  IndicatorResult,
   isKnownRansomwareUse,
   KevVulnerability,
   parseCatalogDate,
+  ThreatFeedStatus,
+  ThreatIntelligenceHealth,
 } from '../../services/threat-intelligence.service';
 
 type RansomwareFilter = 'all' | 'known' | 'not-known';
 type UrgencyFilter = 'all' | DueStatus;
 type SortMode = 'newest' | 'deadline' | 'vendor';
+type WorkspaceTab = 'investigations' | 'catalog';
 
 const panel = 'border border-white/10 bg-[#0F1729] shadow-[0_24px_70px_-48px_rgba(34,211,238,.45)]';
 const control =
