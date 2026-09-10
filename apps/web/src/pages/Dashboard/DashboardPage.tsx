@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type ElementType, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Bug, Clock3, CloudOff, FileWarning,
-  Globe2, MailWarning, Network, Radar, RefreshCw, ScanSearch, Server, ShieldCheck,
+  Globe2, MailWarning, Network, Pause, Play, Radar, RefreshCw, ScanSearch, Server, ShieldCheck,
   Siren, Wifi, WifiOff,
 } from 'lucide-react';
 import {
@@ -66,24 +66,72 @@ function SourceDot({ source, compact = false }: { source: SourceState; compact?:
   );
 }
 
-function GlobalThreatGlobe() {
+function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
   const [rotation, setRotation] = useState<[number, number, number]>([18, -12, 0]);
   const [projectionScale, setProjectionScale] = useState(258);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const updateScale = () => setProjectionScale(window.innerWidth < 640 ? 178 : 258);
     updateScale();
     window.addEventListener('resize', updateScale);
-    const timer = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? undefined
-      : window.setInterval(() => {
-          setRotation(current => [current[0] + 0.22, current[1], current[2]]);
-        }, 70);
-    return () => {
-      if (timer) window.clearInterval(timer);
-      window.removeEventListener('resize', updateScale);
-    };
+    return () => window.removeEventListener('resize', updateScale);
   }, []);
+
+  useEffect(() => {
+    if (isPaused) return;
+
+    let lastTimestamp: number | null = null;
+    const degreesPerMillisecond = 360 / 60_000;
+
+    const animate = (timestamp: number) => {
+      animationFrameRef.current = null;
+      if (document.visibilityState !== 'visible') {
+        lastTimestamp = null;
+        return;
+      }
+
+      if (lastTimestamp !== null) {
+        const elapsed = timestamp - lastTimestamp;
+        setRotation(current => [
+          (current[0] + elapsed * degreesPerMillisecond) % 360,
+          current[1],
+          current[2],
+        ]);
+      }
+      lastTimestamp = timestamp;
+      animationFrameRef.current = window.requestAnimationFrame(animate);
+    };
+
+    const startAnimation = () => {
+      if (document.visibilityState === 'visible' && animationFrameRef.current === null) {
+        lastTimestamp = null;
+        animationFrameRef.current = window.requestAnimationFrame(animate);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (animationFrameRef.current !== null) {
+          window.cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        lastTimestamp = null;
+      } else {
+        startAnimation();
+      }
+    };
+
+    startAnimation();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isPaused]);
 
   return (
     <div className="relative h-[390px] overflow-hidden sm:h-[470px] lg:h-[560px]">
@@ -143,6 +191,9 @@ function ModuleSummary({ title, eyebrow, value, detail, route, icon: Icon, sourc
 export function DashboardPage() {
   const data = useSecurityDashboard();
   const [now, setNow] = useState(new Date());
+  const [isGlobePaused, setIsGlobePaused] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1_000);
@@ -217,7 +268,31 @@ export function DashboardPage() {
       </header>
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(310px,.68fr)]">
-        <Surface className="relative min-w-0 overflow-hidden bg-[#07101e]"><div className="relative z-10 flex min-w-0 flex-col gap-2 border-b border-white/[0.06] px-5 py-4 sm:absolute sm:inset-x-0 sm:top-0 sm:flex-row sm:items-start sm:justify-between sm:border-0"><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Global signal canvas</p><h2 className="mt-1 text-xl font-semibold text-white">Activity orbit</h2></div><div className="flex shrink-0 items-center gap-2 text-xs uppercase tracking-[0.12em] text-slate-400"><Globe2 className="h-3.5 w-3.5 text-cyan-300" /> Auto-rotating</div></div><GlobalThreatGlobe /></Surface>
+        <Surface className="relative min-w-0 overflow-hidden bg-[#07101e]">
+          <div className="relative z-10 flex min-w-0 flex-col gap-3 border-b border-white/[0.06] px-5 py-4 sm:absolute sm:inset-x-0 sm:top-0 sm:flex-row sm:items-start sm:justify-between sm:border-0">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Global signal canvas</p>
+              <h2 className="mt-1 text-xl font-semibold text-white">Activity orbit</h2>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.12em] text-slate-400" aria-live="polite">
+                <Globe2 className={`h-3.5 w-3.5 ${isGlobePaused ? 'text-slate-500' : 'text-cyan-300'}`} />
+                {isGlobePaused ? 'Paused' : 'Rotating'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGlobePaused(current => !current)}
+                aria-label={isGlobePaused ? 'Resume globe rotation' : 'Pause globe rotation'}
+                aria-pressed={!isGlobePaused}
+                className="inline-flex min-h-9 items-center gap-1.5 border border-cyan-300/25 bg-[#07101e]/85 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-200 transition hover:border-cyan-300/45 hover:bg-cyan-300/[0.09] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+              >
+                {isGlobePaused ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : <Pause className="h-3.5 w-3.5" aria-hidden="true" />}
+                {isGlobePaused ? 'Resume' : 'Pause'}
+              </button>
+            </div>
+          </div>
+          <GlobalThreatGlobe isPaused={isGlobePaused} />
+        </Surface>
         <Surface className="relative flex min-h-[480px] flex-col overflow-hidden p-6">
           <div className="absolute right-0 top-0 h-48 w-48 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,.13),transparent_67%)]" />
           <div className="relative flex items-start justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Derived posture</p><h2 className="mt-2 text-xl font-semibold text-white">Operational risk</h2></div><Siren className={posture.score !== null && posture.score >= 40 ? 'h-6 w-6 text-rose-300' : 'h-6 w-6 text-cyan-300'} /></div>
