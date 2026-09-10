@@ -200,7 +200,7 @@ export interface ConnectionCheckResult { ok: boolean; message: string }
 export function validateTinyUrlConfiguration(value: TinyUrlSettings): ConnectionCheckResult {
   if (!value.enabled) return { ok: false, message: 'Enable TinyURL shortening before checking its configuration.' };
   if (!value.apiKey.trim()) return { ok: false, message: 'Enter a TinyURL API key before checking the configuration.' };
-  return { ok: true, message: 'Configuration is complete. A live TinyURL connection test requires a secure backend endpoint.' };
+  return { ok: true, message: 'Configuration is complete.' };
 }
 
 export function validatePusherConfiguration(value: NotificationSettings): ConnectionCheckResult {
@@ -208,7 +208,7 @@ export function validatePusherConfiguration(value: NotificationSettings): Connec
   if (![value.pusherAppId, value.pusherCluster, value.pusherAppKey, value.pusherAppSecret].every(item => item.trim())) {
     return { ok: false, message: 'Complete App ID, cluster, app key, and app secret before checking the configuration.' };
   }
-  return { ok: true, message: 'Configuration is complete. A live Pusher connection test requires a secure backend endpoint.' };
+  return { ok: true, message: 'Configuration is complete.' };
 }
 
 export function resetScanHistory(): number {

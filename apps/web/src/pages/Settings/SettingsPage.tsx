@@ -7,6 +7,7 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 import type { User } from '../../services/auth.service';
+import { testPusherConnection, testTinyUrlConnection } from '../../services/integration.service';
 import defaultLogo from '../../assets/images/Cybershield-AI.png';
 import {
   applyFavicon, BrandingSettings, CompanySettings, EmailSettings, getEffectiveFavicon,
@@ -39,6 +40,8 @@ export function SettingsPage() {
   const [branding, setBranding] = useState(initial.branding);
   const [tinyStatus, setTinyStatus] = useState('');
   const [pusherStatus, setPusherStatus] = useState('');
+  const [testingTinyUrl, setTestingTinyUrl] = useState(false);
+  const [testingPusher, setTestingPusher] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetText, setResetText] = useState('');
 
@@ -81,6 +84,42 @@ export function SettingsPage() {
     event.preventDefault();
     try { saveNotificationSettings(notifications); toast.success('Notification settings saved locally.'); }
     catch { toast.error('Browser storage is unavailable. Notification settings were not saved.'); }
+  };
+
+  const testTinyUrl = async () => {
+    const validation = validateTinyUrlConfiguration(tinyUrl);
+    if (!validation.ok) return setTinyStatus(validation.message);
+    setTestingTinyUrl(true);
+    setTinyStatus('Contacting TinyURL…');
+    try {
+      const result = await testTinyUrlConnection(tinyUrl);
+      setTinyStatus(result.message);
+      toast.success(result.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'TinyURL connection test failed.';
+      setTinyStatus(message);
+      toast.error(message);
+    } finally {
+      setTestingTinyUrl(false);
+    }
+  };
+
+  const testPusher = async () => {
+    const validation = validatePusherConfiguration(notifications);
+    if (!validation.ok) return setPusherStatus(validation.message);
+    setTestingPusher(true);
+    setPusherStatus('Contacting Pusher…');
+    try {
+      const result = await testPusherConnection(notifications);
+      setPusherStatus(result.message);
+      toast.success(result.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Pusher connection test failed.';
+      setPusherStatus(message);
+      toast.error(message);
+    } finally {
+      setTestingPusher(false);
+    }
   };
 
   const saveBranding = (event: FormEvent) => {
@@ -129,7 +168,7 @@ export function SettingsPage() {
         </div>
         <div className="mt-5 flex items-start gap-3 border-l-2 border-amber-400 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-          <p><strong className="font-semibold">Browser-local demo configuration.</strong> Production secrets and live provider tests require encrypted server-side storage and authenticated backend endpoints.</p>
+          <p><strong className="font-semibold">Browser-local configuration.</strong> Connection tests are sent through the CyberShield backend. Move saved secrets to encrypted server-side storage before production use.</p>
         </div>
       </header>
 
@@ -169,7 +208,7 @@ export function SettingsPage() {
                 </div>
               </fieldset>
               <ConnectionStatus message={tinyStatus} />
-              <Actions><SecondaryButton type="button" onClick={() => setTinyStatus(validateTinyUrlConfiguration(tinyUrl).message)} label="Test connection" icon={<TestTube2 className="h-4 w-4" />} /><PrimaryButton label="Save TinyURL settings" /></Actions>
+              <Actions><SecondaryButton type="button" onClick={() => void testTinyUrl()} label={testingTinyUrl ? 'Testing…' : 'Test connection'} disabled={testingTinyUrl || !tinyUrl.enabled} icon={<TestTube2 className={`h-4 w-4 ${testingTinyUrl ? 'animate-pulse' : ''}`} />} /><PrimaryButton label="Save TinyURL settings" /></Actions>
             </form>
           </SettingsSection>
 
@@ -218,7 +257,7 @@ export function SettingsPage() {
                 </div>
               </div>
               <ConnectionStatus message={pusherStatus} />
-              <Actions><SecondaryButton type="button" onClick={() => setPusherStatus(validatePusherConfiguration(notifications).message)} label="Test connection" icon={<TestTube2 className="h-4 w-4" />} /><PrimaryButton label="Save notification settings" /></Actions>
+              <Actions><SecondaryButton type="button" onClick={() => void testPusher()} label={testingPusher ? 'Testing…' : 'Test connection'} disabled={testingPusher || !notifications.pusherEnabled} icon={<TestTube2 className={`h-4 w-4 ${testingPusher ? 'animate-pulse' : ''}`} />} /><PrimaryButton label="Save notification settings" /></Actions>
             </form>
           </SettingsSection>
 
@@ -286,7 +325,7 @@ function Toggle({ label, description, checked, onChange, disabled = false, compa
 
 function Actions({ children }: { children: ReactNode }) { return <div className="flex flex-wrap justify-end gap-2 border-t border-slate-800 pt-5 sm:col-span-2">{children}</div>; }
 function PrimaryButton({ label }: { label: string }) { return <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300"><Save className="h-4 w-4" />{label}</button>; }
-function SecondaryButton({ label, icon, ...props }: { label: string; icon?: ReactNode; type: 'button'; onClick: () => void }) { return <button {...props} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">{icon}{label}</button>; }
+function SecondaryButton({ label, icon, disabled = false, ...props }: { label: string; icon?: ReactNode; type: 'button'; onClick: () => void; disabled?: boolean }) { return <button {...props} disabled={disabled} className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:cursor-not-allowed disabled:opacity-50">{icon}{label}</button>; }
 function ConnectionStatus({ message }: { message: string }) { return <div aria-live="polite">{message && <p className="border-l-2 border-amber-400 bg-amber-400/[0.05] px-3 py-2 text-xs leading-5 text-amber-100">{message}</p>}</div>; }
 function SecurityNote() { return <p className="flex items-start gap-2 text-xs leading-5 text-amber-100"><ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" /> Credentials remain in this browser for demonstration only. Move them to encrypted server storage before production use.</p>; }
 function Status({ label, state, active }: { label: string; state: string; active: boolean }) { return <div className="flex items-center gap-3"><span className={`h-2 w-2 shrink-0 rounded-full ${active ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.45)]' : 'bg-slate-600'}`} /><div className="min-w-0"><p className="text-xs font-medium text-slate-300">{label}</p><p className="truncate text-[11px] capitalize text-slate-500">{state}</p></div></div>; }

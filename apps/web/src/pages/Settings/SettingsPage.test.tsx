@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../../services/auth.service';
@@ -7,10 +7,15 @@ import { SettingsPage } from './SettingsPage';
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(), toastError: vi.fn(), toastSuccess: vi.fn(),
+  testTinyUrlConnection: vi.fn(), testPusherConnection: vi.fn(),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: mocks.toastSuccess } }));
+vi.mock('../../services/integration.service', () => ({
+  testTinyUrlConnection: mocks.testTinyUrlConnection,
+  testPusherConnection: mocks.testPusherConnection,
+}));
 
 const user: User = {
   id: '1', name: 'Admin', email: 'admin@example.com', email_verified_at: '2026-01-01T00:00:00Z',
@@ -29,6 +34,10 @@ describe('SettingsPage', () => {
     localStorage.clear();
     mocks.useAuth.mockReturnValue({ user });
     mocks.toastError.mockReset(); mocks.toastSuccess.mockReset();
+    mocks.testTinyUrlConnection.mockReset();
+    mocks.testPusherConnection.mockReset();
+    mocks.testTinyUrlConnection.mockResolvedValue({ ok: true, provider: 'tinyurl', message: 'TinyURL connection verified successfully.' });
+    mocks.testPusherConnection.mockResolvedValue({ ok: true, provider: 'pusher', message: 'Pusher connection verified successfully.' });
   });
 
   it('renders the requested settings and masks secret values', () => {
@@ -50,12 +59,13 @@ describe('SettingsPage', () => {
     expect(client.getQueryData<User>(['user'])?.organization_name).toBe('Meridian SOC');
   });
 
-  it('describes connection checks honestly and resets only known logs', () => {
+  it('calls the TinyURL connection API and resets only known logs', async () => {
     renderPage();
     fireEvent.click(screen.getAllByRole('checkbox', { name: /Enable TinyURL shortening/i })[0]);
     fireEvent.change(screen.getByLabelText('TinyURL API key'), { target: { value: 'demo-key' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Test connection' })[0]);
-    expect(screen.getByText(/live TinyURL connection test requires a secure backend endpoint/i)).toBeInTheDocument();
+    await waitFor(() => expect(mocks.testTinyUrlConnection).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'demo-key' })));
+    expect(await screen.findByText('TinyURL connection verified successfully.')).toBeInTheDocument();
 
     localStorage.setItem('phishing_scan_logs', '[]');
     localStorage.setItem('incidents', 'keep');
