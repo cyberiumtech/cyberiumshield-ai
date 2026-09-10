@@ -56,9 +56,7 @@ function relativeTime(value?: string | null) {
   return formatter.format(Math.round(hours / 24), 'day');
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PRIMITIVES
-   ───────────────────────────────────────────────────────────── */
+/* PRIMITIVES */
 function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <section className={`border border-white/[0.08] bg-[#0b1424] ${className}`}>
@@ -124,9 +122,7 @@ function SeverityPill({ severity }: { severity: 'critical' | 'warning' | 'info' 
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   GLOBE — always rotating
-   ───────────────────────────────────────────────────────────── */
+/* GLOBE */
 function GlobalThreatGlobe() {
   const [rotation, setRotation] = useState<[number, number, number]>([18, -12, 0]);
   const [projectionScale, setProjectionScale] = useState(258);
@@ -262,9 +258,7 @@ function GlobalThreatGlobe() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   MODULE TILE
-   ───────────────────────────────────────────────────────────── */
+/* MODULE TILE */
 type ModuleProps = {
   title: string;
   eyebrow: string;
@@ -319,9 +313,7 @@ function ModuleTile({ title, eyebrow, value, detail, route, icon: Icon, source, 
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   DASHBOARD PAGE
-   ───────────────────────────────────────────────────────────── */
+/* DASHBOARD PAGE */
 export function DashboardPage() {
   const data = useSecurityDashboard();
   const [now, setNow] = useState(new Date());
@@ -370,12 +362,13 @@ export function DashboardPage() {
     };
   }, [data.email, data.malware, data.network, data.phishing, data.vulnerability, recentKev]);
 
+  /* ═══ MORE DATA IN THE FEED ═══ */
   const activities = useMemo(() => {
     const items: Array<{
       id: string; title: string; detail: string; source: string;
       time: string | null; severity: 'critical' | 'warning' | 'info' | 'ok'; route: string;
     }> = [];
-    data.email.slice(0, 3).forEach((item, index) => items.push({
+    data.email.slice(0, 4).forEach((item, index) => items.push({
       id: `e-${item.id || index}`,
       title: item.verdict === 'legitimate' ? 'Email cleared' : `${item.verdict} email detected`,
       detail: item.subject || item.sender || 'Message scan',
@@ -383,14 +376,14 @@ export function DashboardPage() {
       severity: item.verdict === 'spam' ? 'critical' : item.verdict === 'suspicious' ? 'warning' : 'ok',
       route: '/email-spam',
     }));
-    data.phishing.slice(0, 3).forEach((item, index) => items.push({
+    data.phishing.slice(0, 4).forEach((item, index) => items.push({
       id: `p-${item.id || index}`,
       title: item.prediction === 'phishing' ? 'Phishing URL detected' : 'URL cleared',
       detail: item.url, source: 'Phishing', time: item.scannedAt,
       severity: item.prediction === 'phishing' ? 'critical' : 'ok',
       route: '/phishing',
     }));
-    data.malware.slice(0, 3).forEach((item, index) => items.push({
+    data.malware.slice(0, 4).forEach((item, index) => items.push({
       id: `m-${item.id || index}`,
       title: item.classification === 'Malware' ? 'Malware detected' : 'File scan completed',
       detail: `${item.filename} · ${item.family}`,
@@ -398,7 +391,7 @@ export function DashboardPage() {
       severity: item.classification === 'Malware' ? 'critical' : 'ok',
       route: '/malware',
     }));
-    data.vulnerability?.recent.slice(0, 4).forEach(item => items.push({
+    data.vulnerability?.recent.slice(0, 6).forEach(item => items.push({
       id: `v-${item.id}`,
       title: `${item.severity} vulnerability`,
       detail: `${item.cve || 'Finding'} · ${item.title}`,
@@ -406,7 +399,7 @@ export function DashboardPage() {
       severity: item.severity === 'Critical' ? 'critical' : item.severity === 'High' ? 'warning' : 'info',
       route: '/vulnerability',
     }));
-    data.intel?.vulnerabilities.slice(0, 3).forEach(item => items.push({
+    data.intel?.vulnerabilities.slice(0, 4).forEach(item => items.push({
       id: `i-${item.cveID}`,
       title: 'Known exploited vulnerability',
       detail: `${item.cveID} · ${item.vulnerabilityName}`,
@@ -428,7 +421,7 @@ export function DashboardPage() {
         if (score) return score;
         return (new Date(b.time || 0).getTime() || 0) - (new Date(a.time || 0).getTime() || 0);
       })
-      .slice(0, 9);
+      .slice(0, 12);
   }, [data.email, data.intel, data.malware, data.network, data.phishing, data.vulnerability]);
 
   const detectorCount = data.email.length + data.phishing.length + data.malware.length;
@@ -632,7 +625,7 @@ export function DashboardPage() {
       {/* ACTIVITY + SIDEBAR */}
       <div className="mt-5 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.7fr)]">
 
-        {/* Live attention feed — no horizontal scroll */}
+        {/* Live attention feed */}
         <Panel className="overflow-hidden">
           <PanelHeader
             kicker="Prioritized queue"
@@ -644,20 +637,13 @@ export function DashboardPage() {
           {activities.length ? (
             <div className="w-full">
               <table className="w-full table-fixed border-collapse text-left">
-                <colgroup>
-                  <col className="w-[96px]" />
-                  <col />
-                  <col className="hidden w-[150px] md:table-column" />
-                  <col className="hidden w-[110px] sm:table-column" />
-                  <col className="w-[44px]" />
-                </colgroup>
                 <thead>
                   <tr className="border-b border-white/[0.08] bg-white/[0.015] font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                    <th className="px-5 py-2.5 font-medium">Severity</th>
+                    <th className="w-[96px] px-5 py-2.5 font-medium">Severity</th>
                     <th className="px-4 py-2.5 font-medium">Event</th>
-                    <th className="hidden px-4 py-2.5 font-medium md:table-cell">Source</th>
-                    <th className="hidden px-4 py-2.5 font-medium sm:table-cell">When</th>
-                    <th className="px-5 py-2.5" aria-label="Open" />
+                    <th className="hidden w-[150px] px-4 py-2.5 font-medium md:table-cell">Source</th>
+                    <th className="hidden w-[110px] px-4 py-2.5 font-medium sm:table-cell">When</th>
+                    <th className="w-[44px] px-5 py-2.5" aria-label="Open" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05]">
@@ -679,7 +665,6 @@ export function DashboardPage() {
                         >
                           <p className="truncate text-[13px] font-medium text-slate-200">{item.title}</p>
                           <p className="mt-0.5 truncate text-[11px] text-slate-500">{item.detail}</p>
-                          {/* Inline meta shown only on small screens where Source/When columns are hidden */}
                           <p className="mt-1 flex items-center gap-2 font-mono text-[10px] text-slate-500 md:hidden">
                             <span className="truncate">{item.source}</span>
                             <span className="h-1 w-1 shrink-0 rounded-full bg-slate-700" />
@@ -711,6 +696,12 @@ export function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Feed footer — fills remaining space intentionally */}
+              <div className="flex items-center justify-between border-t border-white/[0.08] bg-white/[0.015] px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">
+                <span>Showing {activities.length} most recent events</span>
+                <span>Sorted by severity</span>
+              </div>
             </div>
           ) : (
             <div className="grid min-h-72 place-items-center px-6 text-center">
