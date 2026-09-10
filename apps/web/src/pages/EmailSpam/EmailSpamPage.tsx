@@ -1115,7 +1115,7 @@ export function EmailSpamPage() {
             </p>
             <h2 className="mt-1 text-[15px] font-semibold text-slate-100">Email scan history</h2>
             <p className="mt-0.5 text-xs text-slate-500">
-              Your last {MAX_LOGS} analyses on this device. Stored locally in the browser.
+              Your last {MAX_LOGS} analyses from the shared MySQL database.
             </p>
           </div>
 
