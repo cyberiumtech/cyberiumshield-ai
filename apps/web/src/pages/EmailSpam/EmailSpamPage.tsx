@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { scanEmailSpam } from '../../services/api';
+import { clearDetectorHistory, getDetectorHistory, scanEmailSpam } from '../../services/api';
 import type { EmailSpamAnalysis } from '../../services/api';
 
 /* ------------------------------------------------------------------ */
@@ -61,7 +61,6 @@ interface VerdictMeta {
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
-const STORAGE_KEY = 'email_spam_scan_logs';
 const MAX_LOGS = 25;
 const MAX_CONTENT_LENGTH = 100_000;
 const MAX_FIELD_LENGTH = 320;
@@ -593,7 +592,7 @@ export function EmailSpamPage() {
   const [content, setContent] = useState('');
 
   const [result, setResult] = useState<EmailSpamAnalysis | null>(null);
-  const [logs, setLogs] = useState<ScanLog[]>(readLogs);
+  const [logs, setLogs] = useState<ScanLog[]>([]);
   const [historyFilter, setHistoryFilter] = useState<'all' | Verdict>('all');
 
   const [error, setError] = useState<string | null>(null);
@@ -605,9 +604,9 @@ export function EmailSpamPage() {
 
   /* ----------------------------- effects ---------------------------- */
   useEffect(() => {
-    const sync = () => setLogs(readLogs());
-    window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
+    void getDetectorHistory<ScanLog>('email-spam', MAX_LOGS)
+      .then(setLogs)
+      .catch(() => setError('Unable to load scan history from MySQL.'));
   }, []);
 
   useEffect(
@@ -645,13 +644,8 @@ export function EmailSpamPage() {
   );
 
   /* ---------------------------- actions ----------------------------- */
-  const persistLogs = useCallback((next: ScanLog[]) => {
-    setLogs(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      toast.error('Scan history could not be saved in this browser.');
-    }
+  const refreshLogs = useCallback(async () => {
+    setLogs(await getDetectorHistory<ScanLog>('email-spam', MAX_LOGS));
     window.dispatchEvent(new Event('cyber:scan-history-updated'));
   }, []);
 
@@ -700,13 +694,7 @@ export function EmailSpamPage() {
       const analysis = normaliseAnalysis(raw);
       setResult(analysis);
 
-      const log: ScanLog = {
-        ...analysis,
-        id: createId(),
-        scannedAt: analysis.scannedAt || new Date().toISOString(),
-      };
-
-      persistLogs([log, ...logs].slice(0, MAX_LOGS));
+      await refreshLogs();
 
       toast.success(
         analysis.verdict === 'spam'
@@ -725,7 +713,7 @@ export function EmailSpamPage() {
     } finally {
       setIsScanning(false);
     }
-  }, [content, isScanning, logs, persistLogs, sender, subject]);
+  }, [content, isScanning, refreshLogs, sender, subject]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
