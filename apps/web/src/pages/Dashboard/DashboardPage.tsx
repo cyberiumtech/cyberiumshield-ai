@@ -25,7 +25,11 @@ const mapPoints = [
   { name: 'Los Angeles', coordinates: [-118.24, 34.05] as [number, number], tone: '#fb7185' },
   { name: 'Moscow', coordinates: [37.62, 55.75] as [number, number], tone: '#22d3ee' },
   { name: 'Beijing', coordinates: [116.41, 39.91] as [number, number], tone: '#a78bfa' },
-  
+  { name: 'Mexico City', coordinates: [-99.13, 19.43] as [number, number], tone: '#f59e0b' },
+  { name: 'Istanbul', coordinates: [28.97, 41.01] as [number, number], tone: '#fb7185' },
+  { name: 'Seoul', coordinates: [126.98, 37.57] as [number, number], tone: '#22d3ee' },
+  { name: 'Paris', coordinates: [2.35, 48.85] as [number, number], tone: '#a78bfa' },
+  { name: 'Buenos Aires', coordinates: [-58.38, -34.61] as [number, number], tone: '#f59e0b' },
 ];
 
 const sourceNames: Record<SourceKey, string> = {
