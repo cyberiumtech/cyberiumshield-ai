@@ -1,78 +1,199 @@
-import React, { useState } from 'react';
-import { X, FileText, Download } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Download, FileJson, FileSpreadsheet, FileText, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
-interface ReportAlert {
+export interface ReportFinding {
+  id: string;
+  source: string;
   title: string;
+  detail: string;
   severity: string;
   status: string;
-  timestamp: string;
+  timestamp: string | null;
+}
+
+export interface ReportSource {
+  key: string;
+  label: string;
+  status: string;
+  updatedAt: string | null;
+  recordCount: number | null;
+  provenance: string;
+}
+
+export interface SecurityReportData {
+  sources: ReportSource[];
+  findings: ReportFinding[];
+  metrics: Array<{ label: string; value: string }>;
+  lastSync: string | null;
 }
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  alerts?: ReportAlert[];
+  data: SecurityReportData;
+  onGenerated?: (artifact: { name: string; format: string; generatedAt: string }) => void;
 }
 
-const defaultAlerts: ReportAlert[] = [
-  { title: 'Security summary requested', severity: 'info', status: 'ready', timestamp: new Date().toLocaleString() },
-];
+const reportTypes = {
+  'security-summary': { label: 'Security evidence summary', description: 'Posture metrics, source health, provenance, and validated findings.' },
+  'finding-ledger': { label: 'Finding ledger', description: 'A chronological export of normalized findings and their source provenance.' },
+  'source-audit': { label: 'Source audit trail', description: 'Connection state, freshness, record counts, and collection provenance.' },
+} as const;
 
-export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportModalProps) {
-  const [reportType, setReportType] = useState('security-summary');
-  const [format, setFormat] = useState('pdf');
-  const [dateRange, setDateRange] = useState('last-7-days');
-  const [isGenerating, setIsGenerating] = useState(false);
+const ranges = {
+  today: { label: 'Today', days: 1 },
+  'last-7-days': { label: 'Last 7 days', days: 7 },
+  'last-30-days': { label: 'Last 30 days', days: 30 },
+  'last-90-days': { label: 'Last 90 days', days: 90 },
+  'all-available': { label: 'All available evidence', days: null },
+} as const;
 
-  const downloadFile = (content: BlobPart, filename: string, type: string) => {
-    const url = URL.createObjectURL(new Blob([content], { type }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+type ReportType = keyof typeof reportTypes;
+type DateRange = keyof typeof ranges;
+type Format = 'pdf' | 'csv' | 'json';
+
+function escapeCsv(value: unknown) {
+  const text = value === null || value === undefined ? '' : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function downloadFile(content: BlobPart, filename: string, type: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function inDateRange(timestamp: string | null, dateRange: DateRange) {
+  if (ranges[dateRange].days === null) return true;
+  if (!timestamp) return false;
+  const time = new Date(timestamp).getTime();
+  return Number.isFinite(time) && time >= Date.now() - ranges[dateRange].days * 86_400_000;
+}
+
+function createPdf(data: SecurityReportData, findings: ReportFinding[], reportType: ReportType, dateRange: DateRange, generatedAt: string) {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+  const margin = 16;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const lineWidth = pageWidth - margin * 2;
+  let y = margin;
+
+  const addLines = (text: string, size = 9, gap = 4.5, color: [number, number, number] = [40, 51, 68]) => {
+    pdf.setFontSize(size);
+    pdf.setTextColor(...color);
+    const lines = pdf.splitTextToSize(text, lineWidth) as string[];
+    for (const line of lines) {
+      if (y + gap > pageHeight - margin) { pdf.addPage(); y = margin; }
+      pdf.text(line, margin, y);
+      y += gap;
+    }
+  };
+  const section = (label: string) => {
+    if (y > pageHeight - 28) { pdf.addPage(); y = margin; }
+    y += 4;
+    pdf.setDrawColor(203, 213, 225);
+    pdf.line(margin, y, pageWidth - margin, y);
+    y += 7;
+    addLines(label.toUpperCase(), 9, 5, [8, 145, 178]);
   };
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  pdf.setFillColor(11, 17, 32);
+  pdf.rect(0, 0, pageWidth, 35, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(19);
+  pdf.text('CyberShield AI', margin, 15);
+  pdf.setFontSize(11);
+  pdf.text(reportTypes[reportType].label, margin, 24);
+  y = 44;
+  addLines(`Generated: ${new Date(generatedAt).toLocaleString()}  |  Range: ${ranges[dateRange].label}`);
+  addLines(`Evidence sync: ${data.lastSync ? new Date(data.lastSync).toLocaleString() : 'Not available'}`);
+  addLines('Integrity note: unavailable values are excluded and are never estimated.', 9, 5, [71, 85, 105]);
+
+  if (reportType === 'security-summary') {
+    section('Validated metrics');
+    data.metrics.forEach(metric => addLines(`${metric.label}: ${metric.value}`));
+  }
+  if (reportType !== 'finding-ledger') {
+    section('Source health & provenance');
+    data.sources.forEach(source => addLines(`${source.label} | ${source.status.toUpperCase()} | Records: ${source.recordCount ?? 'not exposed'} | Checked: ${source.updatedAt ? new Date(source.updatedAt).toLocaleString() : 'unavailable'} | ${source.provenance}`));
+  }
+  if (reportType !== 'source-audit') {
+    section(`Validated findings (${findings.length})`);
+    if (!findings.length) addLines('No findings with a usable timestamp were available in the selected range.');
+    findings.forEach((finding, index) => {
+      addLines(`${index + 1}. [${finding.severity.toUpperCase()}] ${finding.title}`, 9, 4.5, [15, 23, 42]);
+      addLines(`${finding.source} | ${finding.status} | ${finding.timestamp ? new Date(finding.timestamp).toLocaleString() : 'time unavailable'}`, 8, 4, [71, 85, 105]);
+      if (finding.detail) addLines(finding.detail, 8, 4, [71, 85, 105]);
+      y += 2;
+    });
+  }
+  const pages = pdf.getNumberOfPages();
+  for (let page = 1; page <= pages; page += 1) {
+    pdf.setPage(page);
+    pdf.setFontSize(7);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(`CYBERSHIELD EVIDENCE EXPORT  |  PAGE ${page} OF ${pages}`, margin, pageHeight - 7);
+  }
+  return pdf;
+}
+
+export function ReportModal({ isOpen, onClose, data, onGenerated }: ReportModalProps) {
+  const [reportType, setReportType] = useState<ReportType>('security-summary');
+  const [format, setFormat] = useState<Format>('pdf');
+  const [dateRange, setDateRange] = useState<DateRange>('last-30-days');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isGenerating) onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isGenerating, isOpen, onClose]);
+
+  const scopedFindings = data.findings.filter(finding => inDateRange(finding.timestamp, dateRange));
+  const included = reportType === 'source-audit' ? `${data.sources.length} source attestations` : `${scopedFindings.length} findings and ${data.sources.length} source attestations`;
+
+  const handleGenerate = (event: React.FormEvent) => {
+    event.preventDefault();
     setIsGenerating(true);
+    const generatedAt = new Date().toISOString();
+    const stem = `cybershield-${reportType}-${generatedAt.slice(0, 10)}`;
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const reportName = `cybershield-${reportType}-${dateRange}`;
-      const rows = alerts.map((alert) => [alert.title, alert.severity, alert.status, alert.timestamp]);
-      const csv = [
-        ['Title', 'Severity', 'Status', 'Time'],
-        ...rows,
-      ].map((row) => row.map((value) => `"${value.replaceAll('"', '""')}"`).join(',')).join('\n');
-      const reportJson = JSON.stringify({ reportType, dateRange, generatedAt: new Date().toISOString(), alerts }, null, 2);
-
-      if (format === 'csv') {
-        downloadFile(csv, `${reportName}.csv`, 'text/csv;charset=utf-8');
-      } else if (format === 'json') {
-        downloadFile(reportJson, `${reportName}.json`, 'application/json');
+      const report = {
+        metadata: { title: reportTypes[reportType].label, reportType, dateRange, dateRangeLabel: ranges[dateRange].label, generatedAt, lastSuccessfulSync: data.lastSync, integrityNote: 'Unavailable values are excluded and never estimated.' },
+        metrics: reportType === 'security-summary' ? data.metrics : [],
+        sources: reportType === 'finding-ledger' ? [] : data.sources,
+        findings: reportType === 'source-audit' ? [] : scopedFindings,
+      };
+      if (format === 'json') {
+        downloadFile(JSON.stringify(report, null, 2), `${stem}.json`, 'application/json;charset=utf-8');
+      } else if (format === 'csv') {
+        const rows: unknown[][] = [['Report', reportTypes[reportType].label], ['Generated at', generatedAt], ['Date range', ranges[dateRange].label], ['Last sync', data.lastSync ?? 'Unavailable'], ['Integrity note', 'Unavailable values are excluded and never estimated.'], []];
+        if (reportType === 'security-summary') rows.push(['METRICS'], ['Metric', 'Value'], ...data.metrics.map(metric => [metric.label, metric.value]), []);
+        if (reportType !== 'finding-ledger') rows.push(['SOURCE HEALTH'], ['Source', 'Status', 'Last checked', 'Record count', 'Provenance'], ...data.sources.map(source => [source.label, source.status, source.updatedAt ?? '', source.recordCount ?? '', source.provenance]), []);
+        if (reportType !== 'source-audit') rows.push(['FINDINGS'], ['ID', 'Source', 'Severity', 'Status', 'Title', 'Detail', 'Timestamp'], ...scopedFindings.map(finding => [finding.id, finding.source, finding.severity, finding.status, finding.title, finding.detail, finding.timestamp ?? '']));
+        downloadFile(`\uFEFF${rows.map(row => row.map(escapeCsv).join(',')).join('\r\n')}`, `${stem}.csv`, 'text/csv;charset=utf-8');
       } else {
-        const pdf = new jsPDF();
-        pdf.setFontSize(16);
-        pdf.text('cybershield AI Security Report', 20, 20);
-        pdf.setFontSize(10);
-        pdf.text(`Type: ${reportType} | Range: ${dateRange}`, 20, 30);
-        alerts.forEach((alert, index) => {
-          const y = 45 + index * 18;
-          pdf.text(`${index + 1}. ${alert.title}`, 20, y);
-          pdf.text(`Severity: ${alert.severity} | Status: ${alert.status} | ${alert.timestamp}`, 26, y + 7);
-        });
-        pdf.save(`${reportName}.pdf`);
+        createPdf(data, scopedFindings, reportType, dateRange, generatedAt).save(`${stem}.pdf`);
       }
-
-      toast.success('Report downloaded successfully');
+      onGenerated?.({ name: reportTypes[reportType].label, format: format.toUpperCase(), generatedAt });
+      toast.success(`${format.toUpperCase()} report downloaded`, { description: included });
       onClose();
-    } catch {
-      toast.error('Unable to generate the report');
+    } catch (error) {
+      console.error(error);
+      toast.error('Unable to generate report', { description: 'The evidence remains unchanged. Please try again.' });
     } finally {
       setIsGenerating(false);
     }
@@ -80,117 +201,21 @@ export function ReportModal({ isOpen, onClose, alerts = defaultAlerts }: ReportM
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="generate-report-title"
-            className="fixed left-1/2 top-1/2 z-[61] max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-white/10 bg-[#0F1729] shadow-2xl"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-400/10 rounded-lg">
-                  <FileText className="h-5 w-5 text-green-400" />
-                </div>
-                <h2 id="generate-report-title" className="text-lg font-semibold text-slate-100 sm:text-xl">Generate Report</h2>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close report dialog"
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-slate-400" />
-              </button>
-            </div>
-
-            <form onSubmit={handleGenerate} className="space-y-4 p-4 sm:p-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Report Type
-                </label>
-                <select
-                  value={reportType}
-                  onChange={(e) => setReportType(e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                >
-                  <option value="security-summary">Security Summary</option>
-                  <option value="threat-analysis">Threat Analysis</option>
-                  <option value="vulnerability-assessment">Vulnerability Assessment</option>
-                  <option value="compliance">Compliance Report</option>
-                  <option value="incident-log">Incident Log</option>
-                  <option value="audit-trail">Audit Trail</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Format
-                </label>
-                <select
-                  value={format}
-                  onChange={(e) => setFormat(e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="csv">CSV</option>
-                  <option value="json">JSON</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Date Range
-                </label>
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                >
-                  <option value="today">Today</option>
-                  <option value="last-7-days">Last 7 Days</option>
-                  <option value="last-30-days">Last 30 Days</option>
-                  <option value="last-90-days">Last 90 Days</option>
-                  <option value="this-month">This Month</option>
-                  <option value="last-month">Last Month</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row">
-                <button
-                  type="submit"
-                  disabled={isGenerating}
-                  aria-busy={isGenerating}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-400/10 hover:bg-green-400/20 border border-green-400/30 rounded-lg text-green-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Download className="h-4 w-4" />
-                  {isGenerating ? 'Generating...' : 'Generate'}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isGenerating}
-                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-slate-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </>
-      )}
+      {isOpen && <>
+        <motion.button type="button" aria-label="Close report builder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isGenerating && onClose()} className="fixed inset-0 z-[60] cursor-default bg-slate-950/75 backdrop-blur-sm" />
+        <motion.section initial={{ opacity: 0, scale: 0.98, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 16 }} role="dialog" aria-modal="true" aria-labelledby="report-builder-title" className="fixed left-1/2 top-1/2 z-[61] max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-2xl">
+          <header className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-500">Audit-ready export</p><h2 id="report-builder-title" className="mt-1 text-xl font-semibold tracking-tight text-[var(--text-primary)]">Build evidence report</h2><p className="mt-1 text-sm text-[var(--text-secondary)]">Export only the records currently available to Security Center.</p></div>
+            <button ref={closeButtonRef} type="button" onClick={onClose} disabled={isGenerating} aria-label="Close report dialog" className="p-2 text-[var(--text-secondary)] transition hover:bg-white/5 hover:text-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40"><X className="h-5 w-5" /></button>
+          </header>
+          <form onSubmit={handleGenerate} className="p-5 sm:p-7">
+            <fieldset><legend className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">Report scope</legend><div className="mt-3 grid gap-2">{Object.entries(reportTypes).map(([key, item]) => <label key={key} className={`cursor-pointer border p-4 transition ${reportType === key ? 'border-cyan-400/60 bg-cyan-400/[0.07]' : 'border-[var(--border-color)] hover:border-cyan-400/30'}`}><input type="radio" name="report-type" value={key} checked={reportType === key} onChange={() => setReportType(key as ReportType)} className="sr-only" /><span className="flex items-start gap-3"><span className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center border ${reportType === key ? 'border-cyan-400 bg-cyan-400' : 'border-slate-500'}`}>{reportType === key && <CheckCircle2 className="h-3 w-3 text-slate-950" />}</span><span><span className="block text-sm font-semibold text-[var(--text-primary)]">{item.label}</span><span className="mt-1 block text-xs leading-relaxed text-[var(--text-secondary)]">{item.description}</span></span></span></label>)}</div></fieldset>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2"><label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">Date range<select value={dateRange} onChange={event => setDateRange(event.target.value as DateRange)} className="mt-2 w-full border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-3 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">{Object.entries(ranges).map(([key, range]) => <option key={key} value={key}>{range.label}</option>)}</select></label><fieldset><legend className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-secondary)]">File format</legend><div className="mt-2 grid grid-cols-3 gap-2">{([{ key: 'pdf', Icon: FileText }, { key: 'csv', Icon: FileSpreadsheet }, { key: 'json', Icon: FileJson }] as const).map(({ key, Icon }) => <label key={key} className={`cursor-pointer border px-2 py-2.5 text-center text-xs font-semibold uppercase transition ${format === key ? 'border-cyan-400/60 bg-cyan-400/[0.08] text-cyan-400' : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-cyan-400/30'}`}><input className="sr-only" type="radio" name="format" value={key} checked={format === key} onChange={() => setFormat(key)} /><Icon className="mx-auto mb-1 h-4 w-4" />{key}</label>)}</div></fieldset></div>
+            <div className="mt-6 border-l-2 border-cyan-400 bg-cyan-400/[0.05] px-4 py-3"><p className="text-xs font-semibold text-[var(--text-primary)]">Export contents</p><p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{included}. Missing values remain explicitly unavailable; no estimates are inserted.</p></div>
+            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--border-color)] pt-5 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} disabled={isGenerating} className="min-h-11 border border-[var(--border-color)] px-5 text-sm font-semibold text-[var(--text-secondary)] transition hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40">Cancel</button><button type="submit" disabled={isGenerating} aria-busy={isGenerating} className="inline-flex min-h-11 items-center justify-center gap-2 bg-cyan-400 px-5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-wait disabled:opacity-60"><Download className={`h-4 w-4 ${isGenerating ? 'animate-bounce' : ''}`} />{isGenerating ? 'Preparing export…' : `Download ${format.toUpperCase()}`}</button></div>
+          </form>
+        </motion.section>
+      </>}
     </AnimatePresence>
   );
 }
