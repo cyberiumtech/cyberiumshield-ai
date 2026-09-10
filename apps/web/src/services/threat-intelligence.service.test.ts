@@ -230,6 +230,8 @@ describe('threat intelligence service', () => {
       id: 42,
       indicator: 'example.com',
       indicatorType: 'domain',
+      verdict: 'inconclusive',
+      coverage: { status: 'inconclusive', meaningfulEvidence: false },
       details: { dns: { addresses: ['203.0.113.8'] } },
     });
   });
@@ -252,12 +254,12 @@ describe('threat intelligence service', () => {
       model: { loaded: true, used: true },
     });
     expect(result.riskScore).toBe(100);
-    expect(result.verdict).toBe('high');
+    expect(result.verdict).toBe('inconclusive');
     expect(result.evidence).toEqual({ ml_high_risk: true });
     expect(result.coverage).toMatchObject({
-      status: 'partial',
-      confidence: 'low',
-      meaningfulEvidence: true,
+      status: 'inconclusive',
+      confidence: 'none',
+      meaningfulEvidence: false,
     });
 
     vi.stubGlobal(

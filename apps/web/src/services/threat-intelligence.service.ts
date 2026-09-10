@@ -372,7 +372,9 @@ function normalizeEvidenceCoverage(
     };
   }
 
-  const hasLegacyEvidence = Object.keys(evidence).length > 0;
+  const hasLegacyEvidence = ['cisa_kev', 'cvss_score', 'threatfox_matches'].some(key =>
+    Object.prototype.hasOwnProperty.call(evidence, key)
+  );
   return {
     status: hasLegacyEvidence ? 'partial' : 'inconclusive',
     confidence: hasLegacyEvidence ? 'low' : 'none',
@@ -412,11 +414,15 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
     ? (rawType as IndicatorType)
     : 'unknown';
   const rawVerdict = readString(expanded.verdict).toLowerCase();
-  const verdict: ThreatVerdict = ['critical', 'high', 'medium', 'low', 'inconclusive'].includes(
-    rawVerdict
-  )
+  const reportedVerdict: ThreatVerdict = [
+    'critical',
+    'high',
+    'medium',
+    'low',
+    'inconclusive',
+  ].includes(rawVerdict)
     ? (rawVerdict as ThreatVerdict)
-    : 'low';
+    : 'inconclusive';
   const rawDetails = isRecord(expanded.details) ? expanded.details : {};
   const rawThreatFox = isRecord(rawDetails.threatFox) ? rawDetails.threatFox : undefined;
   const rawDns = isRecord(rawDetails.dns) ? rawDetails.dns : undefined;
@@ -426,6 +432,8 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
       ([, item]) => ['string', 'number', 'boolean'].includes(typeof item) || item === null
     )
   ) as Record<string, ThreatEvidenceValue>;
+  const coverage = normalizeEvidenceCoverage(expanded.coverage, evidence);
+  const verdict: ThreatVerdict = coverage.meaningfulEvidence ? reportedVerdict : 'inconclusive';
   const rawModel = isRecord(expanded.model) ? expanded.model : {};
   const rawKev = isRecord(rawDetails.cisaKEV) ? normalizeVulnerability(rawDetails.cisaKEV) : null;
   const id = readNumber(expanded.id, Number.NaN);
@@ -480,7 +488,7 @@ export function normalizeIndicatorResult(payload: unknown): IndicatorResult {
         : {}),
     },
     providerErrors: readStringArray(expanded.providerErrors || expanded.provider_errors),
-    coverage: normalizeEvidenceCoverage(expanded.coverage, evidence),
+    coverage,
     model: { loaded: readBoolean(rawModel.loaded), used: readBoolean(rawModel.used) },
   };
 }

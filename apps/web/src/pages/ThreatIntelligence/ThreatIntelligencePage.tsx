@@ -468,11 +468,11 @@ function ServiceVisibility({
                   {label}
                 </p>
                 <Icon
-                  className={`h-3.5 w-3.5 shrink-0 ${available ? 'text-emerald-300' : 'text-amber-300'}`}
+                  className={`h-3.5 w-3.5 shrink-0 ${available ? 'text-emerald-300' : 'text-slate-500'}`}
                 />
               </div>
               <p
-                className={`mt-2 text-xs font-semibold ${available ? 'text-slate-200' : 'text-amber-200'}`}
+                className={`mt-2 text-xs font-semibold ${available ? 'text-slate-200' : 'text-slate-400'}`}
               >
                 {value}
               </p>
