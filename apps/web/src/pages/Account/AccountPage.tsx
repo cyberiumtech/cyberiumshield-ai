@@ -15,6 +15,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -181,11 +182,11 @@ export function AccountPage() {
   };
 
   const role = formatRole(user.role || 'administrator');
-  const quickActions = [
+  const quickActions: ReadonlyArray<readonly [LucideIcon, string, string]> = [
     [Grid2X2, 'Dashboard', '/dashboard'],
     [CreditCard, 'Subscription', '/subscription'],
-    ...(isAdminRole(user.role) ? [[Settings, 'Settings', '/settings']] : []),
-  ] as const;
+    ...(isAdminRole(user.role) ? [[Settings, 'Settings', '/settings'] as const] : []),
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 text-zinc-100">
