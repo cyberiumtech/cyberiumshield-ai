@@ -81,8 +81,8 @@ const sections: SidebarSection[] = [
    CONSTANTS
    ───────────────────────────────────────────────────────────── */
 const STORAGE_KEY = 'sidebar:collapsed';
-const COLLAPSED_WIDTH = 64;
-const EXPANDED_WIDTH = 232;
+const COLLAPSED_WIDTH = 68;
+const EXPANDED_WIDTH = 268;
 const HEADER_HEIGHT = 72;
 
 /* ─────────────────────────────────────────────────────────────
@@ -134,10 +134,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         className={
           mobile
             ? 'space-y-3'
-            : `flex-1 ${isCollapsed ? 'overflow-visible py-2' : 'overflow-y-auto overflow-x-hidden py-3'}`
+            : `flex-1 ${isCollapsed ? 'overflow-visible py-2' : 'overflow-y-auto overflow-x-hidden py-4'}`
         }
       >
-        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-4'}>
+        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-5'}>
           {sections.map((section, sectionIndex) => {
             const items = section.items.filter(it => !it.adminOnly || isAdmin);
             if (!items.length) return null;
@@ -151,7 +151,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                 )}
 
                 {!mobile && !isCollapsed && (
-                  <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
+                  <p className="mb-2 px-4 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
                     {section.title}
                   </p>
                 )}
@@ -172,8 +172,8 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           aria-label={isCollapsed ? it.label : undefined}
                           className={`group relative flex items-center rounded text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
                             isCollapsed
-                              ? 'mx-1.5 justify-center py-3'
-                              : 'mx-2 gap-2.5 px-3 py-2.5'
+                              ? 'mx-2 justify-center py-3'
+                              : 'mx-3 gap-3 px-3 py-2.5'
                           } ${
                             active
                               ? 'bg-white/[0.06] text-white'
@@ -197,11 +197,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
 
                           {!isCollapsed && <span className="truncate">{it.label}</span>}
 
-                          {/* Floating tooltip — only in collapsed mode */}
                           {isCollapsed && (
                             <span
                               role="tooltip"
-                              className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded border border-white/[0.08] bg-[#0d1219] px-2 py-1 text-[11px] font-medium text-slate-200 opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+                              className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded border border-white/[0.08] bg-[#0d1219] px-2.5 py-1.5 text-[11px] font-medium text-slate-200 opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100"
                             >
                               {it.label}
                             </span>
@@ -220,8 +219,8 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       {/* ═══ Bottom bar: label + toggle ═══ */}
       {!mobile && (
         <div
-          className={`flex h-11 shrink-0 items-center border-t border-white/[0.06] ${
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+          className={`flex h-12 shrink-0 items-center border-t border-white/[0.06] ${
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
           }`}
         >
           {!isCollapsed && (
