@@ -81,20 +81,21 @@ const sections: SidebarSection[] = [
    CONSTANTS
    ───────────────────────────────────────────────────────────── */
 const STORAGE_KEY = 'sidebar:collapsed';
-const COLLAPSED_WIDTH = 72;
-const EXPANDED_WIDTH = 272;
-const HEADER_HEIGHT = 72;
-const BOTTOM_BAR_HEIGHT = 56;
+const COLLAPSED_WIDTH = 68;
+const EXPANDED_WIDTH = 260;
+const HEADER_HEIGHT = 68; // ← must equal the navbar height (was 72 → caused the 4px gap)
+const BOTTOM_BAR_HEIGHT = 52;
 
-/* Thin scrollbar utility — WebKit + Firefox */
+const SIDEBAR_BG = 'bg-[#070b12]';
+
 const THIN_SCROLLBAR =
   '[scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.15)_transparent] ' +
   '[&::-webkit-scrollbar]:w-1 ' +
   '[&::-webkit-scrollbar]:h-1 ' +
   '[&::-webkit-scrollbar-track]:bg-transparent ' +
   '[&::-webkit-scrollbar-thumb]:rounded-full ' +
-  '[&::-webkit-scrollbar-thumb]:bg-white/[0.08] ' +
-  'hover:[&::-webkit-scrollbar-thumb]:bg-white/[0.16]';
+  '[&::-webkit-scrollbar-thumb]:bg-white/[0.06] ' +
+  'hover:[&::-webkit-scrollbar-thumb]:bg-white/[0.14]';
 
 /* ─────────────────────────────────────────────────────────────
    SIDEBAR
@@ -136,17 +137,17 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
       }}
       className={
         mobile
-          ? 'px-2 py-2'
-          : 'sticky flex flex-col border-r border-white/[0.06] bg-[#070b12] transition-[width] duration-200 ease-out'
+          ? `px-2 py-2 ${SIDEBAR_BG}`
+          : `sticky flex flex-col border-r border-white/[0.06] ${SIDEBAR_BG} transition-[width] duration-200 ease-out`
       }
     >
-      {/* ═══ Scroll area — thin scrollbar, bottom bar stays pinned ═══ */}
+      {/* ═══ Scroll area ═══ */}
       <div
         className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${THIN_SCROLLBAR} ${
-          isCollapsed ? 'py-3' : 'py-4'
+          isCollapsed ? 'py-2' : 'pt-2.5 pb-4'
         }`}
       >
-        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-2' : 'space-y-5'}>
+        <div className={mobile ? 'space-y-3' : isCollapsed ? 'space-y-1' : 'space-y-4'}>
           {sections.map((section, sectionIndex) => {
             const items = section.items.filter(it => !it.adminOnly || isAdmin);
             if (!items.length) return null;
@@ -156,20 +157,19 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             return (
               <div key={section.title}>
                 {showDivider && (
-                  <div aria-hidden="true" className="mx-4 my-2 h-px bg-white/[0.06]" />
+                  <div aria-hidden="true" className="mx-3 mb-1 h-px bg-white/[0.06]" />
                 )}
 
-                {/* ── Section label with horizontal line (expanded only) ── */}
                 {!mobile && !isCollapsed && (
-                  <div className="mb-2 flex items-center gap-3 px-4">
-                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
+                  <div className="mb-1.5 flex items-center gap-3 px-3">
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                       {section.title}
                     </span>
-                    <span aria-hidden="true" className="h-px flex-1 bg-white/[0.06]" />
+                    <span aria-hidden="true" className="h-px flex-1 bg-white/[0.05]" />
                   </div>
                 )}
 
-                <ul className={isCollapsed ? 'space-y-1.5' : 'space-y-0.5'}>
+                <ul className={isCollapsed ? 'space-y-1' : 'space-y-0.5'}>
                   {items.map(it => {
                     const Icon = it.icon;
                     const active =
@@ -184,10 +184,10 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           aria-current={active ? 'page' : undefined}
                           aria-label={it.label}
                           title={isCollapsed ? it.label : undefined}
-                          className={`group relative flex items-center rounded text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
+                          className={`group relative flex items-center rounded-md text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
                             isCollapsed
-                              ? 'mx-2 h-11 justify-center'
-                              : 'mx-3 gap-3 px-3 py-2.5'
+                              ? 'mx-1.5 h-10 justify-center'
+                              : 'mx-2 gap-2.5 px-2.5 py-2'
                           } ${
                             active
                               ? 'bg-white/[0.06] text-white'
@@ -197,19 +197,21 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
                           {active && (
                             <span
                               aria-hidden="true"
-                              className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400"
+                              className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-cyan-400"
                             />
                           )}
 
                           <Icon
-                            className={`h-5 w-5 shrink-0 transition-colors duration-150 ${
+                            className={`h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${
                               active
                                 ? 'text-cyan-400'
                                 : 'text-slate-500 group-hover:text-slate-400'
                             }`}
                           />
 
-                          {!isCollapsed && <span className="truncate">{it.label}</span>}
+                          {!isCollapsed && (
+                            <span className="truncate leading-none">{it.label}</span>
+                          )}
                         </Link>
                       </li>
                     );
@@ -221,17 +223,17 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         </div>
       </div>
 
-      {/* ═══ Fixed bottom bar — shrink-0 so it stays pinned ═══ */}
+      {/* ═══ Bottom bar ═══ */}
       {!mobile && (
         <div
-          className={`flex shrink-0 items-center border-t border-white/[0.06] bg-[#070b12] ${
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+          className={`flex shrink-0 items-center border-t border-white/[0.06] ${SIDEBAR_BG} ${
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
           }`}
           style={{ height: BOTTOM_BAR_HEIGHT }}
         >
           {!isCollapsed && (
             <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
-              Collapse Sidebar
+              Collapse
             </p>
           )}
           <button
@@ -240,12 +242,12 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!isCollapsed}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded text-slate-400 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-white/[0.06] hover:text-slate-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500"
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="h-[18px] w-[18px]" />
+              <PanelLeftOpen className="h-[17px] w-[17px]" />
             ) : (
-              <PanelLeftClose className="h-[18px] w-[18px]" />
+              <PanelLeftClose className="h-[17px] w-[17px]" />
             )}
           </button>
         </div>
