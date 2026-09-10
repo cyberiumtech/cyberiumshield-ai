@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  checkThreatIndicator,
   extractHttpLinks,
+  fetchThreatFeedStatus,
+  fetchThreatHistory,
   fetchKevCatalog,
   fetchThreatIntelligenceHealth,
   getDueStatus,
   isKnownRansomwareUse,
   normalizeKevCatalog,
+  normalizeIndicatorInput,
+  normalizeIndicatorResult,
   parseCatalogDate,
   ThreatIntelligenceError,
 } from './threat-intelligence.service';
@@ -136,5 +141,145 @@ describe('threat intelligence service', () => {
       status: 'ok',
       cached: true,
     });
+  });
+
+  it('normalizes supported indicators before lookup and rejects unsupported values locally', async () => {
+    expect(normalizeIndicatorInput(' cve-2026-1234 ')).toBe('CVE-2026-1234');
+    expect(normalizeIndicatorInput(' EXAMPLE.COM ')).toBe('example.com');
+    expect(normalizeIndicatorInput('A'.repeat(32))).toBe('a'.repeat(32));
+    expect(() => normalizeIndicatorInput('not an indicator')).toThrow('Unsupported indicator');
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          indicator: 'CVE-2026-1234',
+          indicatorType: 'cve',
+          riskScore: 85,
+          verdict: 'critical',
+          reasons: ['CISA lists this CVE as a Known Exploited Vulnerability.'],
+          checkedAt: '2026-09-01T12:00:00Z',
+          evidence: { cisa_kev: true },
+          details: {},
+          providerErrors: [],
+          model: { loaded: true, used: false },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(checkThreatIndicator(' cve-2026-1234 ')).resolves.toMatchObject({
+      indicator: 'CVE-2026-1234',
+      riskScore: 85,
+      verdict: 'critical',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/threat-intelligence-api/api/indicator/check',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ indicator: 'CVE-2026-1234' }),
+      })
+    );
+  });
+
+  it('expands persisted result_json rows while retaining their database id', async () => {
+    const storedResult = {
+      indicator: 'example.com',
+      indicatorType: 'domain',
+      riskScore: 10,
+      verdict: 'low',
+      reasons: [],
+      checkedAt: '2026-09-01T12:00:00Z',
+      evidence: { dns_resolves: true },
+      details: { dns: { resolves: true, addresses: ['203.0.113.8'] } },
+      providerErrors: ['ThreatFox: not configured'],
+      model: { loaded: false, used: false },
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          observations: [
+            {
+              id: 42,
+              indicator: 'indexed-value.example',
+              score: 0,
+              result_json: JSON.stringify(storedResult),
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const history = await fetchThreatHistory(500);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/threat-intelligence-api/api/history?limit=200',
+      expect.any(Object)
+    );
+    expect(history[0]).toMatchObject({
+      id: 42,
+      indicator: 'example.com',
+      indicatorType: 'domain',
+      details: { dns: { addresses: ['203.0.113.8'] } },
+    });
+  });
+
+  it('normalizes provider detail and feed status without trusting unexpected shapes', async () => {
+    const result = normalizeIndicatorResult({
+      indicator: 'https://example.test/login',
+      indicatorType: 'url',
+      riskScore: 140,
+      verdict: 'HIGH',
+      reasons: ['Multiple signals'],
+      checkedAt: '2026-09-01T12:00:00Z',
+      evidence: { ml_high_risk: true, nested: { ignored: true } },
+      details: {
+        urlFeatures: { length: 26, suspicious: true },
+        mlProbability: 0.91,
+        threatFox: { configured: true, matches: [{ ioc: 'example.test' }], status: 'ok' },
+      },
+      providerErrors: ['NVD unavailable'],
+      model: { loaded: true, used: true },
+    });
+    expect(result.riskScore).toBe(100);
+    expect(result.verdict).toBe('high');
+    expect(result.evidence).toEqual({ ml_high_risk: true });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            cisaKEV: { status: 'live', count: 1400, lastKnownGood: true },
+            nvd: { configured: true },
+            threatFox: { configured: false },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    );
+    await expect(fetchThreatFeedStatus()).resolves.toMatchObject({
+      cisaKEV: { status: 'live', count: 1400 },
+      nvd: { configured: true },
+      threatFox: { configured: false },
+    });
+  });
+
+  it('surfaces indicator backend errors and does not issue requests for invalid input', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'ThreatFox quota exceeded.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(checkThreatIndicator('example.com')).rejects.toMatchObject({
+      message: 'ThreatFox quota exceeded.',
+      status: 429,
+    });
+    await expect(checkThreatIndicator('invalid value')).rejects.toThrow('Unsupported indicator');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

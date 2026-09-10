@@ -63,7 +63,7 @@ export function PhishingPage() {
       setResult(scan);
       setLogs(nextLogs);
       localStorage.setItem('phishing_scan_logs', JSON.stringify(nextLogs));
-      window.dispatchEvent(new Event('cyberium:scan-history-updated'));
+      window.dispatchEvent(new Event('cyber:scan-history-updated'));
       if (scan.prediction === 'phishing') {
         toast.error('Phishing indicators detected.');
       } else if (scan.prediction === 'suspicious') {
@@ -82,7 +82,7 @@ export function PhishingPage() {
 
   const clearLogs = () => {
     localStorage.removeItem('phishing_scan_logs');
-    window.dispatchEvent(new Event('cyberium:scan-history-updated'));
+    window.dispatchEvent(new Event('cyber:scan-history-updated'));
     setLogs([]);
   };
 

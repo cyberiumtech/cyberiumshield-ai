@@ -881,7 +881,7 @@ export function ThreatIntelligencePage() {
                   </div>
                   <div id="indicator-error" className="mt-3 min-h-5 text-xs" aria-live="assertive">
                     {(inputError || lookupError) && <p className="flex items-start gap-2 text-rose-300"><CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />{inputError || lookupError}</p>}
-                    {lookup.isPending && <p className="text-cyan-300">Querying applicable providers. Slow upstream services may take up to 20 seconds.</p>}
+                    {lookup.isPending && <p className="text-cyan-300">Querying applicable providers. Slow upstream services may take up to 40 seconds.</p>}
                   </div>
                 </form>
               </div>

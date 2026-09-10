@@ -396,7 +396,8 @@ export async function checkThreatIndicator(indicator: string, signal?: AbortSign
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ indicator: normalized }),
     },
-    signal
+    signal,
+    40_000
   );
   return normalizeIndicatorResult(payload);
 }
@@ -419,7 +420,9 @@ export async function fetchThreatHistory(limit = 25, signal?: AbortSignal) {
   });
 }
 
-export async function fetchThreatIntelligenceHealth(signal?: AbortSignal) {
+export async function fetchThreatIntelligenceHealth(
+  signal?: AbortSignal
+): Promise<ThreatIntelligenceHealth> {
   const payload = await requestJson('/api/health', {}, signal, 8_000);
   if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid health data.');
   const providers = isRecord(payload.providers) ? payload.providers : {};
@@ -439,7 +442,7 @@ export async function fetchThreatIntelligenceHealth(signal?: AbortSignal) {
   } satisfies ThreatIntelligenceHealth;
 }
 
-export async function fetchThreatFeedStatus(signal?: AbortSignal) {
+export async function fetchThreatFeedStatus(signal?: AbortSignal): Promise<ThreatFeedStatus> {
   const payload = await requestJson('/api/feeds', {}, signal, 8_000);
   if (!isRecord(payload)) throw new ThreatIntelligenceError('The service returned invalid feed data.');
   const cisa = isRecord(payload.cisaKEV) ? payload.cisaKEV : {};

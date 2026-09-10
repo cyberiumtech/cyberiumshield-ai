@@ -291,7 +291,7 @@ This model is a **tool to assist human decision-making**, not a replacement for 
 For questions, bug reports, or retraining requests:
 - **Team**: CyberShield-AI Security Team
 - **Email**: security@cybershield.ai
-- **Repository**: github.com/cyberiumtech/cybershield-ai
+- **Repository**: github.com/cybertech/cybershield-ai
 
 ---
 

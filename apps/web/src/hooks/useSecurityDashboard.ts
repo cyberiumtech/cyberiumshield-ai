@@ -162,7 +162,7 @@ export function useSecurityDashboard() {
     const historyTimer = window.setInterval(refreshHistories, 5_000);
     const onHistoryChange = () => refreshHistories();
     window.addEventListener('storage', onHistoryChange);
-    window.addEventListener('cyberium:scan-history-updated', onHistoryChange);
+    window.addEventListener('cyber:scan-history-updated', onHistoryChange);
 
     return () => {
       mounted.current = false;
@@ -170,7 +170,7 @@ export function useSecurityDashboard() {
       [networkTimer, backgroundNetworkTimer, vulnerabilityTimer, detectorTimer, intelTimer, historyTimer]
         .forEach(window.clearInterval);
       window.removeEventListener('storage', onHistoryChange);
-      window.removeEventListener('cyberium:scan-history-updated', onHistoryChange);
+      window.removeEventListener('cyber:scan-history-updated', onHistoryChange);
     };
   }, [loadDetectorHealth, loadIntel, loadNetwork, loadVulnerability, refreshHistories]);
 

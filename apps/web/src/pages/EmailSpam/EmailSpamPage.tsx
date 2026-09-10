@@ -29,9 +29,9 @@ Confirm your password and bank details immediately at http://192.168.10.20/claim
 };
 
 const SAFE_SAMPLE = {
-  sender: 'Maya Chen <maya@cyberium.example>',
+  sender: 'Maya Chen <maya@cyber.example>',
   subject: 'Notes from today’s security review',
-  content: `Authentication-Results: mx.cyberium.example; spf=pass; dkim=pass; dmarc=pass
+  content: `Authentication-Results: mx.cyber.example; spf=pass; dkim=pass; dmarc=pass
 
 Hi team,
 
@@ -109,7 +109,7 @@ export function EmailSpamPage() {
       const log = { ...analysis, id: `${Date.now()}-${analysis.subject}` };
       const nextLogs = [log, ...logs].slice(0, 25);
       localStorage.setItem('email_spam_scan_logs', JSON.stringify(nextLogs));
-      window.dispatchEvent(new Event('cyberium:scan-history-updated'));
+      window.dispatchEvent(new Event('cyber:scan-history-updated'));
       setLogs(nextLogs);
       setResult(analysis);
       toast.success(
@@ -372,7 +372,7 @@ export function EmailSpamPage() {
               type="button"
               onClick={() => {
                 localStorage.removeItem('email_spam_scan_logs');
-                window.dispatchEvent(new Event('cyberium:scan-history-updated'));
+                window.dispatchEvent(new Event('cyber:scan-history-updated'));
                 setLogs([]);
               }}
               className="flex items-center gap-2 text-xs text-slate-500 transition hover:text-red-300"
