@@ -30,4 +30,24 @@ def save_observation(result):
 def recent(limit=50):
     with conn() as c:
         rows = c.execute('SELECT * FROM observations ORDER BY id DESC LIMIT ?', (min(max(int(limit),1),200),)).fetchall()
-        return [dict(r) for r in rows]
+        observations = []
+        for row in rows:
+            stored = dict(row)
+            try:
+                result = json.loads(stored['result_json'])
+            except (KeyError, TypeError, json.JSONDecodeError):
+                result = {
+                    'indicator': stored.get('indicator', ''),
+                    'indicatorType': stored.get('indicator_type', 'unknown'),
+                    'riskScore': stored.get('score', 0),
+                    'verdict': stored.get('verdict', 'low'),
+                    'checkedAt': stored.get('created_at', ''),
+                    'reasons': [],
+                    'evidence': {},
+                    'details': {},
+                    'providerErrors': ['The stored result could not be decoded.'],
+                    'model': {'loaded': False, 'used': False},
+                }
+            result['id'] = stored['id']
+            observations.append(result)
+        return observations
