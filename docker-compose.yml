@@ -74,6 +74,13 @@ services:
       - ./malware-detector:/app
     environment:
       - MALWARE_CORS_ORIGIN=http://localhost:5173
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && python main.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
@@ -91,6 +98,13 @@ services:
       - ./phishing-detector:/app
     environment:
       - PHISHING_PORT=5001
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/api/health')"]
@@ -109,6 +123,13 @@ services:
     environment:
       - EMAIL_SPAM_PORT=5002
       - EMAIL_SPAM_CORS_ORIGIN=http://localhost:5173
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/api/health')"]
@@ -127,6 +148,13 @@ services:
     environment:
       - NETWORK_MONITOR_HOST=0.0.0.0
       - NETWORK_MONITOR_PORT=5003
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/api/status')"]
@@ -146,6 +174,13 @@ services:
       - VULNERABILITY_HOST=0.0.0.0
       - VULNERABILITY_MANAGER_PORT=5004
       - VULNERABILITY_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5004/api/health')"]
@@ -165,6 +200,13 @@ services:
       - THREAT_INTEL_HOST=0.0.0.0
       - THREAT_INTEL_PORT=5005
       - THREAT_INTEL_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - CYBERSHIELD_DB_HOST=mysql
+      - CYBERSHIELD_DB_USER=cybershield
+      - CYBERSHIELD_DB_PASSWORD=cybershield
+      - CYBERSHIELD_DB_NAME=cybershield
+    depends_on:
+      python-ai:
+        condition: service_healthy
     command: ["sh", "-c", "pip install -r requirements.txt && waitress-serve --listen=0.0.0.0:5005 app:app"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5005/api/health')"]

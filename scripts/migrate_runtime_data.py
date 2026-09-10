@@ -55,10 +55,18 @@ def import_vulnerabilities(db):
                 VALUES(%s,%s,%s,%s,%s,%s)''', (row['name'],row['address'],row['owner'],row['environment'],row['notes'],parse_date(row['created_at']) or datetime.utcnow()))
             asset_map[row['id']] = cursor.lastrowid; total += 1
         for row in source.execute('SELECT * FROM scans ORDER BY id'):
+            cursor.execute('SELECT id FROM vulnerability_scans WHERE asset_id <=> %s AND started_at <=> %s LIMIT 1',
+                (asset_map.get(row['asset_id']), parse_date(row['started_at'])))
+            found = cursor.fetchone()
+            if found: scan_map[row['id']] = found['id']; continue
             cursor.execute('''INSERT INTO vulnerability_scans(asset_id,started_at,finished_at,status,ports,open_ports)
                 VALUES(%s,%s,%s,%s,%s,%s)''', (asset_map.get(row['asset_id']),parse_date(row['started_at']),parse_date(row['finished_at']),row['status'],row['ports'],row['open_ports']))
             scan_map[row['id']] = cursor.lastrowid; total += 1
         for row in source.execute('SELECT * FROM scan_findings ORDER BY id'):
+            cursor.execute('''SELECT id FROM vulnerability_scan_findings
+                WHERE asset_id <=> %s AND scan_id <=> %s AND port <=> %s AND detected_at <=> %s LIMIT 1''',
+                (asset_map.get(row['asset_id']), scan_map.get(row['scan_id']), row['port'], parse_date(row['detected_at'])))
+            if cursor.fetchone(): continue
             cursor.execute('''INSERT INTO vulnerability_scan_findings(asset_id,scan_id,port,protocol,service,banner,risk_score,risk_level,detected_at)
                 VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)''', (asset_map.get(row['asset_id']),scan_map.get(row['scan_id']),row['port'],row['protocol'],row['service'],row['banner'],row['risk_score'],row['risk_level'],parse_date(row['detected_at']) or datetime.utcnow()))
             total += 1
