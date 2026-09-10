@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Bug, Clock3, CloudOff, FileWarning,
   Globe2, MailWarning, Network, Pause, Play, Radar, RefreshCw, ScanSearch, Server, ShieldCheck,
-  Siren, Wifi, WifiOff, Zap, AlertTriangle, CheckCircle2, ShieldAlert
+  Wifi, WifiOff, ShieldAlert
 } from 'lucide-react';
 import {
   ComposableMap, Geographies, Geography, Graticule, Line, Marker, Sphere,
@@ -51,7 +51,7 @@ function relativeTime(value?: string | null) {
 
 function Surface({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`relative overflow-hidden rounded-lg border border-slate-800/90 bg-slate-900/70 backdrop-blur-md shadow-lg shadow-black/40 ${className}`}>
+    <section className={`relative overflow-hidden rounded-md border border-slate-800/90 bg-slate-900/70 backdrop-blur-md shadow-md shadow-black/40 ${className}`}>
       {children}
     </section>
   );
@@ -62,25 +62,25 @@ function SourceDot({ source, compact = false }: { source: SourceState; compact?:
   const isLoading = source.status === 'loading';
 
   const dotStyles = isOnline
-    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+    ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
     : isLoading
       ? 'bg-amber-400 animate-pulse'
-      : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]';
+      : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]';
 
   return (
-    <span className={`inline-flex items-center ${compact ? 'gap-1.5' : 'gap-2'}`}>
-      <span className="relative flex h-2 w-2">
+    <span className={`inline-flex items-center ${compact ? 'gap-1' : 'gap-1.5'}`}>
+      <span className="relative flex h-1.5 w-1.5">
         {isOnline && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />}
-        <span className={`relative h-2 w-2 rounded-full ${dotStyles}`} />
+        <span className={`relative h-1.5 w-1.5 rounded-full ${dotStyles}`} />
       </span>
-      {!compact && <span className="capitalize text-slate-300 font-medium">{source.status}</span>}
+      {!compact && <span className="capitalize text-slate-300 font-medium text-xs">{source.status}</span>}
     </span>
   );
 }
 
 function RiskScoreGauge({ score }: { score: number | null }) {
   const displayScore = score ?? 0;
-  const radius = 42;
+  const radius = 34;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (displayScore / 100) * circumference;
 
@@ -92,15 +92,15 @@ function RiskScoreGauge({ score }: { score: number | null }) {
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg className="h-28 w-28 -rotate-90 transform" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} className="stroke-slate-800/80" strokeWidth="7" fill="transparent" />
+      <svg className="h-20 w-20 -rotate-90 transform" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r={radius} className="stroke-slate-800/80" strokeWidth="5.5" fill="transparent" />
         {score !== null && (
           <circle
-            cx="50"
-            cy="50"
+            cx="40"
+            cy="40"
             r={radius}
             className={`transition-all duration-700 ease-out ${colorClass}`}
-            strokeWidth="7"
+            strokeWidth="5.5"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
@@ -109,10 +109,10 @@ function RiskScoreGauge({ score }: { score: number | null }) {
         )}
       </svg>
       <div className="absolute flex flex-col items-center justify-center text-center">
-        <span className="font-mono text-3xl font-extrabold tracking-tight text-white">
+        <span className="font-mono text-xl font-extrabold tracking-tight text-white">
           {score !== null ? score : '—'}
         </span>
-        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Risk Score</span>
+        <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Risk Score</span>
       </div>
     </div>
   );
@@ -120,11 +120,11 @@ function RiskScoreGauge({ score }: { score: number | null }) {
 
 function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
   const [rotation, setRotation] = useState<[number, number, number]>([18, -12, 0]);
-  const [projectionScale, setProjectionScale] = useState(190);
+  const [projectionScale, setProjectionScale] = useState(140);
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const updateScale = () => setProjectionScale(window.innerWidth < 640 ? 140 : 190);
+    const updateScale = () => setProjectionScale(window.innerWidth < 640 ? 110 : 140);
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
@@ -186,15 +186,15 @@ function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
   }, [isPaused]);
 
   return (
-    <div className="relative h-[290px] overflow-hidden rounded-b-lg sm:h-[340px] lg:h-[360px]">
-      <div className="pointer-events-none absolute inset-x-[15%] top-[10%] aspect-square rounded-full bg-cyan-500/10 blur-2xl" />
+    <div className="relative h-[210px] overflow-hidden rounded-b-md sm:h-[240px] lg:h-[250px]">
+      <div className="pointer-events-none absolute inset-x-[15%] top-[10%] aspect-square rounded-full bg-cyan-500/10 blur-xl" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_35%,#090d16_90%)]" />
       
       <ComposableMap
         projection="geoOrthographic"
         projectionConfig={{ rotate: rotation, scale: projectionScale }}
         width={800}
-        height={400}
+        height={340}
         className="relative h-full w-full"
         aria-label="Global attack map telemetry"
       >
@@ -231,9 +231,9 @@ function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
         {mapPoints.map(point => (
           <Marker key={point.name} coordinates={point.coordinates}>
             <g className="cursor-pointer">
-              <circle r={7} fill={point.tone} opacity={0.2} className="animate-ping" />
-              <circle r={3.5} fill={point.tone} opacity={0.5} />
-              <circle r={1.8} fill={point.tone} stroke="#090d16" strokeWidth={0.8} />
+              <circle r={6} fill={point.tone} opacity={0.2} className="animate-ping" />
+              <circle r={3} fill={point.tone} opacity={0.5} />
+              <circle r={1.5} fill={point.tone} stroke="#090d16" strokeWidth={0.6} />
               <title>{point.name} Telemetry Node</title>
             </g>
           </Marker>
@@ -242,13 +242,13 @@ function GlobalThreatGlobe({ isPaused }: { isPaused: boolean }) {
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#090d16_0%,transparent_10%,transparent_90%,#090d16_100%)]" />
       
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-md border border-slate-800 bg-slate-950/85 px-3 py-1.5 text-xs text-slate-300 backdrop-blur-md sm:bottom-4 sm:left-4 sm:right-auto">
-        <span className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
+      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded border border-slate-800 bg-slate-950/85 px-2.5 py-1 text-[11px] text-slate-300 backdrop-blur-md sm:bottom-3 sm:left-3 sm:right-auto">
+        <span className="flex items-center gap-1.5">
+          <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-500" />
           </span>
-          <span className="uppercase tracking-wider text-cyan-400 font-semibold text-[10px]">Global Threat Mesh Active</span>
+          <span className="uppercase tracking-wider text-cyan-400 font-semibold text-[9px]">Global Threat Mesh Active</span>
         </span>
       </div>
     </div>
@@ -274,28 +274,28 @@ function ModuleSummary({ title, eyebrow, value, detail, route, icon: Icon, sourc
   return (
     <Link
       to={route}
-      className={`group relative flex flex-col justify-between border-b border-slate-800/80 p-4 transition-all duration-200 hover:bg-slate-800/40 sm:border-r ${style.border}`}
+      className={`group relative flex flex-col justify-between border-b border-slate-800/80 p-2.5 transition-all duration-200 hover:bg-slate-800/40 sm:border-r ${style.border}`}
     >
       <div>
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-1.5">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{eyebrow}</p>
-            <h3 className="mt-0.5 text-sm font-semibold text-slate-100 transition group-hover:text-white">{title}</h3>
+            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-500">{eyebrow}</p>
+            <h3 className="mt-0.5 text-xs font-semibold text-slate-100 transition group-hover:text-white truncate">{title}</h3>
           </div>
-          <span className={`grid h-8 w-8 place-items-center rounded-md border transition-transform duration-200 group-hover:scale-105 ${style.iconBg}`}>
-            <Icon className="h-4 w-4" />
+          <span className={`grid h-6 w-6 shrink-0 place-items-center rounded border transition-transform duration-200 group-hover:scale-105 ${style.iconBg}`}>
+            <Icon className="h-3 w-3" />
           </span>
         </div>
-        <div className="mt-3 font-mono text-2xl font-bold tracking-tight text-white">{value}</div>
-        <p className="mt-1 text-xs text-slate-400 leading-snug truncate">{detail}</p>
+        <div className="mt-2 font-mono text-xl font-bold tracking-tight text-white">{value}</div>
+        <p className="mt-0.5 text-[10px] text-slate-400 leading-tight truncate">{detail}</p>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-slate-800/60 pt-2.5 text-xs">
-        <span className="flex items-center gap-1.5 text-slate-400">
+      <div className="mt-2.5 flex items-center justify-between border-t border-slate-800/60 pt-1.5 text-[10px]">
+        <span className="flex items-center gap-1 text-slate-400 min-w-0">
           <SourceDot source={source} compact />
-          <span className="truncate text-[10px]">{note}</span>
+          <span className="truncate text-[9px]">{note}</span>
         </span>
-        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-600 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-cyan-400" />
+        <ArrowRight className="h-3 w-3 shrink-0 text-slate-600 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-cyan-400" />
       </div>
     </Link>
   );
@@ -352,12 +352,12 @@ export function DashboardPage() {
       const score = severity[b.severity] - severity[a.severity];
       if (score) return score;
       return (new Date(b.time || 0).getTime() || 0) - (new Date(a.time || 0).getTime() || 0);
-    }).slice(0, 7);
+    }).slice(0, 6);
   }, [data.email, data.intel, data.malware, data.network, data.phishing, data.vulnerability]);
 
   const detectorCount = data.email.length + data.phishing.length + data.malware.length;
   const detectionCount = data.email.filter(item => item.verdict !== 'legitimate').length + data.phishing.filter(item => item.prediction === 'phishing').length + data.malware.filter(item => item.classification === 'Malware').length;
-  const sourceSummary = data.summary.loading ? 'Connecting...' : data.summary.offline ? 'Partial Telemetry' : 'All Feeds Nominal';
+  const sourceSummary = data.summary.loading ? 'Connecting...' : data.summary.offline ? 'Partial Feeds' : 'All Feeds Nominal';
   const sourceTone = data.summary.loading || data.summary.offline ? 'text-amber-400' : 'text-emerald-400';
 
   const modules: ModuleProps[] = [
@@ -365,36 +365,36 @@ export function DashboardPage() {
     { title: 'Phishing Defense', eyebrow: 'URL Scanner', value: data.phishing.length ? String(data.phishing.length) : '—', detail: data.phishing.length ? `${data.phishing.filter(item => item.prediction === 'phishing').length} malicious links` : 'No active scans', route: '/phishing', icon: FileWarning, source: data.sources.phishing, accent: 'amber', note: data.sources.phishing.status === 'online' ? 'Active' : 'Offline' },
     { title: 'Malware Engine', eyebrow: 'File Inspection', value: data.malware.length ? String(data.malware.length) : '—', detail: data.malware.length ? `${data.malware.filter(item => item.classification === 'Malware').length} threats isolated` : 'No active scans', route: '/malware', icon: Bug, source: data.sources.malware, accent: 'rose', note: data.sources.malware.status === 'online' ? 'Active' : 'Offline' },
     { title: 'Vulnerabilities', eyebrow: 'Exposure Matrix', value: data.vulnerability ? String(data.vulnerability.counts.total) : '—', detail: data.vulnerability ? `${data.vulnerability.counts.critical} critical · ${data.vulnerability.counts.high} high` : 'Inventory Offline', route: '/vulnerability', icon: ScanSearch, source: data.sources.vulnerability, accent: 'violet', note: data.vulnerability ? `${data.vulnerability.counts.assets} Assets` : 'Offline' },
-    { title: 'Network Traffic', eyebrow: 'Live Connections', value: data.network ? String(data.network.connection_count) : '—', detail: data.network ? `${data.network.established} established` : 'Telemetry Pause', route: '/network', icon: Network, source: data.sources.network, accent: 'emerald', note: data.network?.monitoring ? 'Streaming' : 'Paused' },
-    { title: 'Threat Intelligence', eyebrow: 'CISA KEV Feed', value: data.intel ? String(data.intel.declaredCount ?? data.intel.vulnerabilities.length) : '—', detail: data.intel ? `${recentKev ?? 0} added (30d)` : 'Feed Unavailable', route: '/threat-intelligence', icon: Radar, source: data.sources.intel, accent: 'violet', note: data.intel ? `v${data.intel.catalogVersion || '1.0'}` : 'Offline' },
+    { title: 'Network Traffic', eyebrow: 'Live Connections', value: data.network ? String(data.network.connection_count) : '—', detail: data.network ? `${data.network.established} active` : 'Telemetry Pause', route: '/network', icon: Network, source: data.sources.network, accent: 'emerald', note: data.network?.monitoring ? 'Streaming' : 'Paused' },
+    { title: 'Threat Intel', eyebrow: 'CISA KEV Feed', value: data.intel ? String(data.intel.declaredCount ?? data.intel.vulnerabilities.length) : '—', detail: data.intel ? `${recentKev ?? 0} added (30d)` : 'Feed Unavailable', route: '/threat-intelligence', icon: Radar, source: data.sources.intel, accent: 'violet', note: data.intel ? `v${data.intel.catalogVersion || '1.0'}` : 'Offline' },
   ];
 
   return (
-    <div className="relative mx-auto w-full min-w-0 max-w-[1600px] space-y-5 bg-[#090d16] p-4 text-slate-200 sm:p-6">
+    <div className="relative mx-auto w-full min-w-0 max-w-[1600px] space-y-3.5 bg-[#090d16] p-3 text-slate-200 sm:p-4">
       {/* Structural Top Bar */}
-      <header className="flex flex-col justify-between gap-4 rounded-lg border border-slate-800/80 bg-slate-900/60 p-4 backdrop-blur-md lg:flex-row lg:items-center">
+      <header className="flex flex-col justify-between gap-2.5 rounded-md border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 backdrop-blur-md sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-cyan-400">
-            <ShieldCheck className="h-4 w-4" />
-            <span className="uppercase">SOC Command Operations</span>
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-cyan-400 uppercase">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            SOC Command Operations
           </div>
-          <h1 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
+          <h1 className="mt-0.5 text-base font-bold tracking-tight text-white sm:text-lg">
             Security Operations Dashboard
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="border-l border-slate-800 px-3">
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <div className="border-l border-slate-800 pl-2.5">
             <p className="font-mono text-xs font-semibold text-slate-200">{formatDate(now.toISOString())}</p>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">System Time</p>
+            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-500">System Time</p>
           </div>
 
-          <div className="border-l border-slate-800 px-3">
-            <p className={`flex items-center gap-1.5 text-xs font-semibold ${sourceTone}`}>
+          <div className="border-l border-slate-800 pl-2.5">
+            <p className={`flex items-center gap-1 text-xs font-semibold ${sourceTone}`}>
               <SourceDot source={{ status: data.summary.offline ? 'offline' : 'online', updatedAt: null, error: null }} compact />
               {sourceSummary}
             </p>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+            <p className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
               {data.summary.online} / 6 Feeds Active
             </p>
           </div>
@@ -403,85 +403,85 @@ export function DashboardPage() {
             type="button"
             onClick={() => void data.refreshAll()}
             disabled={data.isRefreshing}
-            className="inline-flex items-center gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition hover:border-cyan-500/50 hover:bg-cyan-500/20 active:scale-95 disabled:cursor-wait disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 transition hover:border-cyan-500/50 hover:bg-cyan-500/20 active:scale-95 disabled:cursor-wait disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${data.isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 ${data.isRefreshing ? 'animate-spin' : ''}`} />
             Sync Feeds
           </button>
         </div>
       </header>
 
       {/* Primary Section: Threat Globe & Risk Gauge */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.8fr)_minmax(320px,0.8fr)]">
+      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,0.8fr)]">
         <Surface className="flex flex-col">
-          <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              <Globe2 className={`h-4 w-4 ${isGlobePaused ? 'text-slate-500' : 'text-cyan-400'}`} />
+          <div className="flex items-center justify-between border-b border-slate-800/80 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <Globe2 className={`h-3.5 w-3.5 ${isGlobePaused ? 'text-slate-500' : 'text-cyan-400'}`} />
               <span>Global Mesh Telemetry Map</span>
             </div>
             <button
               type="button"
               onClick={() => setIsGlobePaused(current => !current)}
-              className="inline-flex items-center gap-1.5 rounded border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-[10px] font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
+              className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-800/80 px-2 py-0.5 text-[9px] font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
             >
-              {isGlobePaused ? <Play className="h-3 w-3 text-emerald-400" /> : <Pause className="h-3 w-3 text-amber-400" />}
+              {isGlobePaused ? <Play className="h-2.5 w-2.5 text-emerald-400" /> : <Pause className="h-2.5 w-2.5 text-amber-400" />}
               {isGlobePaused ? 'Resume' : 'Pause'}
             </button>
           </div>
           <GlobalThreatGlobe isPaused={isGlobePaused} />
         </Surface>
 
-        <Surface className="flex flex-col justify-between p-5">
+        <Surface className="flex flex-col justify-between p-3.5">
           <div>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Security Posture</p>
-                <h2 className="mt-0.5 text-lg font-bold text-white">Risk Profile</h2>
+                <p className="text-[8px] font-bold uppercase tracking-wider text-slate-500">Security Posture</p>
+                <h2 className="text-sm font-bold text-white">Risk Profile</h2>
               </div>
-              <span className={`rounded-md border p-1.5 ${posture.score !== null && posture.score >= 40 ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'}`}>
-                {posture.score !== null && posture.score >= 40 ? <ShieldAlert className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+              <span className={`rounded border p-1 ${posture.score !== null && posture.score >= 40 ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'}`}>
+                {posture.score !== null && posture.score >= 40 ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
               </span>
             </div>
 
-            <div className="mt-4 flex flex-col items-center justify-center border-b border-slate-800/80 pb-4">
+            <div className="mt-2 flex flex-col items-center justify-center border-b border-slate-800/80 pb-2.5">
               <RiskScoreGauge score={posture.score} />
-              <p className="mt-2 font-mono text-xs font-bold tracking-wider text-cyan-400 uppercase">
+              <p className="mt-1 font-mono text-[11px] font-bold tracking-wider text-cyan-400 uppercase">
                 {posture.label}
               </p>
             </div>
 
-            <div className="mt-4 space-y-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Contributing Indicators</p>
+            <div className="mt-2.5 space-y-1.5">
+              <p className="text-[8px] font-bold uppercase tracking-wider text-slate-500">Contributing Indicators</p>
               {posture.factors.length ? (
-                posture.factors.slice(0, 4).map(factor => (
+                posture.factors.slice(0, 3).map(factor => (
                   <div key={factor.label} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-slate-400 truncate">
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${factor.points ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                      <span className="truncate">{factor.label}</span>
+                    <span className="flex items-center gap-1.5 text-slate-400 truncate">
+                      <span className={`h-1 w-1 shrink-0 rounded-full ${factor.points ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                      <span className="truncate text-[11px]">{factor.label}</span>
                     </span>
-                    <span className="font-mono text-xs font-semibold text-slate-200">+{factor.points}</span>
+                    <span className="font-mono text-[11px] font-semibold text-slate-200">+{factor.points}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-500">No elevated indicators logged.</p>
+                <p className="text-[11px] text-slate-500">No elevated indicators logged.</p>
               )}
             </div>
           </div>
 
-          <p className="mt-4 text-[10px] leading-tight text-slate-500 border-t border-slate-800/60 pt-3">
-            Real-time weighted score evaluated across network parameters and detection events.
+          <p className="mt-2 text-[9px] leading-tight text-slate-500 border-t border-slate-800/60 pt-2">
+            Weighted score calculated dynamically from telemetry feeds.
           </p>
         </Surface>
       </div>
 
       {/* Module Overview Grid */}
       <Surface>
-        <div className="flex flex-col justify-between border-b border-slate-800/80 px-4 py-3 sm:flex-row sm:items-center">
+        <div className="flex items-center justify-between border-b border-slate-800/80 px-3 py-2">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-cyan-400">Security Fabric</p>
-            <h2 className="text-base font-bold text-white">Detection Modules</h2>
+            <p className="text-[8px] font-bold uppercase tracking-wider text-cyan-400">Security Fabric</p>
+            <h2 className="text-xs font-bold text-white">Detection Modules</h2>
           </div>
-          <span className="mt-1 font-mono text-xs text-slate-400 sm:mt-0">
+          <span className="font-mono text-[11px] text-slate-400">
             {detectorCount} total scans / <span className="text-rose-400 font-semibold">{detectionCount} threats</span>
           </span>
         </div>
@@ -493,16 +493,16 @@ export function DashboardPage() {
       </Surface>
 
       {/* Lower Section: Telemetry Feed & System Status */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.8fr)]">
+      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)]">
         {/* Real-time Activity */}
         <Surface className="flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-cyan-400" />
-                <h2 className="text-sm font-bold text-white">Live Event Stream</h2>
+            <div className="flex items-center justify-between border-b border-slate-800/80 px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5 text-cyan-400" />
+                <h2 className="text-xs font-bold text-white">Live Event Stream</h2>
               </div>
-              <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-slate-400">Real-Time</span>
+              <span className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase text-slate-400">Real-Time</span>
             </div>
 
             {activities.length ? (
@@ -519,37 +519,37 @@ export function DashboardPage() {
                     <Link
                       key={item.id}
                       to={item.route}
-                      className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-800/30"
+                      className="group flex items-center justify-between gap-2.5 px-3 py-2 transition hover:bg-slate-800/30"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase ${severityBadge}`}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className={`rounded border px-1 py-0.5 text-[8px] font-bold uppercase shrink-0 ${severityBadge}`}>
                           {item.severity}
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-xs font-semibold text-slate-200 group-hover:text-cyan-400 transition">
                             {item.title}
                           </p>
-                          <p className="truncate text-[11px] text-slate-400">{item.detail}</p>
+                          <p className="truncate text-[10px] text-slate-400 leading-tight">{item.detail}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0 text-right">
+                      <div className="flex items-center gap-2.5 shrink-0 text-right">
                         <div>
-                          <p className="text-[11px] font-medium text-slate-300">{item.source}</p>
-                          <p className="font-mono text-[9px] text-slate-500">{relativeTime(item.time)}</p>
+                          <p className="text-[10px] font-medium text-slate-300">{item.source}</p>
+                          <p className="font-mono text-[8px] text-slate-500">{relativeTime(item.time)}</p>
                         </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
+                        <ArrowRight className="h-3 w-3 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-400" />
                       </div>
                     </Link>
                   );
                 })}
               </div>
             ) : (
-              <div className="grid min-h-[220px] place-items-center p-6 text-center">
+              <div className="grid min-h-[160px] place-items-center p-4 text-center">
                 <div>
-                  <CloudOff className="mx-auto h-8 w-8 text-slate-600" />
-                  <p className="mt-2 text-xs font-semibold text-slate-300">No events logged</p>
-                  <p className="mt-1 text-[11px] text-slate-500">Initiate a security scan to populate telemetry.</p>
+                  <CloudOff className="mx-auto h-6 w-6 text-slate-600" />
+                  <p className="mt-1.5 text-xs font-semibold text-slate-300">No events logged</p>
+                  <p className="mt-0.5 text-[10px] text-slate-500">Initiate a security scan to populate telemetry.</p>
                 </div>
               </div>
             )}
@@ -557,36 +557,36 @@ export function DashboardPage() {
         </Surface>
 
         {/* Network & Source Telemetry Side Panels */}
-        <div className="space-y-5">
+        <div className="space-y-3.5">
           {/* Network Throughput Panel */}
-          <Surface className="p-4">
+          <Surface className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Network Bandwidth</p>
-                <h2 className="text-sm font-bold text-white">Live Traffic Rates</h2>
+                <p className="text-[8px] font-bold uppercase tracking-wider text-emerald-400">Network Bandwidth</p>
+                <h2 className="text-xs font-bold text-white">Live Traffic Rates</h2>
               </div>
               {data.network?.monitoring ? (
-                <Wifi className="h-4 w-4 text-emerald-400 animate-pulse" />
+                <Wifi className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
               ) : (
-                <WifiOff className="h-4 w-4 text-slate-600" />
+                <WifiOff className="h-3.5 w-3.5 text-slate-600" />
               )}
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              <div className="rounded-md border border-slate-800 bg-slate-950/60 p-3">
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <ArrowUp className="h-3 w-3 text-violet-400" /> Outbound
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="rounded border border-slate-800 bg-slate-950/60 p-2">
+                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                  <ArrowUp className="h-2.5 w-2.5 text-violet-400" /> Outbound
                 </div>
-                <p className="mt-1 font-mono text-lg font-bold text-white">
+                <p className="mt-0.5 font-mono text-base font-bold text-white">
                   {data.network ? formatDataRate(data.network.upload_bps) : '—'}
                 </p>
               </div>
 
-              <div className="rounded-md border border-slate-800 bg-slate-950/60 p-3">
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <ArrowDown className="h-3 w-3 text-cyan-400" /> Inbound
+              <div className="rounded border border-slate-800 bg-slate-950/60 p-2">
+                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                  <ArrowDown className="h-2.5 w-2.5 text-cyan-400" /> Inbound
                 </div>
-                <p className="mt-1 font-mono text-lg font-bold text-white">
+                <p className="mt-0.5 font-mono text-base font-bold text-white">
                   {data.network ? formatDataRate(data.network.download_bps) : '—'}
                 </p>
               </div>
@@ -595,21 +595,21 @@ export function DashboardPage() {
 
           {/* Feed Integrity Table */}
           <Surface>
-            <div className="border-b border-slate-800/80 px-4 py-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-violet-400">System Feeds</p>
-              <h2 className="text-sm font-bold text-white">Source Feed Health</h2>
+            <div className="border-b border-slate-800/80 px-3 py-1.5">
+              <p className="text-[8px] font-bold uppercase tracking-wider text-violet-400">System Feeds</p>
+              <h2 className="text-xs font-bold text-white">Source Feed Health</h2>
             </div>
 
             <div className="divide-y divide-slate-800/60">
               {(Object.keys(sourceNames) as SourceKey[]).map(key => {
                 const source = data.sources[key];
                 return (
-                  <div key={key} className="flex items-center justify-between px-4 py-2 text-xs">
-                    <span className="flex items-center gap-2 text-slate-200">
+                  <div key={key} className="flex items-center justify-between px-3 py-1 text-[11px]">
+                    <span className="flex items-center gap-1.5 text-slate-200">
                       <SourceDot source={source} compact />
                       {sourceNames[key]}
                     </span>
-                    <span className="font-mono text-[10px] text-slate-400">
+                    <span className="font-mono text-[9px] text-slate-400">
                       {source.status === 'loading' ? 'Connecting' : source.updatedAt ? formatDate(source.updatedAt) : 'Offline'}
                     </span>
                   </div>
@@ -617,18 +617,18 @@ export function DashboardPage() {
               })}
             </div>
 
-            <div className="flex items-center gap-1.5 border-t border-slate-800/80 bg-slate-950/40 px-4 py-2 text-[11px] text-slate-500">
-              <Clock3 className="h-3 w-3 shrink-0" />
-              Last Telemetry Sync: {data.lastSync ? relativeTime(data.lastSync) : 'In Progress'}
+            <div className="flex items-center gap-1 border-t border-slate-800/80 bg-slate-950/40 px-3 py-1 text-[10px] text-slate-500">
+              <Clock3 className="h-2.5 w-2.5 shrink-0" />
+              Last Sync: {data.lastSync ? relativeTime(data.lastSync) : 'In Progress'}
             </div>
           </Surface>
         </div>
       </div>
 
       {/* Compact Telemetry Footer */}
-      <footer className="flex items-center justify-between rounded-md border border-slate-800/60 bg-slate-950/40 px-4 py-2.5 text-[11px] text-slate-500">
-        <span className="flex items-center gap-2 font-mono">
-          <Server className="h-3.5 w-3.5 text-cyan-400" /> Cyber Shield Mesh Node v4.2
+      <footer className="flex items-center justify-between rounded border border-slate-800/60 bg-slate-950/40 px-3 py-1.5 text-[10px] text-slate-500">
+        <span className="flex items-center gap-1.5 font-mono">
+          <Server className="h-3 w-3 text-cyan-400" /> Cyber Shield Mesh Node v4.2
         </span>
         <span>Telemetry Verified</span>
       </footer>
