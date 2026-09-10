@@ -226,7 +226,7 @@ export function Sidebar({ activePath, mobile = false }: { activePath: string; mo
         >
           {!isCollapsed && (
             <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
-              Navigation
+              Collapse Sidebar
             </p>
           )}
           <button
