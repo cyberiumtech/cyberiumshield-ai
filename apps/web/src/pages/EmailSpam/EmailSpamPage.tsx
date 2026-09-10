@@ -35,12 +35,12 @@ import { scanEmailSpam } from '../../services/api';
 import type { EmailSpamAnalysis } from '../../services/api';
 
 /* ------------------------------------------------------------------ */
-/* Typography — single source of truth                                 */
+/* Typography — matches the rest of the redesign                       */
 /* ------------------------------------------------------------------ */
 export const FONT_SANS =
-  '"Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  "'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
 export const FONT_MONO =
-  '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
