@@ -9,7 +9,8 @@ def conn():
     return c
 
 def init_db():
-    with conn() as c:
+    c = conn()
+    try:
         c.execute('''CREATE TABLE IF NOT EXISTS observations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             indicator TEXT NOT NULL,
@@ -21,14 +22,22 @@ def init_db():
         )''')
         c.execute('CREATE INDEX IF NOT EXISTS idx_obs_indicator ON observations(indicator)')
         c.execute('CREATE INDEX IF NOT EXISTS idx_obs_created ON observations(created_at)')
+        c.commit()
+    finally:
+        c.close()
 
 def save_observation(result):
-    with conn() as c:
+    c = conn()
+    try:
         c.execute('INSERT INTO observations(indicator, indicator_type, score, verdict, result_json, created_at) VALUES (?,?,?,?,?,?)',
                   (result['indicator'], result['indicatorType'], result['riskScore'], result['verdict'], json.dumps(result), datetime.now(timezone.utc).isoformat()))
+        c.commit()
+    finally:
+        c.close()
 
 def recent(limit=50):
-    with conn() as c:
+    c = conn()
+    try:
         rows = c.execute('SELECT * FROM observations ORDER BY id DESC LIMIT ?', (min(max(int(limit),1),200),)).fetchall()
         observations = []
         for row in rows:
@@ -51,3 +60,5 @@ def recent(limit=50):
             result['id'] = stored['id']
             observations.append(result)
         return observations
+    finally:
+        c.close()
